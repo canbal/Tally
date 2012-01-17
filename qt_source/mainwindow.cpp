@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Phonon::createPath(m_media, m_vidWidget);
     m_vidWidget->show();
     m_vidWidget->setFullScreen(true);
-    connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinshed());       // needs work
+    connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
 }
 
 MainWindow::~MainWindow()
