@@ -19,6 +19,7 @@ enum TEST_STATE {
     RUNNING
 };
 
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -44,7 +45,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    int *randomizeVideoOrder(void);
     int m_numVideos;
     int *m_videoPlayOrder;
     int m_nextVideo;
@@ -55,8 +55,6 @@ private:
     Phonon::MediaObject *m_media;
     Phonon::VideoWidget *m_vidWidget;
     void setTestState(TEST_STATE state);
-    bool isSetupFileValid(QString testSetupFile, Json::Value *root);
-
 };
 
 #endif // MAINWINDOW_H

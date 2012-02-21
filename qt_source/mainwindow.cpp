@@ -1,15 +1,11 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QFileDialog>
-#include <time.h>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <QMessageBox>
 #include <QUrl>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include "helper.h"
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -64,36 +60,13 @@ void MainWindow::enableStartButton()
 void MainWindow::on_selectVideos_clicked()
 {
     // dialog to select video
-    QStringList fileNames = QFileDialog::getOpenFileNames(this,
-         tr("Select Videos"), "", tr(""));
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select Videos"), "", tr(""));
     // update video list
     if (!fileNames.isEmpty()) {
         ui->videoList->clear();
         ui->videoList->addItems(fileNames);
-        ui->status->setText(QString("Click '%1' to start test").arg(ui->play->text()));
     }
     emit enableStartTest();
-}
-
-
-int *MainWindow::randomizeVideoOrder(void)
-{
-    int *list = new int[m_numVideos];
-    std::vector <int> *listVector = new std::vector<int>;
-    int r;
-    // initialize ordered list vector
-    for (int ii=0; ii<m_numVideos; ii++) {
-        listVector->push_back(ii);
-    }
-    // randomize list
-    srand((unsigned int)time(NULL));
-    for (int ii=0; ii < m_numVideos; ii++) {
-        r = rand() % (m_numVideos-ii);
-        list[ii] = listVector->at(r);
-        listVector->erase(listVector->begin()+r);
-    }
-    delete listVector;
-    return(list);
 }
 
 
@@ -128,12 +101,9 @@ void MainWindow::on_reset_clicked()
     m_videoPlayOrder = NULL;
     m_nextVideo = 0;
     ui->videoList->clear();
-
     ui->testID->clear();
     ui->testNotes->clear();
-
     m_tcpSocket->abort();
-
     setTestState(INITIAL);
 }
 
@@ -155,7 +125,7 @@ void MainWindow::on_startTest_clicked()
         delete [] m_videoPlayOrder;
     }
     m_numVideos = ui->videoList->count();
-    m_videoPlayOrder = randomizeVideoOrder();
+    m_videoPlayOrder = randomizeVideoOrder(m_numVideos);
     m_nextVideo = 0;
 /*
     QString test;
@@ -168,29 +138,19 @@ void MainWindow::on_startTest_clicked()
         // input general test information
     Json::Value object;
     object["testID"] = ui->testID->document()->toPlainText().toStdString();     // check that encoding matches (utf8, etc.)
-    time_t rawtime;
-    time(&rawtime);
-    std::string tm = ctime(&rawtime);
-    tm = tm.substr(0,tm.size()-1);      // remove trailing "\n" character (interpreted as single character)
-    object["timestamp"] = tm.c_str();
+    object["timestamp"] = getTimestamp();
     object["testNotes"] = ui->testNotes->document()->toPlainText().toStdString();     // check that encoding matches (utf8, etc.)
         // input video/randomization information
     for (int ii=0; ii<m_numVideos; ii++) {
-        // stores video and order as pairs as an array of objects
         object["videoList"][ii]["video"] = ui->videoList->item(ii)->text().toStdString();     // check that encoding matches (utf8, etc.)
         object["videoList"][ii]["order"] = m_videoPlayOrder[ii];        // randomization is zero-based
-        // stores randomization and video list as separate arrays
-        //object["videoList2"][ii] = ui->videoList->item(ii)->text().toStdString();     // check that encoding matches (utf8, etc.)
-        //object["randomization"][ii] =  m_videoPlayOrder[ii];        // randomization is zero-based
     }
         // write to file
     std::ofstream testFile;
-    std::string fileName = "SSTT_config_" + ui->testID->document()->toPlainText().toStdString() + ".json";
+    std::string fileName = getFileName(ui->testID->document()->toPlainText().toStdString());
     testFile.open(fileName.c_str());
     Json::StyledStreamWriter writer;
     writer.write(testFile,object);
-    //Json::StyledWriter writer;      // denser formatting
-    //testFile << writer.write(object);
     testFile.close();
 
     // disable test setup buttons
@@ -218,11 +178,8 @@ void MainWindow::on_importTest_clicked()
         return;
     } else {
         // populate test setup with appropriate data
-        const Json::Value testID_obj = root["testID"];
-        ui->testID->setPlainText(QString(testID_obj.asCString()));
-        const Json::Value testNotes_obj = root["testNotes"];
-        ui->testNotes->setPlainText(QString(testNotes_obj.asCString()));
-        // populate video list
+        ui->testID->setPlainText(QString(root["testID"].asCString()));
+        ui->testNotes->setPlainText(QString(root["testNotes"].asCString()));
         const Json::Value videoList_obj = root["videoList"];
         m_numVideos = videoList_obj.size();
         if (m_videoPlayOrder!=NULL) {
@@ -233,7 +190,7 @@ void MainWindow::on_importTest_clicked()
         ui->videoList->clear();
 
         //QString test;
-        for (int ii=0; ii<m_numVideos; ii++) {
+        for (int ii=0; ii<m_numVideos; ii++) {      // populate video list
             ui->videoList->addItem(QString(videoList_obj[ii]["video"].asCString()));
             m_videoPlayOrder[ii] = videoList_obj[ii]["order"].asInt();
         //    test.append(QString("%1 ").arg(m_videoPlayOrder[ii]));
@@ -250,48 +207,6 @@ void MainWindow::on_importTest_clicked()
 }
 
 
-bool MainWindow::isSetupFileValid(QString testSetupFile, Json::Value *root)         // no error-checking for type of data (string, int, etc.)
-{
-    Json::Reader reader;
-    std::ifstream inFile(testSetupFile.toStdString().c_str(), std::ios_base::in);
-    std::stringstream err;
-    if (!reader.parse(inFile,*root)) {
-        err << reader.getFormatedErrorMessages() << std::endl;
-    }
-    if (!root->isMember("testID")) {
-        err << "Missing \"testID\" member" << std::endl;
-    }
-    if (!root->isMember("testNotes")) {
-        err << "Missing \"testNotes\" member" << std::endl;
-    }
-    if (!root->isMember("timestamp")) {
-        err << "Missing \"timestamp\" member" << std::endl;
-    }
-    if (!root->isMember("videoList")) {
-        err << "Missing \"videoList\" member" << std::endl;
-    } else {
-        const Json::Value videoList_obj = (*root)["videoList"];
-        for (int ii=0; ii<(int)videoList_obj.size(); ii++) {
-            if (!videoList_obj[ii].isMember("video")) {
-                err << "Missing \"video\" member of \"videoList\" entry " << ii << std::endl;
-            }
-            if (!videoList_obj[ii].isMember("order")) {
-                err << "Missing \"order\" member of \"videoList\" entry " << ii << std::endl;
-            }
-        }
-    }
-    bool success = (err.str().size()==0);
-    if (!success) {
-        QMessageBox msgBox;
-        msgBox.setIcon(QMessageBox::Critical);
-        msgBox.setText(QString("Invalid configuration file: \n %1 \n Please select a different configuration file or start a new test.").arg(testSetupFile));
-        msgBox.setDetailedText(QString(err.str().c_str()));
-        msgBox.exec();
-    }
-    return (success);
-}
-
-
 void MainWindow::setTestState(TEST_STATE state)
 {
     bool setup, run;
@@ -301,6 +216,10 @@ void MainWindow::setTestState(TEST_STATE state)
     } else if (state==RUNNING) {
         setup = false;
         run = true;
+    } else {
+        QMessageBox::critical(this, tr("SSTT"), QString("'state' must be \"INITIAL\" or \"RUNNING\"."));
+        on_reset_clicked();
+        return;
     }
     ui->selectVideos->setEnabled(setup);
     ui->importTest->setEnabled(setup);
@@ -316,7 +235,7 @@ void MainWindow::readSignal()
 {
     int numChars = 4;
     quint64 ba = m_tcpSocket->bytesAvailable();
-    if (ba < (unsigned)numChars) {        // expects a string of 4 characters
+    if (ba < (unsigned)numChars) {         // expects a string of 4 characters
         return;
     }
 
@@ -342,9 +261,8 @@ void MainWindow::readSignalHTTP(QNetworkReply *networkReply)
     if (!networkReply->error()) {
         QString command = (QString) networkReply->readAll();
         ui->signal->setText(command);
-        QMessageBox::information(this, tr("Fortune Client"), command);
     } else {
-        QMessageBox::information(this, tr("Fortune Client"), networkReply->errorString());
+        QMessageBox::information(this, tr("SSTT"), networkReply->errorString());
     }
     networkReply->deleteLater();
 }
@@ -352,20 +270,18 @@ void MainWindow::readSignalHTTP(QNetworkReply *networkReply)
 
 void MainWindow::displayError(QAbstractSocket::SocketError socketError)
 {
+    QString errStr;
     switch (socketError) {
     case QAbstractSocket::RemoteHostClosedError:
-        break;
+        return;
     case QAbstractSocket::HostNotFoundError:
-        QMessageBox::information(this, tr("Fortune Client"),
-                                 tr("The host was not found. Please check the host name and port settings."));
+        errStr = "The host was not found. Please check the host name and port settings.";
         break;
     case QAbstractSocket::ConnectionRefusedError:
-        QMessageBox::information(this, tr("Fortune Client"),
-                                 tr("The connection was refused by the peer. Make sure the fortune server is running, "
-                                    "and check that the host name and port settings are correct."));
+        errStr = "The connection was refused by the peer. Make sure the server is running, and that the host name and port settings are correct.";
         break;
     default:
-        QMessageBox::information(this, tr("Fortune Client"),
-                                 tr("The following error occurred: %1.").arg(m_tcpSocket->errorString()));
+        errStr = QString("The following error occurred: %1.").arg(m_tcpSocket->errorString());
     }
+    QMessageBox::information(this, tr("SSTT"), errStr);
 }

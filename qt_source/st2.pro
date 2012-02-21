@@ -16,6 +16,7 @@ SOURCES += main.cpp\
     json/json_writer.cpp \
     json/json_value.cpp \
     json/json_reader.cpp \
+    helper.cpp
 
 HEADERS  += mainwindow.h \
     json/writer.h \
@@ -26,6 +27,7 @@ HEADERS  += mainwindow.h \
     json/forwards.h \
     json/features.h \
     json/config.h \
-    json/autolink.h
+    json/autolink.h \
+    helper.h
 
 FORMS    += mainwindow.ui

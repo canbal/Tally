@@ -163,7 +163,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Status: Please select videos to play</string>
+      <string>Status: Please fill out Test Setup and click 'Start Test'</string>
      </property>
     </widget>
     <widget class="QListWidget" name="videoList">
