@@ -1,0 +1,9 @@
+{% if latest_test_list %}
+    <ul>
+    {% for test in latest_test_list %}
+        <li><a href="/{{ test.id }}/">{{ test.title }}</a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No subjective tests are available.</p>
+{% endif %}

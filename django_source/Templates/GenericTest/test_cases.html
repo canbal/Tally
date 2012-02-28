@@ -1,0 +1,9 @@
+<h1>{{ test.title }}</h1>
+
+<ul>
+{% for case in test.testcase_set.all %}
+    <li>{{ case.play_order }} - {{ case.video }}</li>
+{% endfor %}
+</ul>
+
+<a href="/">Go back?</a>
