@@ -42,13 +42,12 @@ objFormat *fileFormat::allocateMemory(int numObj)
 }
 
 
-const char *getTimestamp()
+std::string getTimestamp()
 {
     time_t rawtime;
     time(&rawtime);
     std::string tm = ctime(&rawtime);
-    tm = tm.substr(0,tm.size()-1);      // remove trailing "\n" character
-    return (tm.c_str());
+    return (tm.substr(0,tm.size()-1));      // remove trailing "\n" character
 }
 
 
@@ -62,15 +61,12 @@ int *randomizeVideoOrder(int numVideos)
 {
     int *list = new int[numVideos];
     std::vector <int> listVector;
-    int r;
-    // initialize ordered list vector
-    for (int ii=0; ii<numVideos; ii++) {
+    for (int ii=0; ii<numVideos; ii++) {    // initialize ordered list vector
         listVector.push_back(ii);
     }
-    // randomize list
-    srand((unsigned int)time(NULL));
+    srand((unsigned int)time(NULL));        // randomize list
     for (int ii=0; ii < numVideos; ii++) {
-        r = rand() % (numVideos-ii);
+        int r = rand() % (numVideos-ii);
         list[ii] = listVector.at(r);
         listVector.erase(listVector.begin()+r);
     }
@@ -101,10 +97,12 @@ bool isSetupFileValid(QString testSetupFile, Json::Value *root)
 }
 
 
+// checks for one-to-one correspondence between objects in file and objects in file format
+// no error-checking for empty fields/data type or duplicate fields
 void recursiveCheck(const Json::Value obj, objFormat file, std::string rootStr, std::stringstream *err, bool *success)
 {
     Json::Value tmpObj;
-    std::string arrayEl, origRootStr = rootStr;      // no error-checking for empty fields or type of data (string, int, etc.)
+    std::string arrayEl, origRootStr = rootStr;
 
     int max = (obj.isArray()) ? obj.size() : 1;
     for (int ii=0; ii<max; ii++) {
@@ -117,14 +115,28 @@ void recursiveCheck(const Json::Value obj, objFormat file, std::string rootStr, 
             tmpObj = obj;
             arrayEl = "";
         }
-        rootStr = origRootStr + file.name + arrayEl + ":";
-        for (int jj=0; jj<file.numFields; jj++) {
-            if (!tmpObj.isMember(file.fields[jj].name)) {
-                *err << "Missing " << rootStr << file.fields[jj].name << " member" << std::endl;
-                *success = false;
-            } else {
-                const Json::Value subObj = tmpObj[file.fields[jj].name];
-                recursiveCheck(subObj, file.fields[jj], rootStr, err, success);
+        rootStr = origRootStr + file.name + arrayEl + " :: ";
+        if (tmpObj.size()>0) {                                        // Json::Value::getMemberNames causes assertion failure otherwise
+            Json::Value::Members members = tmpObj.getMemberNames();
+            for (int jj=0; jj<(int)members.size(); jj++) {            // check for extra fields
+                bool found = false;
+                int kk = 0;
+                while (!found && kk<file.numFields) {
+                    found = (members.at(jj) == file.fields[kk].name);
+                    kk++;
+                }
+                if (!found) {
+                    *err << "Extra <" << rootStr << members.at(jj) << "> member" << std::endl;
+                    *success = false;
+                }
+            }
+            for (int jj=0; jj<file.numFields; jj++) {                 // check for missing fields
+                if (!tmpObj.isMember(file.fields[jj].name)) {
+                    *err << "Missing <" << rootStr << file.fields[jj].name << "> member" << std::endl;
+                    *success = false;
+                } else {
+                    recursiveCheck(tmpObj[file.fields[jj].name], file.fields[jj], rootStr, err, success);
+                }
             }
         }
     }

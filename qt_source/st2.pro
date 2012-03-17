@@ -4,9 +4,10 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-QT += phonon
-QT += network
+QT += core gui\
+      phonon\
+      network
+
 TARGET = st2
 TEMPLATE = app
 

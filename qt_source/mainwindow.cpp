@@ -26,15 +26,16 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this,SIGNAL(enableStartTest()),this,SLOT(enableStartButton()));
     setTestState(INITIAL);
 
+    /*
     m_tcpSocket = new QTcpSocket(this);     // parent is MainWindow; no need to delete
-    //connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(readSignal()));
-    //connect(m_tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-    //        this, SLOT(displayError(QAbstractSocket::SocketError)));
-
+    m_numChars = SENTINEL_TCP;
+    m_url = "137.110.118.234";
+    connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(readSignalTCP()));
+    connect(m_tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(displayError(QAbstractSocket::SocketError)));
+*/
     m_manager = new QNetworkAccessManager(this);
-    m_url = "http://137.110.118.234/";
-    connect(m_manager, SIGNAL(finished(QNetworkReply*)),
-            this, SLOT(readSignalHTTP(QNetworkReply*)));
+    m_url = "http://127.0.0.1:8000/";
 }
 
 
@@ -43,7 +44,7 @@ MainWindow::~MainWindow()
     if (m_videoPlayOrder!=NULL) {
         delete [] m_videoPlayOrder;
     }
-    m_tcpSocket->abort();
+    //m_tcpSocket->abort();
     delete m_media;
     delete m_vidWidget;
     delete ui;
@@ -61,7 +62,6 @@ void MainWindow::on_selectVideos_clicked()
 {
     // dialog to select video
     QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Select Videos"), "", tr(""));
-    // update video list
     if (!fileNames.isEmpty()) {
         ui->videoList->clear();
         ui->videoList->addItems(fileNames);
@@ -103,19 +103,69 @@ void MainWindow::on_reset_clicked()
     ui->videoList->clear();
     ui->testID->clear();
     ui->testNotes->clear();
-    m_tcpSocket->abort();
+    //m_tcpSocket->abort();
     setTestState(INITIAL);
 }
 
 
 void MainWindow::onVideoFinished()
 {
+    /*
     if (m_videoPlayOrder!=NULL) {
         ui->videoList->item(m_videoPlayOrder[m_nextVideo-1])->setBackground(Qt::red);
         ui->status->setText(QString("Status: Finished playing Video %1 (Video %2 in the randomization)").arg(m_nextVideo).arg(m_videoPlayOrder[m_nextVideo-1]+1));
-    }
-    m_manager->get(QNetworkRequest(m_url));
+    }*/
+
+    int testInstance = 1;
+    QNetworkRequest request(QUrl(QString("%1%2/get_media/").arg(m_url).arg(testInstance)));
+    QNetworkReply *reply = m_manager->get(request);
+    connect(reply, SIGNAL(finished()), this, SLOT(getMediaHTTP()));
 }
+
+
+void MainWindow::getMediaHTTP()
+{
+    // read command from server
+    QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
+    QString command;
+    if (!reply->error()) {
+        command = (QString) reply->readAll();
+        ui->signal->setText(command);
+    } else {
+        QMessageBox::information(this, tr("SSTT"), reply->errorString());
+    }
+
+    // interpret command
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(command.toStdString().c_str(),root)) {
+        QMessageBox::information(this, tr("SSTT"), QString(reader.getFormatedErrorMessages().c_str()));
+    } else {
+        std::string path = std::string(root["path"].asCString());
+        std::string videoTitle = std::string(root["video"].asCString());
+        bool testDone = root["testDone"].asBool();
+        if (path=="error" || videoTitle=="error") {
+            QMessageBox::information(this, tr("SSTT"), QString("error with server data"));
+        } else if (testDone) {
+            // end test
+            ui->status->setText(QString("All videos played.  Click '%1' or '%2' to start over").arg(ui->reset->text()).arg(ui->selectVideos->text()));
+        } else if (path.empty() || videoTitle.empty()) {
+            // re-request data after timeout
+            clock_t endwait;
+            endwait = clock () + 3 * CLOCKS_PER_SEC ;
+            while (clock() < endwait) {}
+            onVideoFinished();
+        } else {
+            // play video
+            QString fullVid = QString("%1\\%2.mp4").arg(path.c_str()).arg(videoTitle.c_str());
+            ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
+            m_media->setCurrentSource(fullVid);
+            m_media->play();
+        }
+    }
+    reply->deleteLater();
+}
+
 
 
 void MainWindow::on_startTest_clicked()
@@ -138,7 +188,7 @@ void MainWindow::on_startTest_clicked()
         // input general test information
     Json::Value object;
     object["testID"] = ui->testID->document()->toPlainText().toStdString();     // check that encoding matches (utf8, etc.)
-    object["timestamp"] = getTimestamp();
+    object["timestamp"] = getTimestamp().c_str();
     object["testNotes"] = ui->testNotes->document()->toPlainText().toStdString();     // check that encoding matches (utf8, etc.)
         // input video/randomization information
     for (int ii=0; ii<m_numVideos; ii++) {
@@ -158,12 +208,36 @@ void MainWindow::on_startTest_clicked()
 
     // connect to server
     //m_tcpSocket->connectToHost(m_url,9000);
-    m_manager->get(QNetworkRequest(m_url));
+    //m_manager->get(QNetworkRequest(m_url));
+    onVideoFinished();
 }
 
 
 void MainWindow::on_importTest_clicked()
 {
+    // create request
+    QNetworkRequest request(QUrl(m_url+"add_test/"));
+    //request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
+    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
+    //request.setHeader(QNetworkRequest::ContentTypeHeader,"multipart/form-data");  // need QHttpMultiPart for this
+
+    // create data
+    Json::Value jsonData;
+    jsonData["title"] = ui->testID->document()->toPlainText().toStdString().c_str();
+
+    // encode data in URL
+    QUrl params;
+    params.addQueryItem("data",QString(jsonData.toStyledString().c_str()));
+
+    // send POST request
+    QNetworkReply *reply = m_manager->post(request,params.encodedQuery());
+
+
+    // "A signal-slot connection is removed when either of the objects involved are destroyed."
+    // from: http://doc.qt.nokia.com/4.7-snapshot/qobject.html
+    connect(reply, SIGNAL(finished()), this, SLOT(readSignalHTTP()));
+
+    /*
     // dialog to select JSON document
     QString testSetupFile = QFileDialog::getOpenFileName(this,
          tr("Select Test Setup File"), "", tr("JSON documents (*.json)"));
@@ -203,7 +277,8 @@ void MainWindow::on_importTest_clicked()
 
     // connect to server
     //m_tcpSocket->connectToHost(m_url,9000);
-    m_manager->get(QNetworkRequest(m_url));
+    //m_manager->get(QNetworkRequest(m_url));
+    */
 }
 
 
@@ -231,40 +306,79 @@ void MainWindow::setTestState(TEST_STATE state)
 }
 
 
-void MainWindow::readSignal()
+void MainWindow::readSignalTCP()
 {
-    int numChars = 4;
-    quint64 ba = m_tcpSocket->bytesAvailable();
-    if (ba < (unsigned)numChars) {         // expects a string of 4 characters
+    if (m_numChars==SENTINEL_TCP) {
+        m_numChars = readSignalTCPsize();
+    }
+    if (m_tcpSocket->bytesAvailable() < (unsigned)m_numChars) {       // maybe add a timeout in case there is a problem with the socket
         return;
     }
 
     QDataStream in(m_tcpSocket);
     in.setVersion(QDataStream::Qt_4_0);
-    quint8 *signal = new quint8[numChars];
-    QString command;
-    for (int ii=0; ii<numChars; ii++) {     // read out signal as uint8 array, convert to string
-        in >> signal[ii];
-        command.append(QString(char(signal[ii])));
+    char *signal = new char[m_numChars];
+    int br = in.readRawData(signal,m_numChars);
+    if (br!=m_numChars) {       // not necessary since we know m_numChars bytes are available
+        // call error
+        return;
     }
-    ui->signal->setText(QString("%1, %2, %3").arg(command).arg(ba).arg(m_tcpSocket->bytesAvailable()));
-    if (command=="play") {
-        on_play_clicked();
+    std::string command(signal);
+    Json::Value root;
+    Json::Reader reader;
+    std::stringstream err;
+    if (!reader.parse(command,root)) {
+        err << reader.getFormatedErrorMessages() << std::endl;
+        ui->signal->setText(QString(err.str().c_str()));
+    } else {
+        ui->signal->setText(QString("%1, %2").arg(root["iter"].asInt()).arg(root["timestamp"].asCString()));
+        if (root["playVideo"].asBool()) {
+            on_play_clicked();
+        }
     }
     delete [] signal;
+    m_numChars = SENTINEL_TCP;
 }
 
 
-void MainWindow::readSignalHTTP(QNetworkReply *networkReply)
+int MainWindow::readSignalTCPsize()
 {
-    QUrl url = networkReply->url();
-    if (!networkReply->error()) {
-        QString command = (QString) networkReply->readAll();
+    int delimiter = 58;     // ":", assumed to be a single character
+    QDataStream in(m_tcpSocket);
+    in.setVersion(QDataStream::Qt_4_0);
+    quint8 signal;
+    QString command;
+    int ii = 0;
+    while (ii <= MAX_DIGITS_TCP) {
+        if (m_tcpSocket->bytesAvailable() >=1 ) {       // maybe add a timeout in case there is a problem with the socket
+            in >> signal;
+            if (char(signal)==delimiter) {
+                break;
+            }
+            if (ii==MAX_DIGITS_TCP) {     // haven't received delimiter
+                // call error
+                return (SENTINEL_TCP);
+            }
+            command.append(char(signal));
+            ii++;
+        }
+    }
+    return (command.toInt());       // add error-checking for non-int type
+}
+
+
+// use this function to process reply from POST
+void MainWindow::readSignalHTTP()
+{
+    QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
+
+    if (!reply->error()) {
+        QString command = (QString) reply->readAll();
         ui->signal->setText(command);
     } else {
-        QMessageBox::information(this, tr("SSTT"), networkReply->errorString());
+        QMessageBox::information(this, tr("SSTT"), reply->errorString());
     }
-    networkReply->deleteLater();
+    reply->deleteLater();
 }
 
 

@@ -30,7 +30,7 @@ private:
     objFormat *allocateMemory(int numObj);
 };
 
-const char *getTimestamp();
+std::string getTimestamp();
 std::string getFileName(std::string testID);
 int *randomizeVideoOrder(int numVideos);
 bool isSetupFileValid(QString testSetupFile, Json::Value *root);

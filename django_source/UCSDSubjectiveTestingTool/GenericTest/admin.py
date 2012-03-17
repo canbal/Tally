@@ -1,4 +1,4 @@
-from GenericTest.models import Video, TestCase, Test
+from GenericTest.models import *
 from django.contrib import admin
 
 class VideoAdmin(admin.ModelAdmin):
@@ -10,11 +10,13 @@ class VideoAdmin(admin.ModelAdmin):
     list_display  = ('description', 'filename')
     search_fields = ['filename', 'description']
     
+    
 class TestCaseInline(admin.TabularInline):
     model  = TestCase
     extra  = 1
     fields = ['play_order', 'video', 'is_done']
 
+    
 class TestAdmin(admin.ModelAdmin):
     fieldsets      = [
                       (None,         {'fields': ['title', 'description']}),
@@ -25,5 +27,9 @@ class TestAdmin(admin.ModelAdmin):
     search_fields  = ['title', 'description']
     date_hierarchy = 'create_date'
     
-admin.site.register(Test , TestAdmin)
+admin.site.register(Test)#, TestAdmin)
 admin.site.register(Video, VideoAdmin)
+admin.site.register(TestInstance)
+admin.site.register(Subject)
+admin.site.register(TestCase)
+admin.site.register(Score)

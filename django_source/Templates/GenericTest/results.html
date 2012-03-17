@@ -1,0 +1,28 @@
+<html>
+<head>
+<script type="text/javascript">
+function timeSubmit()
+{
+var t=setTimeout("autosubmit()",3000);     <!-- milliseconds
+}
+function autosubmit()
+{
+document.secretForm.submit();
+}
+</script>
+</head>
+
+<h1>Test {{ testInstance.counter }}</h1>
+
+Results submitted.  Waiting for other subjects or video to finish...
+
+
+<form name="secretForm", action="/{{ testInstance.pk }}/tally/" method="post">
+    <input type="hidden" name="value" value="queryState" />
+    <input type="hidden" name="prevCount" value={{ testInstance.counter }} />
+</form>	
+<script type="text/javascript">
+timeSubmit();
+</script>
+
+</html>

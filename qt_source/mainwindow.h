@@ -19,6 +19,8 @@ enum TEST_STATE {
     RUNNING
 };
 
+const int SENTINEL_TCP = -1;    // should be <= 0
+const int MAX_DIGITS_TCP = 5;
 
 class MainWindow : public QMainWindow
 {
@@ -40,14 +42,16 @@ private slots:
     void on_importTest_clicked();
     void enableStartButton();
     void displayError(QAbstractSocket::SocketError socketError);
-    void readSignal();
-    void readSignalHTTP(QNetworkReply *networkReply);
+    void readSignalTCP();
+    void readSignalHTTP();
+    void getMediaHTTP();
 
 private:
     Ui::MainWindow *ui;
     int m_numVideos;
     int *m_videoPlayOrder;
     int m_nextVideo;
+    int m_numChars;
     QString m_initStatus;
     QString m_url;
     QTcpSocket *m_tcpSocket;
@@ -55,6 +59,7 @@ private:
     Phonon::MediaObject *m_media;
     Phonon::VideoWidget *m_vidWidget;
     void setTestState(TEST_STATE state);
+    int readSignalTCPsize();
 };
 
 #endif // MAINWINDOW_H
