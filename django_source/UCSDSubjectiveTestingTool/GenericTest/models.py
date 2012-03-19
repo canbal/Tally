@@ -30,7 +30,7 @@ class TestInstance(models.Model):
     path        = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
     location    = models.CharField(max_length=200)
-    counter     = models.IntegerField(default=0)
+    counter     = models.PositiveIntegerField(default=1)
 
     def __unicode__(self):
         return self.owner + self.test.title

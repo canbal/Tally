@@ -161,15 +161,15 @@ def get_media(request, testInstance_id):
         return HttpResponse(errStr)
     elif ti.counter>ti.testcase_set.count():
         return HttpResponse(json.dumps({"path":"", "video":"", "testDone":True}))
-    if ti.counter==0:
-        ti.counter += 1
-        ti.save()
-        return HttpResponse(json.dumps({"path":ti.path, "video":tc.video.all()[0].filename, "testDone":False}))
     try:
         tc = ti.testcase_set.get(play_order=ti.counter)     # should exist but check anyway
     except(TestCase.DoesNotExist):
         return HttpResponse(errStr)
     else:
+        if ti.counter==1:
+            ti.counter += 1
+            ti.save()
+            return HttpResponse(json.dumps({"path":ti.path, "video":tc.video.all()[0].filename, "testDone":False}))
         if tc.is_done:
             ti.counter += 1
             ti.save()
