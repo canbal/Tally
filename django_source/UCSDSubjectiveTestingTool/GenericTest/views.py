@@ -1,7 +1,6 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from GenericTest.models import *
 import json
@@ -208,4 +207,3 @@ def tally(request,testInstance_id):
             tc.is_done = True;
             tc.save()
             return render_to_response('GenericTest/results.html', {'testInstance': ti})
-    
