@@ -2,3 +2,7 @@
 *~
 #*#
 *.pyc
+
+qt_build_win7-64/
+
+*.db

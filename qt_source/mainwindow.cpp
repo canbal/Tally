@@ -22,8 +22,8 @@ MainWindow::MainWindow(QWidget *parent) :
     m_vidWidget->show();
     m_vidWidget->setFullScreen(true);       // look at QDesktopWidget for how to control which screen this appears on
     connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
-    connect(ui->testID,SIGNAL(textChanged()),this,SIGNAL(enableStartTest()));
-    connect(this,SIGNAL(enableStartTest()),this,SLOT(enableStartButton()));
+    //connect(ui->testID,SIGNAL(textChanged()),this,SIGNAL(enableStartTest()));
+    //connect(this,SIGNAL(enableStartTest()),this,SLOT(enableStartButton()));
     setTestState(INITIAL);
 
     /*
@@ -35,7 +35,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(displayError(QAbstractSocket::SocketError)));
 */
     m_manager = new QNetworkAccessManager(this);
-    m_url = "http://127.0.0.1:8000/";
+    //m_url = "http://127.0.0.1:8000/";
+    m_url = "http://137.110.118.234/";
 }
 
 
@@ -300,7 +301,8 @@ void MainWindow::setTestState(TEST_STATE state)
     ui->importTest->setEnabled(setup);
     ui->testID->setEnabled(setup);
     ui->testNotes->setEnabled(setup);
-    ui->startTest->setEnabled(false);       // always false; enable depends on other buttons
+    //ui->startTest->setEnabled(false);       // always false; enable depends on other buttons
+    ui->startTest->setEnabled(true);       // always false; enable depends on other buttons
     ui->play->setEnabled(run);
     ui->reset->setEnabled(run);
 }

@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 import datetime
 
 METHOD_CHOICES = (
@@ -22,6 +23,17 @@ class Test(models.Model):
     was_created_today.short_description = 'Created today?'
 
     
+class Subject(models.Model):
+    first_name = models.CharField(max_length=200)
+    last_name  = models.CharField(max_length=200)
+    age        = models.PositiveIntegerField()
+    sex        = models.CharField(max_length=1, choices = SEX_CHOICES)
+    user       = models.OneToOneField(User)
+    
+    def __unicode__(self):
+        return self.first_name + self.last_name
+    
+    
 class TestInstance(models.Model):
     owner       = models.CharField(max_length=200)
     create_time = models.DateTimeField('Date created', auto_now_add=True)
@@ -30,7 +42,8 @@ class TestInstance(models.Model):
     path        = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
     location    = models.CharField(max_length=200)
-    counter     = models.PositiveIntegerField(default=1)
+    counter     = models.IntegerField(default=0)
+    subjects    = models.ManyToManyField(Subject)
 
     def __unicode__(self):
         return self.owner + self.test.title
@@ -43,17 +56,7 @@ class Video(models.Model):
     
     def __unicode__(self):
         return self.filename
-
         
-class Subject(models.Model):
-    first_name = models.CharField(max_length=200)
-    last_name  = models.CharField(max_length=200)
-    age        = models.PositiveIntegerField()
-    sex        = models.CharField(max_length=1, choices = SEX_CHOICES)
-    
-    def __unicode__(self):
-        return self.first_name + self.last_name
-
         
 class TestCase(models.Model):
     is_done       = models.BooleanField(default=0)

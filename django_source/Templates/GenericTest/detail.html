@@ -1,11 +1,55 @@
+{% comment %}
+<!DOCTYPE html> 
+<html> 
+	<head> 
+	<title>My Page</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.css" />
+	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.js"></script>
+</head> 
+
+<body> 
+
+<div data-role="page">
+
+	<div data-role="header">
+        <h1>Test {{testInstance.counter}} </h1>
+	</div><!-- /header -->
+
+    <div data-role="fieldcontain">
+        <fieldset data-role="controlgroup">
+            <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
+            <form data-ajax="false" action="/{{ testInstance.pk }}/tally/" method="post">
+            {% for elem in choices %}
+                <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
+               <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label><br />
+            {% endfor %}
+            <input type="submit" id="data_submit" value="Submit" />
+            </form>
+        </fieldset>
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+    </div>
+
+</div><!-- /page -->
+
+</body>
+</html>
+{% endcomment %}
+
+
+
+
 <h1>Test {{testInstance.counter}} </h1>
 
-{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-
+<p>In terms of overall quality relative to the reference video, degradations in the test video were:</p>
 <form action="/{{ testInstance.pk }}/tally/" method="post">
-{% for ii in 01234|make_list %}
-    <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ ii }}" />
-    <label for="choice{{ forloop.counter }}">{{ ii }}</label><br />
+{% csrf_token %}
+{% for elem in choices %}
+    <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
+    <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label><br />
 {% endfor %}
+<input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
 <input type="submit" value="Submit" />
-</form>	
+</form>
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}

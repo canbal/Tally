@@ -3,7 +3,7 @@
 <script type="text/javascript">
 function timeSubmit()
 {
-var t=setTimeout("autosubmit()",3000);     <!-- milliseconds
+var t=setTimeout("autosubmit()",2000);     {# milliseconds #}
 }
 function autosubmit()
 {
@@ -12,17 +12,29 @@ document.secretForm.submit();
 </script>
 </head>
 
-<h1>Test {{ testInstance.counter }}</h1>
+{% if testInstance.counter == 0 %}
+    <h1>Welcome!</h1>
+    <p>Waiting for other participants.  Test will begin shortly...</p>
+{% else %}
+    {% if testInstance.counter > maxCount %}        {# elif currently only supported in django dev version #}
+        <h1>Test Complete</h1>
+        <p>Thank you for your participation!</p>
+    {% else %}
+        <h1>Test {{ testInstance.counter }}</h1>
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>
+        {% else %}
+        <p>Results submitted.  Waiting for other participants or video to finish...</p>{% endif %}  
+    {% endif %}        
+{% endif %}
 
-Results submitted.  Waiting for other subjects or video to finish...
-
-
-<form name="secretForm", action="/{{ testInstance.pk }}/tally/" method="post">
-    <input type="hidden" name="value" value="queryState" />
-    <input type="hidden" name="prevCount" value={{ testInstance.counter }} />
-</form>	
-<script type="text/javascript">
-timeSubmit();
-</script>
-
+{% if testInstance.counter <= maxCount %}
+    <form name="secretForm", action="/{{ testInstance.pk }}/tally/" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="value" value="queryState" />
+        <input type="hidden" name="prevCount" value={{ testInstance.counter }} />
+    </form>	
+    <script type="text/javascript">
+        timeSubmit();
+    </script>
+{% endif %}
 </html>

@@ -1,4 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
@@ -6,204 +7,103 @@ from GenericTest.models import *
 import json
 
 
-# Helper functions, not views
-def create_video(data):
-    try:
-        f = data['video']
-    except(KeyError):
-        return None
-    else:
-        return Video(filename=f, description=f)
-
-        
-def get_video(data):
-    try:
-        f = data['video']
-    except(KeyError):
-        return None
-    else:
-        try:
-            v = Video.objects.get(filename=f)
-            return v
-        except(Video.DoesNotExist):
-            return None
-
-            
-def create_or_get_video(data):
-    v = get_video(data)
-    if v is None:
-        v = create_video(data)
-        if v is not None:
-            v.save()
-    return v
-
-
-def create_test(data):
-    try:
-        f = data['title']
-    except(KeyError):
-        return None
-    else:
-        return Test(title=f, description=f+f)
-
-        
-def get_test(data):
-    try:
-        f = data['title']
-    except(KeyError):
-        return None
-    else:
-        try:
-            t = Test.objects.get(title=f)
-            return t
-        except(Test.DoesNotExist):
-            return None
-
-    
-def create_or_update_case(data, test):
-    try:
-        o = data['order']
-    except(KeyError):
-        return None
-    else:
-        v = create_or_get_video(data)
-        try:
-            tc = test.testcase_set.get(play_order=o)            
-        except(TestCase.DoesNotExist):
-            tc = TestCase(play_order=o, is_done=0, test=test, video=v)            
-        else:
-            tc.video = v
-            tc.is_done = 0
-        return tc
-
-    
 def index(request):
     latest_test_list = Test.objects.all().order_by('-create_date')[:5]
     return render_to_response('GenericTest/index.html', {'latest_test_list': latest_test_list})
 
-    
-def detail(request, testInstance_id):
-    ti = get_object_or_404(TestInstance, pk=testInstance_id)
-    return render_to_response('GenericTest/detail.html', {'testInstance': ti}, context_instance=RequestContext(request))
 
-
-def results(request, testInstance_id):
-    ti = get_object_or_404(TestInstance, pk=testInstance_id)
-    return render_to_response('GenericTest/results.html', {'testInstance': ti})
-
-    
-# Views
-
-@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
-def add_video(request):
-    data_json = request.POST['data']
-    try:
-        data = json.loads(data_json)
-    except(TypeError, ValueError):
-        return HttpResponse("Input format is wrong\n")
-    else:
-        v = get_video(data)
-        if v is None:
-            v = create_video(data)
-            if v is not None:
-                v.save()
-                return HttpResponse("Video created\n")
-            else:
-                return HttpResponse("Input format is wrong\n")
-        else:
-            return HttpResponse("Video already exists\n")
-    
-
-@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
-def add_case(request, test_id):
-    t = get_object_or_404(Test, pk=test_id)
-    data_json = request.POST['data']
-    try:
-        data = json.loads(data_json)
-    except(TypeError, ValueError):
-        return HttpResponse("Input format is wrong\n")
-    else:
-        tc = create_or_update_case(data, t)
-        if tc is not None:
-            tc.save()
-            return HttpResponse("Test is updated\n")
-        else:
-            return HttpResponse("Input format is wrong\n")
-                        
-            
-@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
-def add_test(request):
-    data_json = request.POST['data']
-    try:
-        data = json.loads(data_json)
-    except(TypeError, ValueError):
-        return HttpResponse("Input format is wrong\n")
-    else:
-        t = get_test(data)
-        if t is None:
-            t = create_test(data)
-            if t is not None:
-                t.save()
-                return HttpResponse("Test created\n")
-            else:
-                return HttpResponse("Test input format is wrong\n")
-        else:
-            return HttpResponse("Test already exists\n")
-            
-            
 @csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
 def get_media(request, testInstance_id):
-# initialization not quite working.  When desktop app first requests video (counter=0, is_done=False) there is a server error.
     ti = get_object_or_404(TestInstance, pk=testInstance_id)
-    errStr = json.dumps({"path":"error", "video":"error", "testDone":True});
+    errStr = json.dumps({"path":"error", "video":"error", "testDone":True})
+    # check bounds of counter
     if ti.counter<0:
         return HttpResponse(errStr)
     elif ti.counter>ti.testcase_set.count():
         return HttpResponse(json.dumps({"path":"", "video":"", "testDone":True}))
+    # get the current test case
     try:
-        tc = ti.testcase_set.get(play_order=ti.counter)     # should exist but check anyway
+        tc_current = ti.testcase_set.get(play_order=max(1,ti.counter))     # should exist but check anyway
     except(TestCase.DoesNotExist):
         return HttpResponse(errStr)
     else:
-        if ti.counter==1:
+        # if the current test is done, increment the counter and return the next video or a done signal
+        if tc_current.is_done:
             ti.counter += 1
             ti.save()
-            return HttpResponse(json.dumps({"path":ti.path, "video":tc.video.all()[0].filename, "testDone":False}))
-        if tc.is_done:
+            if ti.counter > ti.testcase_set.count():
+                return HttpResponse(json.dumps({"path":"", "video":"", "testDone":True}))
+            else:
+                try:
+                    tc_next = ti.testcase_set.get(play_order=ti.counter)
+                except(TestCase.DoesNotExist):
+                    return HttpResponse(errStr)
+                else:
+                    return HttpResponse(json.dumps({"path":ti.path, "video":tc_next.video.all()[0].filename, "testDone":False}))
+        # if this is the first request of the test instance, return the first video and increment the counter
+        elif ti.counter==0:
             ti.counter += 1
             ti.save()
-            return HttpResponse(json.dumps({"path":ti.path, "video":tc.video.all()[0].filename, "testDone":False}))
+            return HttpResponse(json.dumps({"path":ti.path, "video":tc_current.video.all()[0].filename, "testDone":False}))
+        # otherwise, the subjects haven't finished scoring- return a wait signal
         else:
             return HttpResponse(json.dumps({"path":"", "video":"", "testDone":False}))
             
             
-@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
+@login_required
 def tally(request,testInstance_id):
-# upon submitting choice, the wait page seems to be working and correctly navigates to the page, but the subsequent voting page only appears after a manual refresh.
+#    if request.method=='GET':
+#        return HttpResponse("please don't navigate yourself!")
+    # get the test instance
     ti = get_object_or_404(TestInstance, pk=testInstance_id)
+    choices = [(5,'Imperceptible'), (4,'Perceptible, but not annoying'), (3,'Slightly annoying'), (2,'Annoying'), (1,'Very annoying')]
+    # check bounds of the counter (should handle these cases better)
     try:
         tc = ti.testcase_set.get(play_order=ti.counter)
     except(TestCase.DoesNotExist):
-        return HttpResponse("test over")
+        return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()},  context_instance=RequestContext(request))
+    # ensure that one of the choices was selected before submitting the form
     try:
-        selection = request.POST['value'];
+        selection = request.POST['value']
     except KeyError:
         return render_to_response('GenericTest/detail.html', {
-            'testInstance': ti,
+            'testInstance': ti, 'choices': choices,
             'error_message': "Please select a choice.",
         }, context_instance=RequestContext(request))
     else:
+        # if the hidden wait form was submitted, return the next test form if the counter has incremented or loop back to the wait page
         if selection=="queryState":
-            prevCount = request.POST['prevCount'];
+            prevCount = int(request.POST['prevCount'])
             if prevCount < ti.counter:
                 return render_to_response('GenericTest/detail.html', {
-                    'testInstance': ti,
+                    'testInstance': ti, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
-                return render_to_response('GenericTest/results.html', {'testInstance': ti})
+                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()}, context_instance=RequestContext(request))
+        # if the test form was submitted, process the data
         else:
-            score = Score(test_case=tc, subject=Subject.objects.get(pk=1), value=selection)
-            score.save()
-            tc.is_done = True;
-            tc.save()
-            return render_to_response('GenericTest/results.html', {'testInstance': ti})
+            # make sure this subject has not submitted a score for this test case already (need to handle error better)
+            subject_pk = Subject.objects.get(user=request.user)._get_pk_val()
+            try:
+                sc = Subject.objects.get(pk=subject_pk).score_set.get(test_case=tc)
+            except(Score.DoesNotExist):
+            # only submit score if it belongs to the appropriate test (protects against scores from previous test being recorded for current test by hitting back button)
+                current_count = int(request.POST['current_count'])
+                if current_count is ti.counter:
+                    score = Score(test_case=tc, subject=Subject.objects.get(pk=subject_pk), value=selection)
+                    score.save()
+                else:
+                    return render_to_response('GenericTest/detail.html', {'testInstance': ti, 'choices': choices
+                }, context_instance=RequestContext(request))
+            else:
+                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count(), 'error_message': 'you fool! vote already submitted'}, context_instance=RequestContext(request))
+            # if all subjects of this test instance have reported scores for this test case, mark it as done
+            try:
+                for ii in range(0,ti.subjects.count()):
+                    sc = ti.subjects.all()[ii].score_set.get(test_case=tc)
+            except(Score.DoesNotExist):
+                pass
+            else:
+                tc.is_done = True
+                tc.save()
+            return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()}, context_instance=RequestContext(request))
