@@ -4,6 +4,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from GenericTest.models import *
+from GenericTest.forms import *
 import json
 
 
@@ -107,3 +108,20 @@ def tally(request,testInstance_id):
                 tc.is_done = True
                 tc.save()
             return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()}, context_instance=RequestContext(request))
+
+@login_required
+def add_test_case_item(request, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    t  = ti.test
+    if request.method == 'POST':
+        form = TestCaseItemForm(request.POST)
+        form.fields["video"].queryset = Video.objects.filter(test=t)
+        if form.is_valid():
+            form.save()
+            return HttpResponse('Test case item created successfully!')
+    else:
+        form = TestCaseItemForm()
+        form.fields["video"].queryset = Video.objects.filter(test=t)
+        
+    return render_to_response("GenericTest/addtestcaseitem.html",  {'form': form,  },
+                              context_instance=RequestContext(request))

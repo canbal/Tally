@@ -7,7 +7,7 @@ METHOD_CHOICES = (
                   ('SQ','SAMVIQ')
 )
 
-SEX_CHOICES = ( ('M', 'male'), ('F', 'female') )
+SEX_CHOICES = ( ('M', 'Male'), ('F', 'Female') )
 
 class Test(models.Model):
     title       = models.CharField(max_length=200)
@@ -31,7 +31,7 @@ class Subject(models.Model):
     user       = models.OneToOneField(User)
     
     def __unicode__(self):
-        return self.first_name + self.last_name
+        return self.first_name + ' ' + self.last_name
     
     
 class TestInstance(models.Model):
@@ -46,7 +46,7 @@ class TestInstance(models.Model):
     subjects    = models.ManyToManyField(Subject)
 
     def __unicode__(self):
-        return self.owner + self.test.title
+        return self.owner + ' ' + self.test.title
 
 
 class Video(models.Model):
@@ -62,18 +62,24 @@ class TestCase(models.Model):
     is_done       = models.BooleanField(default=0)
     test_instance = models.ForeignKey(TestInstance)
     play_order    = models.PositiveIntegerField()
-    #video = models.ManyToManyField(Video,limit_choices_to=Video.objects.filter(test=lambda self.test_instance.test))
-    video         = models.ManyToManyField(Video)
-    # handle play order of videos within test case
+    video         = models.ManyToManyField(Video, through='TestCaseItem')
     def getTest(self):
         return self.test_instance.test
     def __unicode__(self):
-        return '%s : %d : %s' % (unicode(self.test_instance), self.play_order, self.video.all()[0].filename)
+        return '%s : %d' % (unicode(self.test_instance), self.play_order)
 
+class TestCaseItem(models.Model):
+    test_case  = models.ForeignKey(TestCase)
+    video      = models.ForeignKey(Video)
+    play_order = models.PositiveIntegerField()
+    class Meta:
+        unique_together = ("test_case", "play_order")
+    def __unicode__(self):
+        return '%s : %d : %s' % (unicode(self.test_case), self.play_order, self.video)
         
 class Score(models.Model):
-    test_case = models.ForeignKey(TestCase)
+    test_case_item = models.ForeignKey(TestCaseItem)
     subject = models.ForeignKey(Subject)
     value = models.IntegerField()
     def __unicode__(self):
-        return '%s : %s : %d' % (unicode(self.test_case), unicode(self.subject), self.value)
+        return '%s : %s : %d' % (unicode(self.test_case_item), unicode(self.subject), self.value)
