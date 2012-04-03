@@ -12,8 +12,8 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '/Users/canbal/Documents/Workspace/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
-        #'NAME': 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
+        #'NAME': '/Users/canbal/Documents/Workspace/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
+        'NAME': 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -104,7 +104,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'UCSDSubjectiveTestingTool.urls'
 
 TEMPLATE_DIRS = (
-    #'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/Templates',
+    'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/Templates',
     '/Users/canbal/Documents/Workspace/UCSD-Subjective-Testing-Tool/django_source/Templates',
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
@@ -127,7 +127,7 @@ INSTALLED_APPS = (
 )
 
 # model that extends User model
-AUTH_PROFILE_MODULE = 'GenericTest.Subject'
+AUTH_PROFILE_MODULE = 'registration.UserProfile'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

@@ -1,4 +1,5 @@
 from GenericTest.models import *
+from registration.models import *
 from django.contrib import admin
 
 class VideoAdmin(admin.ModelAdmin):
@@ -30,7 +31,8 @@ class TestAdmin(admin.ModelAdmin):
 admin.site.register(Test)#, TestAdmin)
 admin.site.register(Video, VideoAdmin)
 admin.site.register(TestInstance)
-admin.site.register(Subject)
+admin.site.register(UserProfile)
 admin.site.register(TestCase)
 admin.site.register(TestCaseItem)
+admin.site.register(TestCaseInstance)
 admin.site.register(Score)

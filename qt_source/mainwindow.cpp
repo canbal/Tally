@@ -35,8 +35,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(displayError(QAbstractSocket::SocketError)));
 */
     m_manager = new QNetworkAccessManager(this);
-    //m_url = "http://127.0.0.1:8000/";
-    m_url = "http://137.110.118.234/";
+    m_url = "http://127.0.0.1:8000/";
+    //m_url = "http://137.110.118.234/";
 }
 
 
@@ -111,6 +111,7 @@ void MainWindow::on_reset_clicked()
 
 void MainWindow::onVideoFinished()
 {
+    // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
     /*
     if (m_videoPlayOrder!=NULL) {
         ui->videoList->item(m_videoPlayOrder[m_nextVideo-1])->setBackground(Qt::red);
@@ -143,30 +144,36 @@ void MainWindow::getMediaHTTP()
         QMessageBox::information(this, tr("SSTT"), QString(reader.getFormatedErrorMessages().c_str()));
     } else {
         std::string path = std::string(root["path"].asCString());
-        std::string videoTitle = std::string(root["video"].asCString());
+        Json::Value videoList = root["videoList"];
         bool testDone = root["testDone"].asBool();
-        if (path=="error" || videoTitle=="error") {
+        if (path=="error" && videoList.empty()) {
             QMessageBox::information(this, tr("SSTT"), QString("error with server data"));
         } else if (testDone) {
             // end test
             ui->status->setText(QString("All videos played.  Click '%1' or '%2' to start over").arg(ui->reset->text()).arg(ui->selectVideos->text()));
-        } else if (path.empty() || videoTitle.empty()) {
+        } else if (path.empty() || videoList.empty()) {
             // re-request data after timeout
             clock_t endwait;
             endwait = clock () + 3 * CLOCKS_PER_SEC ;
             while (clock() < endwait) {}
             onVideoFinished();
         } else {
-            // play video
-            QString fullVid = QString("%1\\%2.mp4").arg(path.c_str()).arg(videoTitle.c_str());
-            ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
-            m_media->setCurrentSource(fullVid);
+            // play video list
+            QString fullVid;
+            for (int ii=0; ii<videoList.size(); ii++) {
+                fullVid = QString("%1\\%2.mp4").arg(path.c_str()).arg(videoList[ii].asCString());
+                ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
+                if (ii==0) {
+                    m_media->setCurrentSource(fullVid);
+                } else {
+                    m_media->enqueue(fullVid);
+                }
+            }
             m_media->play();
         }
     }
     reply->deleteLater();
 }
-
 
 
 void MainWindow::on_startTest_clicked()
@@ -185,6 +192,7 @@ void MainWindow::on_startTest_clicked()
     }
     ui->signal->setText(test); */
 
+    /*
     // export JSON document describing test
         // input general test information
     Json::Value object;
@@ -210,6 +218,7 @@ void MainWindow::on_startTest_clicked()
     // connect to server
     //m_tcpSocket->connectToHost(m_url,9000);
     //m_manager->get(QNetworkRequest(m_url));
+*/
     onVideoFinished();
 }
 

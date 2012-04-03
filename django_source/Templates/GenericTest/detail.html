@@ -1,12 +1,16 @@
-{% comment %}
+
+
 <!DOCTYPE html> 
 <html> 
 	<head> 
 	<title>My Page</title> 
 	<meta name="viewport" content="width=device-width, initial-scale=1"> 
-	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.css" />
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.css" />
+    <script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.js"></script>
+<!--	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.css" />
 	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
-	<script src="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.js"></script> -->
 </head> 
 
 <body> 
@@ -17,17 +21,21 @@
         <h1>Test {{testInstance.counter}} </h1>
 	</div><!-- /header -->
 
-    <div data-role="fieldcontain">
-        <fieldset data-role="controlgroup">
-            <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
-            <form data-ajax="false" action="/{{ testInstance.pk }}/tally/" method="post">
-            {% for elem in choices %}
-                <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
-               <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label><br />
-            {% endfor %}
-            <input type="submit" id="data_submit" value="Submit" />
-            </form>
-        </fieldset>
+    <div data-role="content" data-theme="c">
+        <form id="form" action="/{{ testInstance.pk }}/tally/" method="post" data-ajax="false">
+            {% csrf_token %}
+            <div data-role="fieldcontain">
+                <fieldset data-role="controlgroup"> 
+                    <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
+                    {% for elem in choices %}
+                        <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
+                        <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
+                    {% endfor %}
+                </fieldset>
+            </div>
+            <input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
+            <button type="submit" data-theme="b" value="Submit">Submit</button>
+        </form>
         {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
     </div>
 
@@ -35,15 +43,14 @@
 
 </body>
 </html>
-{% endcomment %}
 
-
+{% comment %}
 
 
 <h1>Test {{testInstance.counter}} </h1>
 
 <p>In terms of overall quality relative to the reference video, degradations in the test video were:</p>
-<form action="/{{ testInstance.pk }}/tally/" method="post">
+<form action="/{{ testInstance.pk }}/tally/" method="get">
 {% csrf_token %}
 {% for elem in choices %}
     <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
@@ -53,3 +60,6 @@
 <input type="submit" value="Submit" />
 </form>
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+
+{% endcomment %}

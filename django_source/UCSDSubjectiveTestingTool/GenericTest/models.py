@@ -1,13 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import User
+from registration.models import UserProfile
 import datetime
 
 METHOD_CHOICES = (
                   ('DS','DSIS'  ),
                   ('SQ','SAMVIQ')
 )
-
-SEX_CHOICES = ( ('M', 'Male'), ('F', 'Female') )
 
 class Test(models.Model):
     title       = models.CharField(max_length=200)
@@ -17,69 +15,73 @@ class Test(models.Model):
     
     def __unicode__(self):
         return self.title
-    
     def was_created_today(self):
         return self.create_date == datetime.date.today()
-    was_created_today.short_description = 'Created today?'
-
-    
-class Subject(models.Model):
-    first_name = models.CharField(max_length=200)
-    last_name  = models.CharField(max_length=200)
-    age        = models.PositiveIntegerField()
-    sex        = models.CharField(max_length=1, choices = SEX_CHOICES)
-    user       = models.OneToOneField(User)
-    
-    def __unicode__(self):
-        return self.first_name + ' ' + self.last_name
+        was_created_today.short_description = 'Created today?'
     
     
 class TestInstance(models.Model):
+    test        = models.ForeignKey(Test)
+    subject     = models.ManyToManyField(UserProfile)
     owner       = models.CharField(max_length=200)
     create_time = models.DateTimeField('Date created', auto_now_add=True)
     run_time    = models.DateTimeField('Date run')
-    test        = models.ForeignKey(Test)
     path        = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
     location    = models.CharField(max_length=200)
     counter     = models.IntegerField(default=0)
-    subjects    = models.ManyToManyField(Subject)
-
+    
     def __unicode__(self):
         return self.owner + ' ' + self.test.title
 
 
 class Video(models.Model):
+    test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
-    test        = models.ForeignKey(Test)
     
     def __unicode__(self):
         return self.filename
-        
-        
+
+
 class TestCase(models.Model):
-    is_done       = models.BooleanField(default=0)
-    test_instance = models.ForeignKey(TestInstance)
-    play_order    = models.PositiveIntegerField()
-    video         = models.ManyToManyField(Video, through='TestCaseItem')
+    test  = models.ForeignKey(Test)
+    video = models.ManyToManyField(Video, through='TestCaseItem')
+    
+    def __unicode__(self):
+        return '%s : %d' % (unicode(self.test.title), self.pk)
     def getTest(self):
-        return self.test_instance.test
+        return self.test
+    
+
+class TestCaseInstance(models.Model):
+    test_instance = models.ForeignKey(TestInstance)
+    test_case     = models.ForeignKey(TestCase)
+    is_done       = models.BooleanField(default=0)
+    play_order    = models.PositiveIntegerField()
+    
+    class Meta:
+        unique_together = ("test_instance", "play_order")
     def __unicode__(self):
         return '%s : %d' % (unicode(self.test_instance), self.play_order)
 
+        
 class TestCaseItem(models.Model):
-    test_case  = models.ForeignKey(TestCase)
-    video      = models.ForeignKey(Video)
-    play_order = models.PositiveIntegerField()
+    test_case    = models.ForeignKey(TestCase)
+    video        = models.ForeignKey(Video)
+    play_order   = models.PositiveIntegerField()
+    is_reference = models.BooleanField(default=0)
+    
     class Meta:
         unique_together = ("test_case", "play_order")
     def __unicode__(self):
         return '%s : %d : %s' % (unicode(self.test_case), self.play_order, self.video)
         
+        
 class Score(models.Model):
-    test_case_item = models.ForeignKey(TestCaseItem)
-    subject = models.ForeignKey(Subject)
-    value = models.IntegerField()
+    test_case_instance = models.ForeignKey(TestCaseInstance)
+    subject            = models.ForeignKey(UserProfile)
+    value              = models.IntegerField()
+
     def __unicode__(self):
-        return '%s : %s : %d' % (unicode(self.test_case_item), unicode(self.subject), self.value)
+        return '%s : %s : %d' % (unicode(self.test_case_instance), unicode(self.subject), self.value)

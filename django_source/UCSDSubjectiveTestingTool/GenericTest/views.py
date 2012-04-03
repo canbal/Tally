@@ -5,6 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from GenericTest.models import *
 from GenericTest.forms import *
+from registration.models import UserProfile
 import json
 
 
@@ -16,39 +17,46 @@ def index(request):
 @csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
 def get_media(request, testInstance_id):
     ti = get_object_or_404(TestInstance, pk=testInstance_id)
-    errStr = json.dumps({"path":"error", "video":"error", "testDone":True})
+    maxCount = ti.testcaseinstance_set.count()
+    errStr = json.dumps({"path":"error", "videoList":[], "testDone":True})
     # check bounds of counter
     if ti.counter<0:
         return HttpResponse(errStr)
-    elif ti.counter>ti.testcase_set.count():
-        return HttpResponse(json.dumps({"path":"", "video":"", "testDone":True}))
+    elif ti.counter > maxCount:
+        return HttpResponse(json.dumps({"path":"", "videoList":[], "testDone":True}))
     # get the current test case
     try:
-        tc_current = ti.testcase_set.get(play_order=max(1,ti.counter))     # should exist but check anyway
-    except(TestCase.DoesNotExist):
+        tci_current = ti.testcaseinstance_set.get(play_order=max(1,ti.counter))     # should exist but check anyway
+    except(TestCaseInstance.DoesNotExist):
         return HttpResponse(errStr)
     else:
         # if the current test is done, increment the counter and return the next video or a done signal
-        if tc_current.is_done:
+        if tci_current.is_done:
             ti.counter += 1
             ti.save()
-            if ti.counter > ti.testcase_set.count():
-                return HttpResponse(json.dumps({"path":"", "video":"", "testDone":True}))
+            if ti.counter > maxCount:
+                return HttpResponse(json.dumps({"path":"", "videoList":[], "testDone":True}))
             else:
                 try:
-                    tc_next = ti.testcase_set.get(play_order=ti.counter)
-                except(TestCase.DoesNotExist):
+                    tci_next = ti.testcaseinstance_set.get(play_order=ti.counter)
+                except(TestCaseInstance.DoesNotExist):
                     return HttpResponse(errStr)
                 else:
-                    return HttpResponse(json.dumps({"path":ti.path, "video":tc_next.video.all()[0].filename, "testDone":False}))
+                    vidList = []
+                    for ii in range(0,tci_next.test_case.testcaseitem_set.count()):
+                        vidList.append(tci_next.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
+                    return HttpResponse(json.dumps({"path":ti.path, "videoList":vidList, "testDone":False}))
         # if this is the first request of the test instance, return the first video and increment the counter
         elif ti.counter==0:
             ti.counter += 1
             ti.save()
-            return HttpResponse(json.dumps({"path":ti.path, "video":tc_current.video.all()[0].filename, "testDone":False}))
+            vidList = []
+            for ii in range(0,tci_current.test_case.testcaseitem_set.count()):
+                vidList.append(tci_current.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
+            return HttpResponse(json.dumps({"path":ti.path, "videoList":vidList, "testDone":False}))
         # otherwise, the subjects haven't finished scoring- return a wait signal
         else:
-            return HttpResponse(json.dumps({"path":"", "video":"", "testDone":False}))
+            return HttpResponse(json.dumps({"path":"", "videoList":[], "testDone":False}))
             
             
 @login_required
@@ -57,12 +65,13 @@ def tally(request,testInstance_id):
 #        return HttpResponse("please don't navigate yourself!")
     # get the test instance
     ti = get_object_or_404(TestInstance, pk=testInstance_id)
+    maxCount = ti.testcaseinstance_set.count();
     choices = [(5,'Imperceptible'), (4,'Perceptible, but not annoying'), (3,'Slightly annoying'), (2,'Annoying'), (1,'Very annoying')]
     # check bounds of the counter (should handle these cases better)
     try:
-        tc = ti.testcase_set.get(play_order=ti.counter)
-    except(TestCase.DoesNotExist):
-        return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()},  context_instance=RequestContext(request))
+        tci = ti.testcaseinstance_set.get(play_order=ti.counter)
+    except(TestCaseInstance.DoesNotExist):
+        return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount},  context_instance=RequestContext(request))
     # ensure that one of the choices was selected before submitting the form
     try:
         selection = request.POST['value']
@@ -73,42 +82,43 @@ def tally(request,testInstance_id):
         }, context_instance=RequestContext(request))
     else:
         # if the hidden wait form was submitted, return the next test form if the counter has incremented or loop back to the wait page
-        if selection=="queryState":
+        if selection=="queryState":         # using 'is' causes a bug here???
             prevCount = int(request.POST['prevCount'])
             if prevCount < ti.counter:
                 return render_to_response('GenericTest/detail.html', {
                     'testInstance': ti, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
-                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()}, context_instance=RequestContext(request))
+                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount}, context_instance=RequestContext(request))
         # if the test form was submitted, process the data
         else:
             # make sure this subject has not submitted a score for this test case already (need to handle error better)
-            subject_pk = Subject.objects.get(user=request.user)._get_pk_val()
+            subject_pk = UserProfile.objects.get(user=request.user)._get_pk_val()
             try:
-                sc = Subject.objects.get(pk=subject_pk).score_set.get(test_case=tc)
+                sc = UserProfile.objects.get(pk=subject_pk).score_set.get(test_case_instance=tci)
             except(Score.DoesNotExist):
             # only submit score if it belongs to the appropriate test (protects against scores from previous test being recorded for current test by hitting back button)
                 current_count = int(request.POST['current_count'])
                 if current_count is ti.counter:
-                    score = Score(test_case=tc, subject=Subject.objects.get(pk=subject_pk), value=selection)
+                    score = Score(test_case_instance=tci, subject=UserProfile.objects.get(pk=subject_pk), value=selection)
                     score.save()
                 else:
                     return render_to_response('GenericTest/detail.html', {'testInstance': ti, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
-                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count(), 'error_message': 'you fool! vote already submitted'}, context_instance=RequestContext(request))
+                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount, 'error_message': 'you fool! vote already submitted'}, context_instance=RequestContext(request))
             # if all subjects of this test instance have reported scores for this test case, mark it as done
             try:
-                for ii in range(0,ti.subjects.count()):
-                    sc = ti.subjects.all()[ii].score_set.get(test_case=tc)
+                for ii in range(0,ti.subject.count()):
+                    sc = ti.subject.all()[ii].score_set.get(test_case_instance=tci)
             except(Score.DoesNotExist):
                 pass
             else:
-                tc.is_done = True
-                tc.save()
-            return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': ti.testcase_set.count()}, context_instance=RequestContext(request))
+                tci.is_done = True
+                tci.save()
+            return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount}, context_instance=RequestContext(request))
 
+            
 @login_required
 def add_test_case_item(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
