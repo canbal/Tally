@@ -6,7 +6,8 @@
 
 QT += core gui\
       phonon\
-      network
+      network\
+      webkit
 
 TARGET = st2
 TEMPLATE = app
@@ -16,8 +17,7 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     json/json_writer.cpp \
     json/json_value.cpp \
-    json/json_reader.cpp \
-    helper.cpp
+    json/json_reader.cpp
 
 HEADERS  += mainwindow.h \
     json/writer.h \
@@ -28,7 +28,6 @@ HEADERS  += mainwindow.h \
     json/forwards.h \
     json/features.h \
     json/config.h \
-    json/autolink.h \
-    helper.h
+    json/autolink.h
 
 FORMS    += mainwindow.ui

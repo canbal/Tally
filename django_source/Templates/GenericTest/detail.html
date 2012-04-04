@@ -32,11 +32,13 @@
                         <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
                     {% endfor %}
                 </fieldset>
+                <span style="float:right">
+                    <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
+                </span>
             </div>
             <input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
-            <button type="submit" data-theme="b" value="Submit">Submit</button>
+        {% if error_message %}<p style="color:red;font-weight:bold;font-size:1.1em">{{ error_message }}</p>{% endif %}
         </form>
-        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
     </div>
 
 </div><!-- /page -->

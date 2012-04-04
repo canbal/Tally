@@ -6,198 +6,100 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>572</width>
-    <height>372</height>
+    <width>657</width>
+    <height>656</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QGroupBox" name="testSetup">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>181</width>
-      <height>341</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Test Setup</string>
-    </property>
-    <widget class="QPlainTextEdit" name="testID">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>70</y>
-       <width>161</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <property name="plainText">
-      <string/>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="startTest">
-     <property name="geometry">
-      <rect>
-       <x>100</x>
-       <y>310</y>
-       <width>75</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Start Test</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="selectVideos">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>310</y>
-       <width>75</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Select Videos</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="importTest">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>75</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Import Test</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="testNotesLabel">
-     <property name="geometry">
-      <rect>
-       <x>14</x>
-       <y>107</y>
-       <width>46</width>
-       <height>13</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Notes</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="testIDLabel">
-     <property name="geometry">
-      <rect>
-       <x>12</x>
-       <y>55</y>
-       <width>46</width>
-       <height>13</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Test ID</string>
-     </property>
-    </widget>
-    <widget class="QPlainTextEdit" name="testNotes">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>124</y>
-       <width>161</width>
-       <height>171</height>
-      </rect>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QPushButton" name="reset">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>320</y>
-      <width>85</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Reset</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="play">
-    <property name="geometry">
-     <rect>
-      <x>210</x>
-      <y>320</y>
-      <width>85</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Play</string>
-    </property>
-   </widget>
-   <widget class="QGroupBox" name="groupBox">
-    <property name="geometry">
-     <rect>
-      <x>197</x>
-      <y>10</y>
-      <width>361</width>
-      <height>341</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Test Environment</string>
-    </property>
-    <widget class="QLabel" name="status">
-     <property name="geometry">
-      <rect>
-       <x>12</x>
-       <y>280</y>
-       <width>351</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Status: Please fill out Test Setup and click 'Start Test'</string>
-     </property>
-    </widget>
-    <widget class="QListWidget" name="videoList">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>26</y>
-       <width>341</width>
-       <height>251</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLabel" name="signal">
-     <property name="geometry">
-      <rect>
-       <x>190</x>
-       <y>300</y>
-       <width>161</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </widget>
-   <zorder>groupBox</zorder>
-   <zorder>testSetup</zorder>
-   <zorder>reset</zorder>
-   <zorder>play</zorder>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLineEdit" name="webAddress">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>http://</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QWebView" name="webView">
+      <property name="url">
+       <url>
+        <string>about:blank</string>
+       </url>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="signal">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Signal: </string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="status">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Status: Please fill out Test Setup and click 'Start Test'</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="startTest">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>23</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Start Test</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QWebView</class>
+   <extends>QWidget</extends>
+   <header>QtWebKit/QWebView</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
