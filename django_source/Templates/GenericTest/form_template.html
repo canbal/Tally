@@ -1,0 +1,34 @@
+
+{% extends "base_subject.html" %}
+
+{% block header %}
+    {{ header }}
+{% endblock header %}
+
+{% block content %}
+    <form action="" method="post" data-ajax="false">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div data-role="fieldcontain">
+            {% for field in form %}
+                {{ field.errors }}
+                {{ field.label_tag }} {{ field }}
+            {% endfor %}
+        </div>
+        <span style="float:right">
+            <button type="submit" data-theme="b" value="Add" data-inline="true" data-icon="check">Add</button>
+        </span>
+    </form>
+{% endblock content %}
+
+
+<!-- Old content -->
+{% comment %}
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Add">
+</form>
+{% endblock content %}
+{% endcomment %}

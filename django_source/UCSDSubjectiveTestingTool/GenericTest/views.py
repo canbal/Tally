@@ -77,7 +77,7 @@ def tally(request,testInstance_id):
         selection = request.POST['value']
     except KeyError:
         return render_to_response('GenericTest/detail.html', {
-            'testInstance': ti, 'choices': choices,
+            'testInstance': ti, 'maxCount': maxCount, 'choices': choices,
             'error_message': "Please select a choice.",
         }, context_instance=RequestContext(request))
     else:
@@ -86,7 +86,7 @@ def tally(request,testInstance_id):
             prevCount = int(request.POST['prevCount'])
             if prevCount < ti.counter:
                 return render_to_response('GenericTest/detail.html', {
-                    'testInstance': ti, 'choices': choices
+                    'testInstance': ti, 'maxCount': maxCount, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
                 return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount}, context_instance=RequestContext(request))
@@ -103,7 +103,7 @@ def tally(request,testInstance_id):
                     score = Score(test_case_instance=tci, subject=UserProfile.objects.get(pk=subject_pk), value=selection)
                     score.save()
                 else:
-                    return render_to_response('GenericTest/detail.html', {'testInstance': ti, 'choices': choices
+                    return render_to_response('GenericTest/detail.html', {'testInstance': ti, 'maxCount': maxCount, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
                 return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount, 'error_message': 'you fool! vote already submitted'}, context_instance=RequestContext(request))
@@ -133,5 +133,5 @@ def add_test_case_item(request, test_instance_id):
         form = TestCaseItemForm()
         form.fields["video"].queryset = Video.objects.filter(test=t)
         
-    return render_to_response("GenericTest/addtestcaseitem.html",  {'form': form,  },
+    return render_to_response("GenericTest/form_template.html",  {'form': form,  'header': 'Add Test Case Item'},
                               context_instance=RequestContext(request))

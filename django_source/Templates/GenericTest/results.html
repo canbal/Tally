@@ -1,66 +1,51 @@
-<!DOCTYPE html> 
-<html> 
-	<head> 
-	<title>My Page</title> 
-	<meta name="viewport" content="width=device-width, initial-scale=1"> 
-    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.css" />
-    <script src="http://code.jquery.com/jquery-1.6.4.min.js"></script>
-    <script src="http://code.jquery.com/mobile/1.0.1/jquery.mobile-1.0.1.min.js"></script>
-<!--	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.css" />
-	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
-	<script src="http://code.jquery.com/mobile/1.1.0-rc.1/jquery.mobile-1.1.0-rc.1.min.js"></script> -->
+
+{% extends "base_subject.html" %}
+
+{% block head %}
     <script type="text/javascript">
-        function timeSubmit()
-        {
-        var t=setTimeout("autosubmit()",2000);     {# milliseconds #}
+        function timeSubmit() {
+            var t=setTimeout("autosubmit()",2000);     {# milliseconds #}
         }
-        function autosubmit()
-        {
-        document.secretForm.submit();
+        function autosubmit() {
+            document.secretForm.submit();
         }
     </script>
-</head> 
+{% endblock head %}
 
-<body> 
-<div data-role="page">
-
-	<div data-role="header">
-        {% if testInstance.counter == 0 %}
-        <h1>Welcome!</h1>
-    </div>
-    <div data-role="content" data-theme="c">
-        <p>Waiting for other participants.  Test will begin shortly...</p>
+{% block header %}
+    {% if testInstance.counter == 0 %}
+        Welcome!
+    {% else %}
+        {% if testInstance.counter > maxCount %}        {# elif currently only supported in django dev version #}
+            Test Complete
         {% else %}
-            {% if testInstance.counter > maxCount %}        {# elif currently only supported in django dev version #}
-        <h1>Test Complete</h1>
-    </div>
-    <div data-role="content" data-theme="c">
-        <p>Thank you for your participation!</p>
+            Test {{ testInstance.counter }}/{{ maxCount }}
+        {% endif %}
+    {% endif %}
+{% endblock header %}
+
+{% block content %}
+    {% if testInstance.counter <= maxCount %}
+        {% if testInstance.counter == 0 %}
+            <p>Waiting for other participants.  Test will begin shortly...</p>
+        {% else %}
+            {% if error_message %}<p><strong>{{ error_message }}</strong></p>
             {% else %}
-        <h1>Test {{ testInstance.counter }}</h1>
-    </div>
-    <div data-role="content" data-theme="c">
-                {% if error_message %}<p><strong>{{ error_message }}</strong></p>
-                {% else %}
-        <p>Results submitted.  Waiting for other participants or video to finish...</p>
-                {% endif %}  
-            {% endif %}        
+                <p>Results submitted.  Waiting for other participants or video to finish...</p>
+            {% endif %}
         {% endif %}
-
-        {% if testInstance.counter <= maxCount %}
-            <form name="secretForm", action="/{{ testInstance.pk }}/tally/" method="post" data-ajax="false">
-                {% csrf_token %}
-                <input type="hidden" name="value" value="queryState" />
-                <input type="hidden" name="prevCount" value={{ testInstance.counter }} />
-            </form>	
-            <script type="text/javascript">
-                timeSubmit();
-            </script>
-        {% endif %}
-    </div>
-
-</div><!-- /page -->
-
-</body>
-</html>
-
+        <form name="secretForm", action="/{{ testInstance.pk }}/tally/" method="post" data-ajax="false">
+            {% csrf_token %}
+            <input type="hidden" name="value" value="queryState" />
+            <input type="hidden" name="prevCount" value={{ testInstance.counter }} />
+        </form>	
+        <script type="text/javascript">
+            timeSubmit();
+        </script>
+    {% else %}
+        <p>Thank you for your participation!</p>
+        <span style="float:right">
+            <a href="/accounts/logout" data-role="button" data-theme="b" data-inline="true" data-icon="check" data-ajax="false">Logout</a>
+        </span>
+    {% endif %}
+{% endblock content %}
