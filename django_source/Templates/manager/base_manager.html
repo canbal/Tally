@@ -1,0 +1,29 @@
+
+<!DOCTYPE html> 
+<html> 
+	<head>
+    <meta charset="utf-8">
+	<title>{% block title %}Default title{% endblock title %}</title>
+    <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+    {% block head %}
+    {% endblock head %}
+</head> 
+
+<body> 
+
+<div data-role="page">
+
+	<div data-role="header">
+        <h1>{% block header %}Default header{% endblock header %}</h1>
+	</div>
+
+    <div data-role="content">
+        {% block content %}
+            <p>Default content</p>
+        {% endblock content %}
+    </div>
+
+</div>
+
+</body>
+</html>

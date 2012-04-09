@@ -12,6 +12,6 @@ class UserProfile(models.Model):
     age        = models.PositiveIntegerField()
     sex        = models.CharField(max_length=1, choices = GENDER_CHOICES)
     user       = models.OneToOneField(User)
-    
+        
     def __unicode__(self):
         return self.first_name + ' ' + self.last_name

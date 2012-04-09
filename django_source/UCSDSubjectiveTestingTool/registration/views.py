@@ -15,15 +15,15 @@ def register(request):
     else:
         form = RegistrationForm()
  
-    return render_to_response("registration/register.html",  {'form': form,  },
+    return render_to_response('registration/register.html',  {'form': form,  },
                               context_instance=RequestContext(request))
         
 @login_required
 def render_profile(request):
     if not request.user.is_superuser:
-        return HttpResponse("You are a normal user!")
+        return HttpResponse('You are a normal user!')
     else:
-        return HttpResponse("You are a super user! You are awesome!")
+        return HttpResponse('You are a super user! You are awesome!')
 
 def custom_login(request, *args, **kwargs):
     if request.user.is_authenticated():
