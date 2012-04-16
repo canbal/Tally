@@ -24,8 +24,8 @@ class TestInstance(models.Model):
     test        = models.ForeignKey(Test)
     subject     = models.ManyToManyField(UserProfile)
     owner       = models.CharField(max_length=200)
-    create_time = models.DateTimeField('Date created', auto_now_add=True)
-    run_time    = models.DateTimeField('Date run')
+    create_time = models.DateTimeField('Date created', auto_now_add=True) #TODO: change field name to create_date
+    run_time    = models.DateTimeField('Date run') #TODO: change field name to run_date
     path        = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
     location    = models.CharField(max_length=200)

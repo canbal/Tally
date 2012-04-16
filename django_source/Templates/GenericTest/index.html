@@ -1,7 +1,7 @@
-{% if latest_test_list %}
+{% if latest_test_instances %}
     <ul>
-    {% for test in latest_test_list %}
-        <li><a href="/{{ test.id }}/">{{ test.title }}</a></li>
+    {% for test_instance in latest_test_instances %}
+        <li><a href="/{{ test_instance.id }}/tally/">{{ test_instance.test.title }}</a></li>
     {% endfor %}
     </ul>
 {% else %}

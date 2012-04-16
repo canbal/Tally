@@ -5,8 +5,8 @@ from GenericTest.models import *
 urlpatterns = patterns('',
     url(r'^$',
         ListView.as_view(
-            queryset=Test.objects.order_by('-create_date')[:5],
-            context_object_name='latest_test_list',
+            queryset=TestInstance.objects.order_by('-create_time')[:10],
+            context_object_name='latest_test_instances',
             template_name='GenericTest/index.html')),
     #url(r'^(?P<testInstance_id>\d+)/scored$', 'GenericTest.views.results'),
     #url(r'^add_video/$', 'GenericTest.views.add_video'),  

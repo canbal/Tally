@@ -2,7 +2,9 @@
 *~
 #*#
 *.pyc
+*.user
 
+st2-build*
 qt_build_win7-64/
 qt_source_old/
 
