@@ -7,11 +7,9 @@ GENDER_CHOICES = (
 )
 
 class UserProfile(models.Model):
-    first_name = models.CharField(max_length=200)
-    last_name  = models.CharField(max_length=200)
     age        = models.PositiveIntegerField()
     sex        = models.CharField(max_length=1, choices = GENDER_CHOICES)
     user       = models.OneToOneField(User)
-    
+        
     def __unicode__(self):
-        return self.first_name + ' ' + self.last_name
+        return self.user.username

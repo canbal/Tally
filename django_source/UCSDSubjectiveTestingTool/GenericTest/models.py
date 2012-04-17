@@ -3,36 +3,38 @@ from registration.models import UserProfile
 import datetime
 
 METHOD_CHOICES = (
-                  ('DS','DSIS'  ),
-                  ('SQ','SAMVIQ')
+    ('DS','DSIS'),
+    ('SQ','SAMVIQ'),
+    ('CU','CUSTOM')
 )
 
 class Test(models.Model):
     title       = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
     method      = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
-    create_date = models.DateTimeField('Date created', auto_now_add=True)
+    create_time = models.DateTimeField('Date created', auto_now_add=True)
     
     def __unicode__(self):
         return self.title
     def was_created_today(self):
-        return self.create_date == datetime.date.today()
+        return self.create_time == datetime.date.today()
         was_created_today.short_description = 'Created today?'
     
     
 class TestInstance(models.Model):
-    test        = models.ForeignKey(Test)
-    subject     = models.ManyToManyField(UserProfile)
-    owner       = models.CharField(max_length=200)
-    create_time = models.DateTimeField('Date created', auto_now_add=True) #TODO: change field name to create_date
-    run_time    = models.DateTimeField('Date run') #TODO: change field name to run_date
-    path        = models.CharField(max_length=200)
-    description = models.CharField(max_length=400)
-    location    = models.CharField(max_length=200)
-    counter     = models.IntegerField(default=0)
+    test          = models.ForeignKey(Test)
+    owner         = models.ForeignKey(UserProfile, related_name='testinstance_owner')
+    subject       = models.ManyToManyField(UserProfile, related_name='testinstance_subjects', null=True)
+    create_time   = models.DateTimeField('Date created', auto_now_add=True)
+    schedule_time = models.DateTimeField('Date scheduled', null=True)
+    run_time      = models.DateTimeField('Date run', null=True)
+    path          = models.CharField(max_length=200)
+    description   = models.CharField(max_length=400)
+    location      = models.CharField(max_length=200)
+    counter       = models.IntegerField(default=0)
     
     def __unicode__(self):
-        return self.owner + ' ' + self.test.title
+        return self.owner.user.username + ' : ' + self.test.title
 
 
 class Video(models.Model):
@@ -42,6 +44,9 @@ class Video(models.Model):
     
     def __unicode__(self):
         return self.filename
+    
+    class Meta:
+        unique_together = ('test','filename')
 
 
 class TestCase(models.Model):
@@ -61,7 +66,7 @@ class TestCaseInstance(models.Model):
     play_order    = models.PositiveIntegerField()
     
     class Meta:
-        unique_together = ("test_instance", "play_order")
+        unique_together = ('test_instance', 'play_order')
     def __unicode__(self):
         return '%s : %d' % (unicode(self.test_instance), self.play_order)
 
@@ -73,7 +78,7 @@ class TestCaseItem(models.Model):
     is_reference = models.BooleanField(default=0)
     
     class Meta:
-        unique_together = ("test_case", "play_order")
+        unique_together = ('test_case', 'play_order')
     def __unicode__(self):
         return '%s : %d : %s' % (unicode(self.test_case), self.play_order, self.video)
         
