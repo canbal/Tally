@@ -34,7 +34,7 @@ class TestInstance(models.Model):
     counter       = models.IntegerField(default=0)
     
     def __unicode__(self):
-        return self.owner.user.username + ' : ' + self.test.title
+        return str(self.id) + ' : ' + self.owner.user.username + ' : ' + self.test.title
 
 
 class Video(models.Model):
@@ -54,7 +54,7 @@ class TestCase(models.Model):
     video = models.ManyToManyField(Video, through='TestCaseItem')
     
     def __unicode__(self):
-        return '%s : %d' % (unicode(self.test.title), self.pk)
+        return '%s : %d' % (str(self.test.title), self.pk)
     def getTest(self):
         return self.test
     
@@ -68,7 +68,7 @@ class TestCaseInstance(models.Model):
     class Meta:
         unique_together = ('test_instance', 'play_order')
     def __unicode__(self):
-        return '%s : %d' % (unicode(self.test_instance), self.play_order)
+        return '%s : %d' % (str(self.test_instance), self.play_order)
 
         
 class TestCaseItem(models.Model):
@@ -89,4 +89,4 @@ class Score(models.Model):
     value              = models.IntegerField()
 
     def __unicode__(self):
-        return '%s : %s : %d' % (unicode(self.test_case_instance), unicode(self.subject), self.value)
+        return '%s : %s : %d' % (str(self.test_case_instance), str(self.subject), self.value)

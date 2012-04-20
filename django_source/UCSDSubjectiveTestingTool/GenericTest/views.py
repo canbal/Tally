@@ -8,10 +8,16 @@ from GenericTest.forms import *
 from registration.models import UserProfile
 import json
 
-
+@login_required
 def index(request):
-    latest_test_list = Test.objects.all().order_by('-create_date')[:5]
-    return render_to_response('GenericTest/index.html', {'latest_test_list': latest_test_list})
+    # A user may not have an associated UserProfile - i.e. SuperUser
+    try:
+        subject = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return HttpResponse('No subjective tests are available.')
+    else:
+        latest_test_instances = TestInstance.objects.filter(subject=subject).order_by('-create_time')
+        return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
 
 
 @csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!

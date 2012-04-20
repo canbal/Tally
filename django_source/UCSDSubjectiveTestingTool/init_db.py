@@ -71,11 +71,25 @@ for idv in range(5):
     except Video.DoesNotExist:
         video = Video(test=test,filename=filename,description=filename)
         video.save()
-
-
+    
+    try:
+        test_case_item = TestCaseItem.objects.get(test_case__test=test,video=video)
+    except TestCaseItem.DoesNotExist:
+        test_case = TestCase(test=test)
+        test_case.save()
+        test_case_item = TestCaseItem(test_case=test_case,video=video,play_order=0)
+        test_case_item.save()        
+        
 test_instance = test.testinstance_set.create(owner=tester_profile,
                                              path='/my/path/to/videos/',
                                              description='An instance of the example test',
                                              location='UCSD Video Processing Lab')
 test_instance.subject.add(subject_profile)
 test_instance.save()
+
+play_order = 0
+for test_case in test_instance.test.testcase_set.all():
+    test_case_instance = TestCaseInstance(test_instance=test_instance,test_case=test_case,play_order=play_order)
+    test_case_instance.save()
+    play_order = play_order + 1
+    
