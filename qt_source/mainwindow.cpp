@@ -40,7 +40,8 @@ void MainWindow::on_startTest_clicked()
 void MainWindow::on_webAddress_returnPressed()
 {
     ui->webView->setUrl(ui->webAddress->text());
-    QMessageBox::information(this, tr("SSTT"), QString("URL = %1").arg(ui->webView->url().toString()));
+    m_url = ui->webView->url().toString();
+    //QMessageBox::information(this, tr("SSTT"), QString("URL = %1").arg(m_url));
 }
 
 

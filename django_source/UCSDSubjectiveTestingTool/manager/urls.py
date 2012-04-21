@@ -38,7 +38,7 @@ urlpatterns = patterns('manager.views',
         # Links To:   homepage, /<test_id>/instance/save/
 
     url(r'^(?P<test_id>\d+)/instance/save/$', 'save_test_instance'),
-        # Function:   Saves a TestInstance to the database.  Redirects to /<test_id>/<test_instance_id>/, maybe display a note that this TestInstsance was just successfully created.
+        # Function:   Saves a TestInstance to the database.  Redirects to /<test_id>/<test_instance_id>/, maybe display a note that this TestInstance was just successfully created.
         # Links From: /<test_id>/instance/
         # Links To:   same as /<test_id>/<test_instance_id>/
         

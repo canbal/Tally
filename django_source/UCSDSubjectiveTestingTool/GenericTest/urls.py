@@ -6,7 +6,7 @@ from GenericTest.models import *
 urlpatterns = patterns('GenericTest.views',
     url(r'^$',
         ListView.as_view(
-            queryset=Test.objects.order_by('-create_date')[:5],
+            queryset=Test.objects.order_by('-create_time')[:5],
             context_object_name='latest_test_list',
             template_name='GenericTest/index.html')),
     url(r'^(?P<test_instance_id>\d+)/add/$', 'add_test_case_item'),

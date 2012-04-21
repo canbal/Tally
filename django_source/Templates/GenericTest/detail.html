@@ -24,21 +24,3 @@
     </form>
     {% if error_message %}<p style="color:red;font-weight:bold;font-size:1.1em">{{ error_message }}</p>{% endif %}
 {% endblock content %}
-
-
-<!-- Old content -->
-{% comment %}
-{% block content %}
-    <p>In terms of overall quality relative to the reference video, degradations in the test video were:</p>
-    <form action="/{{ testInstance.pk }}/tally/" method="get">
-        {% csrf_token %}
-        {% for elem in choices %}
-            <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
-            <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label><br />
-        {% endfor %}
-        <input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
-        <input type="submit" value="Submit" />
-    </form>
-    {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-{% endblock content %}
-{% endcomment %}
