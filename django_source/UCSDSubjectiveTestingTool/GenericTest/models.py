@@ -23,18 +23,18 @@ class Test(models.Model):
     
 class TestInstance(models.Model):
     test          = models.ForeignKey(Test)
-    subject       = models.ManyToManyField(UserProfile)
-    owner         = models.CharField(max_length=200)
+    owner         = models.ForeignKey(UserProfile, related_name='testinstance_owner')
+    subject       = models.ManyToManyField(UserProfile, related_name='testinstance_subjects', null=True)
     create_time   = models.DateTimeField('Date created', auto_now_add=True)
-    schedule_time = models.DateTimeField('Scheduled Date')
-    run_time      = models.DateTimeField('Date run')
+    schedule_time = models.DateTimeField('Date scheduled', null=True)
+    run_time      = models.DateTimeField('Date run', null=True)
     path          = models.CharField(max_length=200)
     description   = models.CharField(max_length=400)
     location      = models.CharField(max_length=200)
     counter       = models.IntegerField(default=0)
     
     def __unicode__(self):
-        return self.owner + ' ' + self.test.title
+        return str(self.id) + ' : ' + self.owner.user.username + ' : ' + self.test.title
 
 
 class Video(models.Model):
@@ -44,6 +44,9 @@ class Video(models.Model):
     
     def __unicode__(self):
         return self.filename
+    
+    class Meta:
+        unique_together = ('test','filename')
 
 
 class TestCase(models.Model):
@@ -51,7 +54,7 @@ class TestCase(models.Model):
     video = models.ManyToManyField(Video, through='TestCaseItem')
     
     def __unicode__(self):
-        return '%s : %d' % (unicode(self.test.title), self.pk)
+        return '%s : %d' % (str(self.test.title), self.pk)
     def getTest(self):
         return self.test
     
@@ -65,7 +68,7 @@ class TestCaseInstance(models.Model):
     class Meta:
         unique_together = ('test_instance', 'play_order')
     def __unicode__(self):
-        return '%s : %d' % (unicode(self.test_instance), self.play_order)
+        return '%s : %d' % (str(self.test_instance), self.play_order)
 
         
 class TestCaseItem(models.Model):
@@ -86,4 +89,4 @@ class Score(models.Model):
     value              = models.IntegerField()
 
     def __unicode__(self):
-        return '%s : %s : %d' % (unicode(self.test_case_instance), unicode(self.subject), self.value)
+        return '%s : %s : %d' % (str(self.test_case_instance), str(self.subject), self.value)

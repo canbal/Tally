@@ -1,5 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse
 from django.template import RequestContext
@@ -8,10 +8,16 @@ from GenericTest.forms import *
 from registration.models import UserProfile
 import json
 
-
+@login_required
 def index(request):
-    latest_test_list = Test.objects.all().order_by('-create_date')[:5]
-    return render_to_response('GenericTest/index.html', {'latest_test_list': latest_test_list})
+    # A user may not have an associated UserProfile - i.e. SuperUser
+    try:
+        subject = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return HttpResponse('No subjective tests are available.')
+    else:
+        latest_test_instances = TestInstance.objects.filter(subject=subject).order_by('-create_time')
+        return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
 
 
 @csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
@@ -60,6 +66,7 @@ def get_media(request, test_instance_id):
             
             
 @login_required
+@permission_required('GenericTest.add_score')
 def tally(request,test_instance_id):
 #    if request.method=='GET':
 #        return HttpResponse('please don't navigate yourself!')
@@ -120,6 +127,7 @@ def tally(request,test_instance_id):
 
             
 @login_required
+@permission_required('GenericTest.add_testcaseitem')
 def add_test_case_item(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     t  = ti.test
@@ -133,5 +141,5 @@ def add_test_case_item(request, test_instance_id):
         form = TestCaseItemForm()
         form.fields['video'].queryset = Video.objects.filter(test=t)
         
-    return render_to_response('GenericTest/form_template.html',  {'form': form,  'header': 'Add Test Case Item'},
+    return render_to_response('GenericTest/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
                               context_instance=RequestContext(request))

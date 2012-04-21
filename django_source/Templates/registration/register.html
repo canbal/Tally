@@ -4,34 +4,44 @@
     <form action="" method="post">
         {% csrf_token %}
 		<div>
-            {{ form.username.errors }}
+            {{ rform.username.errors }}
             <label for="id_username">Username: </label>
-            {{ form.username }}
+            {{ rform.username }}
         </div>
         <div>
-            {{ form.first_name.errors }}
+            {{ rform.first_name.errors }}
             <label for="id_first_name">First name: </label>
-            {{ form.first_name }}
+            {{ rform.first_name }}
         </div>
         <div>
-            {{ form.last_name.errors }}
+            {{ rform.last_name.errors }}
             <label for="id_last_name">Last name: </label>
-            {{ form.last_name }}
+            {{ rform.last_name }}
         </div>
         <div>
-            {{ form.email.errors }}
+            {{ pform.age.errors }}
+            <label for="id_age">Age: </label>
+            {{ pform.age }}
+        </div>
+        <div>
+            {{ pform.sex.errors }}
+            <label for="id_sex">Sex: </label>
+            {{ pform.sex }}
+        </div>
+        <div>
+            {{ rform.email.errors }}
             <label for="id_email">E-Mail: </label>
-            {{ form.email }}
+            {{ rform.email }}
         </div>
         <div>
-            {{ form.password1.errors }}
+            {{ rform.password1.errors }}
             <label for="id_password1">Password: </label>
-            {{ form.password1 }}
+            {{ rform.password1 }}
         </div>
         <div>
-            {{ form.password2.errors }}
+            {{ rform.password2.errors }}
             <label for="id_password2">Repeat password: </label>
-            {{ form.password2 }}
+            {{ rform.password2 }}
         </div>
         <input type="submit" value="Register" />
     </form>
