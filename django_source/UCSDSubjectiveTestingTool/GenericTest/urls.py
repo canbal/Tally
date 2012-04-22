@@ -8,6 +8,7 @@ urlpatterns = patterns('GenericTest.views',
     url(r'^(?P<test_instance_id>\d+)/add/$', 'add_test_case_item'),
     url(r'^(?P<test_instance_id>\d+)/get_media/$', 'get_media'),
     url(r'^(?P<test_instance_id>\d+)/tally/$', 'tally'),
+    url(r'^(?P<test_instance_id>\d+)/reset/$', 'reset_test_instance'),
 )
 
 # URLS from other apps

@@ -64,8 +64,10 @@ except Test.DoesNotExist:
     test = Test(title='Example Test',description='An example test with single video test cases',method='CU')
     test.save()
     
-for idv in range(5):
-    filename = 'video_'+str(idv)
+    
+videoList = ['skydiving_largeBlur_blurOne_30.mp4', 'skydiving_largeBlur_inPhase_30.mp4', 'skydiving_largeBlur_outOfPhase_60.mp4', 'skydiving_smallBlur_blurOne_60.mp4']
+videoPath = 'd:/binocsupp/skydiving'
+for filename in videoList:
     try:
         video = Video.objects.get(test=test,filename=filename)
     except Video.DoesNotExist:
@@ -81,13 +83,13 @@ for idv in range(5):
         test_case_item.save()        
         
 test_instance = test.testinstance_set.create(owner=tester_profile,
-                                             path='/my/path/to/videos/',
+                                             path=videoPath,
                                              description='An instance of the example test',
                                              location='UCSD Video Processing Lab')
 test_instance.subject.add(subject_profile)
 test_instance.save()
 
-play_order = 0
+play_order = 1
 for test_case in test_instance.test.testcase_set.all():
     test_case_instance = TestCaseInstance(test_instance=test_instance,test_case=test_case,play_order=play_order)
     test_case_instance.save()

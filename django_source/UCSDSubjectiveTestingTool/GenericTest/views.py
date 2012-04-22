@@ -143,3 +143,20 @@ def add_test_case_item(request, test_instance_id):
         
     return render_to_response('GenericTest/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
                               context_instance=RequestContext(request))
+                              
+                              
+                              
+                              
+                              
+def reset_test_instance(request, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    ti.counter = 0
+    ti.save()
+    tci = TestCaseInstance.objects.filter(test_instance=ti)
+    for t in tci:
+        t.is_done = False
+        t.save()
+        scores = Score.objects.filter(test_case_instance=t)
+        for s in scores:
+            s.delete()
+    return HttpResponse("Test Instance " + test_instance_id + " has been reset.")

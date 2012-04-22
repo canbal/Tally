@@ -30,10 +30,12 @@ private slots:
     void on_startTest_clicked();
     void getMediaHTTP();
     void on_webAddress_returnPressed();
+    void readHTTPResponseSlot();
 
 private:
     Ui::MainWindow *ui;
-    QString m_url;
+    QString m_rootURL;
+    int m_testInstanceID;
     QNetworkAccessManager *m_manager;
     Phonon::MediaObject *m_media;
     Phonon::VideoWidget *m_vidWidget;
