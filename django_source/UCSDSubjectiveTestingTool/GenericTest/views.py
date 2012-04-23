@@ -1,24 +1,39 @@
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.shortcuts import render_to_response, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from GenericTest.models import *
 from GenericTest.forms import *
 from registration.models import UserProfile
 import json
 
+def group_required(*group_names):
+    """Requires user membership in at least one of the groups passed in."""
+    def in_groups(u):
+        if u.is_authenticated():
+            if bool(u.groups.filter(name__in=group_names)):
+                return True
+        return False
+    return user_passes_test(in_groups)
+
 @login_required
 def index(request):
-    # A user may not have an associated UserProfile - i.e. SuperUser
     try:
+    # A user may not have an associated UserProfile - i.e. SuperUser
         subject = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
-        return HttpResponse('No subjective tests are available.')
+        return HttpResponse('You are not registered as a subject or a tester in the system!')
     else:
         latest_test_instances = TestInstance.objects.filter(subject=subject).order_by('-create_time')
         return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
 
+@login_required
+@group_required('Subjects')
+def enroll(request):
+    subject = UserProfile.objects.get(user=request.user)
+    latest_test_instances = TestInstance.objects.exclude(subject=subject).order_by('-create_time')
+    return render_to_response('GenericTest/enroll.html', {'latest_test_instances': latest_test_instances})
 
 @csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
 def get_media(request, test_instance_id):
@@ -125,7 +140,20 @@ def tally(request,test_instance_id):
                 tci.save()
             return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount}, context_instance=RequestContext(request))
 
-            
+@login_required
+@group_required('Subjects')
+def enroll_to_test_instance(request, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    try:
+    # A user may not have an associated UserProfile - i.e. SuperUser
+        subject = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        pass
+    else:
+        ti.subject.add(subject)
+
+    return HttpResponseRedirect('/')
+    
 @login_required
 @permission_required('GenericTest.add_testcaseitem')
 def add_test_case_item(request, test_instance_id):

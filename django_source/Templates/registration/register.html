@@ -1,44 +1,49 @@
+{% extends "base_subject.html" %}
+
+{% block header %}
+    Please register to the test system
+{% endblock header %}
+
 {% block content %}
-    <h1>Please register to the test system</h1>
- 
-    <form action="" method="post">
+    <form action="" method="post" data-ajax="false">
         {% csrf_token %}
-		<div>
+        {{ form.non_field_errors }}
+		<div data-role="fieldcontain">
             {{ rform.username.errors }}
             <label for="id_username">Username: </label>
             {{ rform.username }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ rform.first_name.errors }}
             <label for="id_first_name">First name: </label>
             {{ rform.first_name }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ rform.last_name.errors }}
             <label for="id_last_name">Last name: </label>
             {{ rform.last_name }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ pform.age.errors }}
             <label for="id_age">Age: </label>
             {{ pform.age }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ pform.sex.errors }}
             <label for="id_sex">Sex: </label>
             {{ pform.sex }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ rform.email.errors }}
             <label for="id_email">E-Mail: </label>
             {{ rform.email }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ rform.password1.errors }}
             <label for="id_password1">Password: </label>
             {{ rform.password1 }}
         </div>
-        <div>
+        <div data-role="fieldcontain">
             {{ rform.password2.errors }}
             <label for="id_password2">Repeat password: </label>
             {{ rform.password2 }}

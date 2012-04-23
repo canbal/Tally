@@ -1,9 +1,26 @@
-{% if latest_test_instances %}
-    <ul>
-    {% for test_instance in latest_test_instances %}
-        <li><a href="/{{ test_instance.id }}/tally/">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
-    {% endfor %}
+{% extends "base_subject.html" %}
+
+{% load url from future %}
+
+{% block header %}
+    {% if latest_test_instances %}
+        Enrolled Subjective Tests
+    {% else %}
+        No subjective tests are available.
+    {% endif %}    
+{% endblock header %}
+
+{% block content %}
+    {% if latest_test_instances %}
+        <ul data-role="listview" data-theme="g">
+        {% for test_instance in latest_test_instances %}
+            <li><a href="/{{ test_instance.id }}/tally/">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    <ul data-role="listview" data-theme="g">
+        <form>
+            <input type="button" value="Enroll to other subjective tests" onclick="window.location.href={% url 'GenericTest.views.enroll' %}"/> 
+        </form>
     </ul>
-{% else %}
-    <p>No subjective tests are available.</p>
-{% endif %}
+{% endblock %}
