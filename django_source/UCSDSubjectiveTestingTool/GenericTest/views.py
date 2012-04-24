@@ -129,7 +129,7 @@ def tally(request,test_instance_id):
                     return render_to_response('GenericTest/detail.html', {'testInstance': ti, 'maxCount': maxCount, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
-                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount, 'error_message': 'you fool! vote already submitted'}, context_instance=RequestContext(request))
+                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount, 'error_message': 'Vote is already submitted.'}, context_instance=RequestContext(request))
             # if all subjects of this test instance have reported scores for this test case, mark it as done
             try:
                 for ii in range(0,ti.subject.count()):

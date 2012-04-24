@@ -1,11 +1,11 @@
-{% extends "base_subject.html" %}
+{% extends "base_registration.html" %}
 
 {% block header %}
     Please register to the test system
 {% endblock header %}
 
 {% block content %}
-    <form action="" method="post" data-ajax="false">
+    <form action="" method="post">
         {% csrf_token %}
         
         <span style="color:red;font-weight:bold;font-size:1.1em">
@@ -44,6 +44,6 @@
             <label for="id_password2">{{ rform.password2.label }}: </label>
             {{ rform.password2 }}
         </div>
-        <input type="submit" value="Register" />
+        <input type="submit" data-theme="e" value="Register" />
     </form>
 {% endblock %}

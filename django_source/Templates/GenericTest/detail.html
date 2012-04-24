@@ -17,9 +17,9 @@
                 {% endfor %}
             </fieldset>
         </div>
-                    <span style="float:right">
-                <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
-            </span>
+        <span style="float:right">
+            <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
+        </span>
         <input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
     </form>
     {% if error_message %}<p style="color:red;font-weight:bold;font-size:1.1em">{{ error_message }}</p>{% endif %}

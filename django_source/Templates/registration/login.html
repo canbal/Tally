@@ -1,4 +1,4 @@
-{% extends "base_subject.html" %}
+{% extends "base_registration.html" %}
 
 {% load url from future %}
 
@@ -12,7 +12,7 @@
 
 {% block content %}
 
-    <form action="{% url 'registration.views.custom_login' %}" method="post" data-ajax="false">
+    <form action="{% url 'registration.views.custom_login' %}" method="post">
         {% csrf_token %}
         <div data-role="fieldcontain">
             {{ form.username.label_tag }} {{ form.username }}
@@ -21,6 +21,6 @@
         <input type="hidden" name="next" value="{{ next }}" />
         <input type="submit" data-theme="b" value="Login" />
     </form>
-    <a href="{% url 'registration.views.register' %}" data-role="button" data-theme="e" data-ajax="false">Register</a> 
+    <a href="{% url 'registration.views.register' %}" data-role="button" data-theme="e">Register</a> 
     
 {% endblock %}
