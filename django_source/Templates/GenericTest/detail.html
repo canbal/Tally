@@ -1,6 +1,10 @@
 
 {% extends "base_subject.html" %}
 
+{% block title %}
+Subjective Test
+{% endblock title %}
+
 {% block header %}
     Test {{ testInstance.counter }}/{{ maxCount }}
 {% endblock header %}
@@ -16,10 +20,10 @@
                     <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
                 {% endfor %}
             </fieldset>
-            <span style="float:right">
+        </div>
+                    <span style="float:right">
                 <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
             </span>
-        </div>
         <input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
     </form>
     {% if error_message %}<p style="color:red;font-weight:bold;font-size:1.1em">{{ error_message }}</p>{% endif %}

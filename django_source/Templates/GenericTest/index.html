@@ -11,16 +11,14 @@
 {% endblock header %}
 
 {% block content %}
-    {% if latest_test_instances %}
-        <ul data-role="listview" data-theme="g">
-        {% for test_instance in latest_test_instances %}
-            <li><a href="/{{ test_instance.id }}/tally/">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    <ul data-role="listview" data-theme="g">
-        <form>
-            <input type="button" value="Enroll to other subjective tests" onclick="window.location.href={% url 'GenericTest.views.enroll' %}"/> 
-        </form>
-    </ul>
-{% endblock %}
+    <div data-role="fieldcontain">
+        <fieldset data-role="controlgroup"> 
+            <ul data-role="listview" data-theme="g">
+                {% for test_instance in latest_test_instances %}
+                    <li><a href="/{{ test_instance.id }}/tally/" data-ajax="false">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
+                {% endfor %}
+            </ul>
+        </fieldset>
+    </div>
+    <a href="{% url 'GenericTest.views.enroll' %}" data-role="button" data-ajax="false">Enroll in other subjective tests</a> 
+{% endblock content %}

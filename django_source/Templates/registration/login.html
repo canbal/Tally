@@ -16,17 +16,11 @@
         {% csrf_token %}
         <div data-role="fieldcontain">
             {{ form.username.label_tag }} {{ form.username }}
-        </div>
-        <div data-role="fieldcontain">
             {{ form.password.label_tag }} {{ form.password }}
         </div>
-    <input type="submit" value="Login" />
-    <input type="hidden" name="next" value="{{ next }}" />
-    
+        <input type="hidden" name="next" value="{{ next }}" />
+        <input type="submit" data-theme="b" value="Login" />
     </form>
-    
-    <form>
-        <input type="button" value="Register" onclick="window.location.href={% url 'registration.views.register' %}"/> 
-    </form>
+    <a href="{% url 'registration.views.register' %}" data-role="button" data-theme="e" data-ajax="false">Register</a> 
     
 {% endblock %}

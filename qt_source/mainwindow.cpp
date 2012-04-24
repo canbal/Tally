@@ -6,6 +6,7 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QMessageBox>
+#include <QDesktopWidget>
 #include <time.h>
 
 
@@ -17,6 +18,11 @@ MainWindow::MainWindow(QWidget *parent) :
     m_media = new Phonon::MediaObject();
     m_vidWidget = new Phonon::VideoWidget();
     Phonon::createPath(m_media, m_vidWidget);
+    QDesktopWidget *desktop = QApplication::desktop();
+    if (desktop->screenCount() > 1) {
+        QRect geom = desktop->screenGeometry(0);
+        m_vidWidget->move(geom.topLeft());
+    }
     m_vidWidget->show();
     m_vidWidget->setFullScreen(true);       // look at QDesktopWidget for how to control which screen this appears on
     connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));

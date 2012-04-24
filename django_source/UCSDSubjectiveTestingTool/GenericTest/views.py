@@ -81,6 +81,7 @@ def get_media(request, test_instance_id):
             
             
 @login_required
+@group_required('Subjects')
 @permission_required('GenericTest.add_score')
 def tally(request,test_instance_id):
 #    if request.method=='GET':
