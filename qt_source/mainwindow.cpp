@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->startTest->setEnabled(false);
     m_media = new Phonon::MediaObject();
     m_vidWidget = new Phonon::VideoWidget();
     Phonon::createPath(m_media, m_vidWidget);
@@ -42,9 +43,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_startTest_clicked()
 {
-    //ui->startTest->setEnabled(false);
-    m_media->stop();
-    m_media->clearQueue();
+    ui->startTest->setEnabled(false);
     QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
     connect(reply, SIGNAL(finished()), this, SLOT(readHTTPResponseSlot()));
@@ -62,6 +61,8 @@ void MainWindow::on_webAddress_returnPressed()
     m_testInstanceID = tmp.toInt(&success);
     if (!success) {
         QMessageBox::information(this, tr("SSTT"), "error resolving Test Instance ID");
+    } else {
+        ui->startTest->setEnabled(true);
     }
 }
 
@@ -69,6 +70,7 @@ void MainWindow::on_webAddress_returnPressed()
 void MainWindow::onVideoFinished()
 {
     // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
+    m_media->clear();   // so that video player does not pause on final frame
     QNetworkRequest request(QUrl(QString("%1/%2/get_media/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
     connect(reply, SIGNAL(finished()), this, SLOT(getMediaHTTP()));
