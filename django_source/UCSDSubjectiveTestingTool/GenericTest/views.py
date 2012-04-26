@@ -94,7 +94,7 @@ def tally(request,test_instance_id):
     try:
         tci = ti.testcaseinstance_set.get(play_order=ti.counter)
     except(TestCaseInstance.DoesNotExist):
-        return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount},  context_instance=RequestContext(request))
+        return render_to_response('GenericTest/status.html', {'test_instance':ti})
     # ensure that one of the choices was selected before submitting the form
     try:
         selection = request.POST['value']
@@ -112,7 +112,7 @@ def tally(request,test_instance_id):
                     'testInstance': ti, 'maxCount': maxCount, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
-                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount}, context_instance=RequestContext(request))
+                return render_to_response('GenericTest/status.html', {'test_instance':ti})
         # if the test form was submitted, process the data
         else:
             # make sure this subject has not submitted a score for this test case already (need to handle error better)
@@ -129,17 +129,73 @@ def tally(request,test_instance_id):
                     return render_to_response('GenericTest/detail.html', {'testInstance': ti, 'maxCount': maxCount, 'choices': choices
                 }, context_instance=RequestContext(request))
             else:
-                return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount, 'error_message': 'Vote is already submitted.'}, context_instance=RequestContext(request))
+                return render_to_response('GenericTest/status.html', {'test_instance':ti,'error_message':'You already casted a vote to this test!'})
             # if all subjects of this test instance have reported scores for this test case, mark it as done
             try:
-                for ii in range(0,ti.subject.count()):
-                    sc = ti.subject.all()[ii].score_set.get(test_case_instance=tci)
+                for subject in ti.subject.all():
+                    sc = subject.score_set.get(test_case_instance=tci)
             except(Score.DoesNotExist):
                 pass
             else:
                 tci.is_done = True
                 tci.save()
-            return render_to_response('GenericTest/results.html', {'testInstance': ti, 'maxCount': maxCount}, context_instance=RequestContext(request))
+            return render_to_response('GenericTest/status.html',{'test_instance':ti})
+
+def testjson(request):
+    return HttpResponse(json.dumps({'message':'true'}))
+
+@login_required
+@group_required('Subjects')
+def status(request, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    messages = {'0': 'Waiting for other participants. Test will begin shortly...',
+                '1': 'Vote is submitted. Waiting for other participants or video to finish...',
+                '2': 'Votes of all subjects are recorded. Test will proceed shortly...',
+                '3': 'Thank you for your participation!'}
+    max_counter = ti.testcaseinstance_set.count();
+    status = 0 # 0: means test hasn't started yet
+    header = 'Welcome'
+    if ti.counter>0:
+        header = 'Test '+str(ti.counter)+'/'+str(max_counter)
+        try:
+            tci = ti.testcaseinstance_set.get(play_order=ti.counter)
+        except(TestCaseInstance.DoesNotExist):
+            status = 3 # 3: means test has finished
+            header = 'Test Complete'
+        else:
+            status = 2 # 2: means all subjects have voted for current test case
+            # update status if there exist any subjects who have voted
+            try:
+                for subject in ti.subject.all():
+                    sc = subject.score_set.get(test_case_instance=tci)
+            except(Score.DoesNotExist):
+                status = 1
+    return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)], 'header':header}))
+    
+@login_required
+@group_required('Subjects')
+def check(request, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    try:
+        tci = ti.testcaseinstance_set.get(play_order=ti.counter)
+    except(TestCaseInstance.DoesNotExist):
+        return render_to_response('GenericTest/check.html',
+                                  {'message':'Test case instance with play order ' + str(ti.counter) + ' not found', 'testInstance':ti}, 
+                                  context_instance=RequestContext(request))
+     
+    try:
+        for subject in ti.subject.all():
+            sc = subject.score_set.get(test_case_instance=tci)
+    except(Score.DoesNotExist):
+        return render_to_response('GenericTest/check.html',
+                                  {'message':'Not all test subjects have voted yet', 'testInstance':ti}, 
+                                  context_instance=RequestContext(request))
+    else:
+        tci.is_done = True
+        tci.save()
+        return render_to_response('GenericTest/check.html',
+                                  {'message':'Awesome, everyone has voted', 'testInstance':ti}, 
+                                  context_instance=RequestContext(request))
 
 @login_required
 @group_required('Subjects')
