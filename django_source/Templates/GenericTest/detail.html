@@ -2,11 +2,11 @@
 {% extends "base_subject.html" %}
 
 {% block header %}
-    Test {{ testInstance.counter }}/{{ maxCount }}
+    {{ header }}
 {% endblock header %}
 
 {% block content %}
-    <form id="form" action="/{{ testInstance.pk }}/tally/" method="post" data-ajax="false">
+    <form id="form" action="/{{ test_instance.pk }}/tally/" method="post" data-ajax="false">
         {% csrf_token %}
         <div data-role="fieldcontain">
             <fieldset data-role="controlgroup"> 
@@ -20,7 +20,7 @@
         <span style="float:right">
             <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
         </span>
-        <input type="hidden" name="current_count" value="{{ testInstance.counter }}" />
+        <input type="hidden" name="current_count" value="{{ test_instance.counter }}" />
     </form>
     {% if error_message %}<p style="color:red;font-weight:bold;font-size:1.1em">{{ error_message }}</p>{% endif %}
 {% endblock content %}

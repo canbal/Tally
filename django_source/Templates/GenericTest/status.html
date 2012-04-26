@@ -7,7 +7,7 @@
     }
     function updateStatus() {
         $.getJSON("/{{ test_instance.pk }}/status", function(data) {
-            if(data.status=='1') 
+            if(data.status=='4') 
             {
                 window.location.replace("/{{ test_instance.pk }}/tally");
             }
@@ -32,8 +32,8 @@
 {% endblock header %}
 
 {% block content %}
-    <p><div id="error" style="color:red">
-    {{ error_message }}
-    </div></p>
+    <div id="error">
+    {% if error_message %}<p style="color:red">{{ error_message }}</p>{% endif %}
+    </div>
     <p><div id="message"></div></p>
 {% endblock content %}  
