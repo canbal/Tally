@@ -8,10 +8,9 @@
             $( "#error" ).empty();
         }
         function updateStatus() {
-            $.getJSON("/{{ test_instance.pk }}/status", function(data) {
-                if(data.status=='4') 
-                {
-                    window.location.replace("/{{ test_instance.pk }}/tally");
+            $.getJSON("/{{ test_instance.pk }}/status/", function(data) {
+                if(data.status=="4") {
+                    window.location = "/{{ test_instance.pk }}/tally";
                 }
                 else {
                     $( "#header" ).empty().append(data.header);
@@ -19,11 +18,9 @@
                 }
             });
         }
-        $("#status").bind("pageinit",updateStatus());
-        $("#status").bind("pageinit",function(){
-            var refreshId = setInterval("updateStatus()", 1000);
-        });
-        $("#status").bind("pageinit",setTimeout("clearError()",3000));
+        $("#status").on("pageinit",updateStatus());
+        $("#status").on("pageinit",setInterval("updateStatus()", 1000));
+        $("#status").on("pageinit",setTimeout("clearError()",3000));
     </script>
 {% endblock head %}
 

@@ -6,7 +6,7 @@
 {% endblock header %}
 
 {% block content %}
-    <form action="" method="post" data-ajax="false">
+    <form action="" method="post" data-ajax="false"> 
         {% csrf_token %}
         {{ form.non_field_errors }}
         <div data-role="fieldcontain">

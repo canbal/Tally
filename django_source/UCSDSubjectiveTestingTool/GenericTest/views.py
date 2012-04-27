@@ -8,7 +8,6 @@ from GenericTest.forms import *
 from registration.models import UserProfile
 import json
 
-
 def group_required(*group_names):
     """Requires user membership in at least one of the groups passed in."""
     def in_groups(u):
@@ -138,20 +137,19 @@ def status(request, test_instance_id):
                 '1': 'Choice is submitted. Waiting for other participants or video to finish...',
                 '2': 'Choices of all participants are recorded. Test will proceed shortly...',
                 '3': 'Thank you for your participation!',
-                '4': 'Please select a choice.'}
+                '4': 'Get ready to vote.',
+                '5': 'Server error'}
     max_counter = ti.testcaseinstance_set.count();
-    status = 0 # 0: means test hasn't started yet
-    header = 'Welcome'
-    if ti.counter>0:
+    if ti.counter == 0:
+        status = 0 # 0: means test hasn't started yet
+        header = 'Welcome'
+    elif ti.counter > 0 and ti.counter <= max_counter:
         header = 'Test '+str(ti.counter)+'/'+str(max_counter)
         try:
             tci = ti.testcaseinstance_set.get(play_order=ti.counter)
         except(TestCaseInstance.DoesNotExist):
-            status = 3 # 3: means test has finished
-            header = 'Test Complete'
+            status = 5
         else:
-            status = 2 # 2: means all subjects have voted for current test case
-            
             # update status if current subject has not voted yet
             subject = UserProfile.objects.get(user=request.user)
             try:
@@ -159,12 +157,22 @@ def status(request, test_instance_id):
             except(Score.DoesNotExist):
                 status = 4
             else:
-                # update status if there exist any subjects who has not voted yet
-                try:
-                    for subject in ti.subject.all():
-                        sc = subject.score_set.get(test_case_instance=tci)
-                except(Score.DoesNotExist):
-                    status = 1
+                if tci.is_done:
+                    status = 2 # 2: means all subjects have voted for current test case
+                else:
+                    # update status if there exist any subjects who has not voted yet
+                    try:
+                        for subject in ti.subject.all():
+                            sc = subject.score_set.get(test_case_instance=tci)
+                    except(Score.DoesNotExist):
+                        status = 1
+                    else:
+                        status = 2 # 2: means all subjects have voted for current test case
+                        tci.is_done = True
+                        tci.save()
+    else:
+        status = 3 # 3: means test has finished
+        header = 'Test Complete'
     return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)], 'header':header}))
 
     
