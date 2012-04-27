@@ -12,7 +12,7 @@
 
 {% block content %}
 
-    <form action="{% url 'registration.views.custom_login' %}" method="post">
+    <form action="{% url 'registration.views.custom_login' %}" method="post" data-ajax="false">
         {% csrf_token %}
         <div data-role="fieldcontain">
             {{ form.username.label_tag }} {{ form.username }}
