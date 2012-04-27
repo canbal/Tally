@@ -25,12 +25,16 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+signals:
+    void resetFinished();
+
 private slots:
     void onVideoFinished();
     void on_startTest_clicked();
     void getMediaHTTP();
     void on_webAddress_returnPressed();
-    void readHTTPResponseSlot();
+    void readHTTPResponseSignal();
+    void on_changeScreen_clicked();
 
 private:
     Ui::MainWindow *ui;

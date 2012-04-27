@@ -19,13 +19,9 @@ MainWindow::MainWindow(QWidget *parent) :
     m_media = new Phonon::MediaObject();
     m_vidWidget = new Phonon::VideoWidget();
     Phonon::createPath(m_media, m_vidWidget);
-    QDesktopWidget *desktop = QApplication::desktop();
-    if (desktop->screenCount() > 1) {
-        QRect geom = desktop->screenGeometry(0);
-        m_vidWidget->move(geom.topLeft());
-    }
+    m_vidWidget->setFullScreen(true);
     m_vidWidget->show();
-    m_vidWidget->setFullScreen(true);       // look at QDesktopWidget for how to control which screen this appears on
+    on_changeScreen_clicked();
     connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
     m_manager = new QNetworkAccessManager(this);
     m_rootURL = "";
@@ -44,10 +40,11 @@ MainWindow::~MainWindow()
 void MainWindow::on_startTest_clicked()
 {
     ui->startTest->setEnabled(false);
+    ui->changeScreen->setEnabled(false);
     QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(readHTTPResponseSlot()));
-    onVideoFinished();
+    connect(reply, SIGNAL(finished()), this, SLOT(readHTTPResponseSignal()));
+    connect(this, SIGNAL(resetFinished()), this, SLOT(onVideoFinished()));
 }
 
 
@@ -120,9 +117,10 @@ void MainWindow::getMediaHTTP()
 }
 
 
-void MainWindow::readHTTPResponseSlot()
+void MainWindow::readHTTPResponseSignal()
 {
     QString command = readHTTPResponse();
+    emit resetFinished();
 }
 
 
@@ -138,4 +136,18 @@ QString MainWindow::readHTTPResponse()
     }
     reply->deleteLater();
     return(command);
+}
+
+
+void MainWindow::on_changeScreen_clicked()
+{
+    QDesktopWidget *desktop = QApplication::desktop();
+    int nScreens = desktop->screenCount();
+    if (nScreens > 0) {
+        int screen = (desktop->screenNumber(m_vidWidget->pos()) + 1) % nScreens;
+        QRect geom = desktop->screenGeometry(screen);
+        m_vidWidget->move(geom.topLeft());
+        m_vidWidget->showFullScreen();
+        ui->changeScreen->setText(QString("Screen %1").arg(screen));
+    }
 }

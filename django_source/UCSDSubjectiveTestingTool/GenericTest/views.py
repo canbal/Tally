@@ -8,6 +8,7 @@ from GenericTest.forms import *
 from registration.models import UserProfile
 import json
 
+
 def group_required(*group_names):
     """Requires user membership in at least one of the groups passed in."""
     def in_groups(u):
@@ -17,6 +18,7 @@ def group_required(*group_names):
         return False
     return user_passes_test(in_groups)
 
+    
 @login_required
 def index(request):
     try:
@@ -28,6 +30,7 @@ def index(request):
         latest_test_instances = TestInstance.objects.filter(subject=subject).order_by('-create_time')
         return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
 
+        
 @login_required
 @group_required('Subjects')
 def enroll(request):
@@ -35,6 +38,7 @@ def enroll(request):
     latest_test_instances = TestInstance.objects.exclude(subject=subject).order_by('-create_time')
     return render_to_response('GenericTest/enroll.html', {'latest_test_instances': latest_test_instances})
 
+    
 @csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
 def get_media(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
@@ -125,6 +129,7 @@ def tally(request,test_instance_id):
                                   {'test_instance': ti,
                                    'error_message': 'You already selected a choice for this test!'})
 
+
 @login_required
 @group_required('Subjects')
 def status(request, test_instance_id):
@@ -162,6 +167,7 @@ def status(request, test_instance_id):
                     status = 1
     return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)], 'header':header}))
 
+    
 @login_required
 @group_required('Subjects')
 def enroll_to_test_instance(request, test_instance_id):
@@ -173,8 +179,8 @@ def enroll_to_test_instance(request, test_instance_id):
         pass
     else:
         ti.subject.add(subject)
-
     return HttpResponseRedirect('/')
+    
     
 @login_required
 @permission_required('GenericTest.add_testcaseitem')
@@ -190,13 +196,9 @@ def add_test_case_item(request, test_instance_id):
     else:
         form = TestCaseItemForm()
         form.fields['video'].queryset = Video.objects.filter(test=t)
-        
     return render_to_response('GenericTest/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
                               context_instance=RequestContext(request))
-                              
-                              
-                              
-                              
+                                                        
                               
 def reset_test_instance(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
