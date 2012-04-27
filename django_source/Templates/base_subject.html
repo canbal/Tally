@@ -13,7 +13,7 @@
 
 <body> 
 
-<div data-role="page">
+<div {% block page_id %}{% endblock page_id %} data-role="page">
 
 	<div data-role="header">
         <h1>{% block header %}Default header{% endblock header %}</h1>
