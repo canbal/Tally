@@ -32,8 +32,7 @@ def display_test(request, test_id):
 def display_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     tif = DisplayTestInstanceForm(instance=ti)
-    return render_to_response('manager/display_test_instance.html',  { 'tif': tif, 'create_time': ti.create_time, 'test_id': test_id, 'test_instance_id': test_instance_id },
-                              context_instance=RequestContext(request))
+    return render_to_response('manager/display_test_instance.html',  { 'tif': tif, 'create_time_name': ti._meta.get_field('create_time').verbose_name, 'create_time': ti.create_time, 'test_id': test_id, 'test_instance_id': test_instance_id }, context_instance=RequestContext(request))
 
 
 @login_required
@@ -49,10 +48,10 @@ def create_test_instance(request, test_id):
             else:
                 t = get_object_or_404(Test, pk=test_id)
                 # create new instance
-                new_ti = tif.save(commit=False)
+                new_ti = tif.save(commit=False)     # create new test instance from form, but don't save it yet
                 new_ti.test = t         # add in exluded fields
                 new_ti.owner = owner    # when an admin is logged in, they are not recognized as a user!!!!!!
-                new_ti.run_time = new_ti.schedule_time
+                new_ti.path = new_ti.path.replace("\\","/").rstrip("/")     # make sure path has only forward slashes and no trailing slashes
                 new_ti.save()           # save the new instance
                 tif.save_m2m()          # save the many-to-many data for the form
                 # create new test case instances

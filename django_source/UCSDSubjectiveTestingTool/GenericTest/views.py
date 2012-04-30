@@ -72,6 +72,7 @@ def get_media(request, test_instance_id):
                     return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList, 'testDone':False}))
         # if this is the first request of the test instance, return the first video and increment the counter
         elif ti.counter==0:
+            ti.run_time = datetime.datetime.now()       # set the run_time of the test instance to now
             ti.counter += 1
             ti.save()
             vidList = []

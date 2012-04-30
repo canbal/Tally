@@ -7,7 +7,7 @@
 
 {% block content %}
     <div data-role="fieldcontain">
-        <p><label for="id_create_time">Create time: </label> {{ create_time }}</p>
+        <p><label for="id_create_time">{{ create_time_name }}: </label> {{ create_time }}</p>
         {% for field in tif %}
             <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field.value }}</p>
         {% endfor %}
