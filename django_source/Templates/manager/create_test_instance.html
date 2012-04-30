@@ -6,6 +6,22 @@
 {% endblock header %}
 
 {% block content %}
-<p> test page </p>
+    <form action="" method="post">
+        {% csrf_token %}
+        
+        <span style="color:red;font-weight:bold;font-size:1.1em">
+        {{ tif.non_field_errors }}
+        {% for field in tif %}
+            {% if field.errors %}{{ field.label }}:{{ field.errors }}{% endif %}
+        {% endfor %}
+        </span>
+        
+        <div data-role="fieldcontain">
+            {% for field in tif %}
+                <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}</p>
+            {% endfor %}
+        </div>
+        <input type="submit" value="Add" />
+    </form>
 {% endblock content %}
 

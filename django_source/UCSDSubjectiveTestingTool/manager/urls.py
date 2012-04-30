@@ -33,13 +33,8 @@ urlpatterns = patterns('manager.views',
 
     ### Create TestInstance and run
     url(r'^(?P<test_id>\d+)/instance/$', 'create_test_instance'),
-        # Function:   Allows a user to create a TestInstance of <test_id>
+        # Function:   Allows a user to create a TestInstance of <test_id>.  Saves a TestInstance to the database, along with associated TestCaseInstances.  Redirects to /<test_id>/<test_instance_id>/, maybe display a note that this TestInstance was just successfully created.
         # Links From: /<test_id>/
-        # Links To:   homepage, /<test_id>/instance/save/
-
-    url(r'^(?P<test_id>\d+)/instance/save/$', 'save_test_instance'),
-        # Function:   Saves a TestInstance to the database.  Redirects to /<test_id>/<test_instance_id>/, maybe display a note that this TestInstance was just successfully created.
-        # Links From: /<test_id>/instance/
         # Links To:   same as /<test_id>/<test_instance_id>/
         
     url(r'^(?P<test_id>\d+)/(?P<test_instance_id>\d+)/start/$', 'start_test'),

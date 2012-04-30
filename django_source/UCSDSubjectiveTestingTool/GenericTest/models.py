@@ -41,13 +41,12 @@ class Video(models.Model):
     test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)
     description = models.CharField(max_length=400)
-    
+
+    class Meta:
+        unique_together = ('test','filename')
     def __unicode__(self):
         return self.filename
     
-    class Meta:
-        unique_together = ('test','filename')
-
 
 class TestCase(models.Model):
     test  = models.ForeignKey(Test)
