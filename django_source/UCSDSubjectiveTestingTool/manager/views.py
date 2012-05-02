@@ -5,7 +5,7 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from GenericTest.models import *
 from forms import CreateTestInstanceForm, DisplayTestInstanceForm
-import json, random
+import json, random, csv
 
 
 @login_required
@@ -32,7 +32,12 @@ def display_test(request, test_id):
 def display_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     tif = DisplayTestInstanceForm(instance=ti)
-    return render_to_response('manager/display_test_instance.html',  { 'tif': tif, 'create_time_name': ti._meta.get_field('create_time').verbose_name, 'create_time': ti.create_time, 'test_id': test_id, 'test_instance_id': test_instance_id }, context_instance=RequestContext(request))
+    return render_to_response('manager/display_test_instance.html',  { 'tif': tif,
+                                                                       'create_time_name': ti._meta.get_field('create_time').verbose_name, 'create_time': ti.create_time,
+                                                                       'test_id': test_id,
+                                                                       'test_instance_id': test_instance_id,
+                                                                       'already_run': ti.run_time is not None },
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -75,3 +80,28 @@ def create_test_instance(request, test_id):
 @login_required
 def start_test(request, test_id, test_instance_id):
     return render_to_response('manager/start_test.html',context_instance=RequestContext(request))
+
+    
+@login_required
+def export_data(request):
+    if request.method == 'POST':
+        try:
+            test_id = request.POST['test_id']
+            test_instance_id = request.POST['test_instance_id']
+        except KeyError:
+            pass
+        else:
+            return render_to_response('manager/export_data.html', {'test_id': test_id, 'test_instance_id': test_instance_id }, context_instance=RequestContext(request))
+    return render_to_response('manager/export_data.html',context_instance=RequestContext(request))
+    
+    
+@login_required
+def save_data(request):
+    if request.method == 'POST':
+        response = HttpResponse(mimetype='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=test_data.csv'
+        writer = csv.writer(response)
+        writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
+        writer.writerow(['Second row', 'A', 'B', 'C', '"Testing"', "Here's a quote"])
+        return response
+    return HttpResponseRedirect(reverse('manager.views.export_data'))

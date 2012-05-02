@@ -41,4 +41,16 @@ urlpatterns = patterns('manager.views',
         # Function:   This page prompts the user to press the start button on the Qt app, which can extract the data it needs from the URL
         # Links From: /<test_id>/<test_instance_id>/,
         # Links To:   homepage, some sort of test instance status page
+        
+        
+    ### Export data
+    url(r'^export/$', 'export_data'),
+        # Function:   This page allows the user to select options for exporting data: test, test instance, and format.  When accessed from a test or test instance page, those options should be pre-populated.  Data formats should include CSV, Excel, some kind of file or module to read the data into Python, and a *.m file to read the data into Matlab.  A test report showing all options, parameters, videos, test cases, and randomization should be automatically generated as well.
+        # Links From: homepage, /<test_id>/, /<test_id>/<test_instance_id>/,
+        # Links To:   homepage, /<test_id>/ pages, /<test_id>/<test_instance_id>/ pages
+
+    url(r'^export/save/$', 'save_data'),
+        # Function:   This page exports the data based on the test method.  There is no template, it simply returns the data files.
+        # Links From: /export/
+        # Links To:   homepage
 )

@@ -13,5 +13,14 @@
         {% endfor %}
     </div>
     <a href="{% url manager.views.display_test test_id=test_id %}">Parent Test</a>
-    <a href="{% url manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
+    {% if already_run %}
+        <form id="form" action="{% url manager.views.export_data %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="test_id" value="{{ test_id }}" />
+            <input type="hidden" name="test_instance_id" value=" {{ test_instance_id }}" />
+            <input type="submit" name="export_data" value="Export Data" />
+        </form>
+    {% else %}
+        <a href="{% url manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
+    {% endif %}
 {% endblock content %}

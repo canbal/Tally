@@ -1,0 +1,23 @@
+
+{% extends "manager/base_manager.html" %}
+
+{% block header %}
+    Export data page
+{% endblock header %}
+
+{% block content %}
+    <p> Choose Test: (dropdown)</p>
+    <p> Choose Test Instance: (dropdown, with choice of 'all')</p>
+    <p> Choose data format: (checkbox)</p>
+    {% if test_id %}
+        <p> Selected Test: {{ test_id }} </p>
+    {% endif %}
+    {% if test_instance_id %}
+        <p> Selected Test Instance: {{ test_instance_id }} </p>
+    {% endif %}    
+    <form id="form" action="{% url manager.views.save_data %}" method="post">
+        {% csrf_token %}
+        <input type="submit" name="save" value="Export" />
+    </form>
+{% endblock content %}
+
