@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QDesktopWidget>
 #include <time.h>
+#include <sstream>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -43,8 +44,8 @@ void MainWindow::on_startTest_clicked()
     ui->changeScreen->setEnabled(false);
     QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(readHTTPResponseSignal()));
-    connect(this, SIGNAL(resetFinished()), this, SLOT(onVideoFinished()));
+    connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
+    connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));
 }
 
 
@@ -117,10 +118,40 @@ void MainWindow::getMediaHTTP()
 }
 
 
-void MainWindow::readHTTPResponseSignal()
+void MainWindow::initTest()
 {
+    // read command from server
     QString command = readHTTPResponse();
-    emit resetFinished();
+
+    // interpret command
+    std::stringstream err;
+    bool success = true;
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(command.toStdString().c_str(),root)) {
+        err << reader.getFormatedErrorMessages() << std::endl;
+        success = false;
+    } else {
+        std::string path = std::string(root["path"].asCString());
+        Json::Value videoList = root["videoList"];
+        QString fullVid;
+        for (int ii=0; ii < videoList.size(); ii++) {
+            fullVid = QString("%1/%2").arg(path.c_str()).arg(videoList[ii].asCString());
+            if (!QFile(fullVid).exists()) {
+                err << "Missing file: " << fullVid.toStdString() << std::endl;
+                success = false;
+            }
+        }
+    }
+    if (success) {
+        emit initComplete();
+    } else {
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setText("Error with test instance");
+        msgBox.setDetailedText(QString(err.str().c_str()));
+        msgBox.exec();
+    }
 }
 
 

@@ -211,6 +211,7 @@ def add_test_case_item(request, test_instance_id):
                               
 def reset_test_instance(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    # reset test instance
     ti.counter = 0
     ti.save()
     tci = TestCaseInstance.objects.filter(test_instance=ti)
@@ -220,4 +221,10 @@ def reset_test_instance(request, test_instance_id):
         scores = Score.objects.filter(test_case_instance=t)
         for s in scores:
             s.delete()
-    return HttpResponse("Test Instance " + test_instance_id + " has been reset.")
+    #return HttpResponse("Test Instance " + test_instance_id + " has been reset.")
+    # send list of all videos so desktop app can verify that they exist
+    vid = Video.objects.filter(test=ti.test)
+    vidList = []
+    for v in vid:
+        vidList.append(v.filename)
+    return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList}))

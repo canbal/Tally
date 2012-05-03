@@ -2,13 +2,13 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QNetworkAccessManager>
+#include <QWebView>
 #include <Phonon/VideoWidget>
 #include <Phonon/VideoPlayer>
 #include <Phonon/MediaObject>
 #include <Phonon/MediaSource>
 #include <json/json.h>
-#include <QNetworkAccessManager>
-#include <QWebView>
 
 
 namespace Ui {
@@ -26,14 +26,14 @@ public:
     ~MainWindow();
 
 signals:
-    void resetFinished();
+    void initComplete();
 
 private slots:
     void onVideoFinished();
     void on_startTest_clicked();
     void getMediaHTTP();
     void on_webAddress_returnPressed();
-    void readHTTPResponseSignal();
+    void initTest();
     void on_changeScreen_clicked();
 
 private:
