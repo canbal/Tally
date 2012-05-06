@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from forms import RegistrationForm, UserProfileForm
 
+
 def register(request):
     if request.method == 'POST':
         rform = RegistrationForm(request.POST)
@@ -40,6 +41,7 @@ def render_profile(request):
     #    return HttpResponse('You are a normal user!')
     #else:
     #    return HttpResponse('You are a super user! You are awesome!')
+    
 
 def custom_login(request, *args, **kwargs):
     if request.user.is_authenticated():

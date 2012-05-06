@@ -61,7 +61,7 @@ except UserProfile.DoesNotExist:
 try:
     test = Test.objects.get(title='Example Test',description='An example test with single video test cases')
 except Test.DoesNotExist:
-    test = Test(title='Example Test',description='An example test with single video test cases',method='CU')
+    test = Test(title='Example Test',description='An example test with single video test cases',method='CU',owner=tester_profile)
     test.save()
     
     

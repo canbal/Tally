@@ -1,14 +1,13 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QFileDialog>
-#include <QUrl>
-#include <QDir>
-#include <QNetworkRequest>
+#include <QFile>
 #include <QNetworkReply>
 #include <QMessageBox>
 #include <QDesktopWidget>
 #include <time.h>
 #include <sstream>
+#include <json/json.h>
+#include <QNetworkCookie>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -25,8 +24,11 @@ MainWindow::MainWindow(QWidget *parent) :
     on_changeScreen_clicked();
     connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
     m_manager = new QNetworkAccessManager(this);
+    m_manager->setCookieJar(new QNetworkCookieJar);
     m_rootURL = "";
     m_testInstanceID = 0;
+
+    //connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)), this, SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
 }
 
 
@@ -38,14 +40,39 @@ MainWindow::~MainWindow()
 }
 
 
+void MainWindow::authenticate(QNetworkReply* reply, QAuthenticator* auth)
+{
+    QMessageBox::information(this, tr("SSTT"), QString("command"));
+}
+
 void MainWindow::on_startTest_clicked()
 {
     ui->startTest->setEnabled(false);
     ui->changeScreen->setEnabled(false);
+
+   // tried to POST to /login/ but get "connection closed" error- this is due to webpage being forbidden (HTTP 403).
+   // likely due to CSRF not being handled.  some web searching reveals that @csrf_exempt decorator may
+   // not actually remove CSRF handling.  when i tried this (@csrf_exempt), it still didn't work
+
+    QNetworkRequest requestGET(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
+    QNetworkReply *replyGET = m_manager->get(requestGET);
+    connect(replyGET, SIGNAL(finished()), this, SLOT(initTest()));
+
+    /*QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
+    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
+    QUrl params;
+    params.addQueryItem("username","tester");
+    params.addQueryItem("password","1234");
+    params.addQueryItem("csrfmiddlewaretoken","2c9e7ed2454217f81016111fe42857b2");
+    //params.addQueryItem("next","");
+    const QByteArray data = params.encodedQuery();
+    QNetworkReply *reply = m_manager->post(request,data);
+    connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
+/*
     QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
     connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
-    connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));
+    connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));*/
 }
 
 
@@ -122,7 +149,7 @@ void MainWindow::initTest()
 {
     // read command from server
     QString command = readHTTPResponse();
-
+/*
     // interpret command
     std::stringstream err;
     bool success = true;
@@ -151,7 +178,7 @@ void MainWindow::initTest()
         msgBox.setText("Error with test instance");
         msgBox.setDetailedText(QString(err.str().c_str()));
         msgBox.exec();
-    }
+    }*/
 }
 
 
@@ -165,6 +192,24 @@ QString MainWindow::readHTTPResponse()
     } else {
         QMessageBox::information(this, tr("SSTT"), reply->errorString());
     }
+
+
+    QVariant cookieVar = reply->header(QNetworkRequest::SetCookieHeader);
+    //if (cookieVar.isValid()) {
+        QList<QNetworkCookie> cookies = cookieVar.value<QList<QNetworkCookie> >();
+        std::stringstream cnames;
+        for (int ii = 0; ii < cookies.size(); ii++) {
+            QNetworkCookie cookie = cookies.at(ii);
+            cnames << std::string(cookie.name().data()) << std::endl;
+            //if (cookie.name()=="csrfmiddlewaretoken") {
+                //QMessageBox::information(this, tr("SSTT"), cookie.value());
+            //}
+            // do whatever you want here
+        }
+        QMessageBox::information(this, tr("SSTT"), QString("%1").arg(cookies.size()).toStdString().c_str());//cnames.str().c_str());
+    //}
+
+
     reply->deleteLater();
     return(command);
 }

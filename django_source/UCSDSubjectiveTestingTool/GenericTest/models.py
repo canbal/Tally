@@ -9,10 +9,12 @@ METHOD_CHOICES = (
 )
 
 class Test(models.Model):
-    title       = models.CharField(max_length=200)
-    description = models.CharField(max_length=400)
-    method      = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
-    create_time = models.DateTimeField('Date created', auto_now_add=True)
+    owner        = models.ForeignKey(UserProfile, related_name='test_owner')
+    collaborator = models.ManyToManyField(UserProfile, null=True)
+    title        = models.CharField(max_length=200)
+    description  = models.CharField(max_length=400)
+    method       = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
+    create_time  = models.DateTimeField('Date created', auto_now_add=True)
     
     def __unicode__(self):
         return self.title
@@ -24,6 +26,7 @@ class Test(models.Model):
 class TestInstance(models.Model):
     test          = models.ForeignKey(Test)
     owner         = models.ForeignKey(UserProfile, related_name='testinstance_owner')
+    collaborator  = models.ManyToManyField(UserProfile, null=True)
     subject       = models.ManyToManyField(UserProfile, related_name='testinstance_subjects', null=True)
     create_time   = models.DateTimeField('Date created', auto_now_add=True)
     schedule_time = models.DateTimeField('Date scheduled', null=True)

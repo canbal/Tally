@@ -3,12 +3,8 @@
 
 #include <QMainWindow>
 #include <QNetworkAccessManager>
-#include <QWebView>
 #include <Phonon/VideoWidget>
-#include <Phonon/VideoPlayer>
 #include <Phonon/MediaObject>
-#include <Phonon/MediaSource>
-#include <json/json.h>
 
 
 namespace Ui {
@@ -35,6 +31,7 @@ private slots:
     void on_webAddress_returnPressed();
     void initTest();
     void on_changeScreen_clicked();
+    void authenticate(QNetworkReply* reply, QAuthenticator* auth);
 
 private:
     Ui::MainWindow *ui;

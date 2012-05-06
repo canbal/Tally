@@ -1,4 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
@@ -38,7 +39,7 @@ def enroll(request):
     return render_to_response('GenericTest/enroll.html', {'latest_test_instances': latest_test_instances})
 
     
-@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
+#@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
 def get_media(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     maxCount = ti.testcaseinstance_set.count()
@@ -208,23 +209,47 @@ def add_test_case_item(request, test_instance_id):
     return render_to_response('GenericTest/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
                               context_instance=RequestContext(request))
                                                         
-                              
+
 def reset_test_instance(request, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    # reset test instance
-    ti.counter = 0
-    ti.save()
-    tci = TestCaseInstance.objects.filter(test_instance=ti)
-    for t in tci:
-        t.is_done = False
-        t.save()
-        scores = Score.objects.filter(test_case_instance=t)
-        for s in scores:
-            s.delete()
-    #return HttpResponse("Test Instance " + test_instance_id + " has been reset.")
-    # send list of all videos so desktop app can verify that they exist
-    vid = Video.objects.filter(test=ti.test)
-    vidList = []
-    for v in vid:
-        vidList.append(v.filename)
-    return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList}))
+
+    # check if request.user is in the tester_desktop group
+    if request.method=='POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+                return HttpResponse(request.user.first_name)
+                # Redirect to a success page.
+            else:
+                return HttpResponse('disabled account')
+                # Return a 'disabled account' error message
+        else:
+            return HttpResponse('invalid login')
+            # Return an 'invalid login' error message.
+    return HttpResponse(request.COOKIES)
+
+
+    # if request.user.groups.filter(name='Testers'):
+        # ti = get_object_or_404(TestInstance, pk=test_instance_id)
+        # # reset test instance
+        # ti.counter = 0
+        # ti.save()
+        # tci = TestCaseInstance.objects.filter(test_instance=ti)
+        # for t in tci:
+            # t.is_done = False
+            # t.save()
+            # scores = Score.objects.filter(test_case_instance=t)
+            # for s in scores:
+                # s.delete()
+        # # return HttpResponse("Test Instance " + test_instance_id + " has been reset.")
+        # # send list of all videos so desktop app can verify that they exist
+        # vid = Video.objects.filter(test=ti.test)
+        # vidList = []
+        # for v in vid:
+            # vidList.append(v.filename)
+        # return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList}))
+    # else:
+        # # return HTTP 401
+        # return HttpResponse(json.dumps({'path':'nope'}))

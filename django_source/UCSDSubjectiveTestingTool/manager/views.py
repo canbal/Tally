@@ -61,7 +61,7 @@ def create_test_instance(request, test_id):
                 tif.save_m2m()          # save the many-to-many data for the form
                 # create new test case instances
                 tc_all = t.testcase_set.all()
-                repeat = tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
+                repeat = [1, 2, 3, 5]#tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
                 rand_order = range(1,sum(repeat)+1)    # play order starts from 1
                 random.shuffle(rand_order)
                 idx = 0
