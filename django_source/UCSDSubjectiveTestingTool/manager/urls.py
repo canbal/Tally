@@ -53,4 +53,10 @@ urlpatterns = patterns('manager.views',
         # Function:   This page exports the data based on the test method.  There is no template, it simply returns the data files.
         # Links From: /export/
         # Links To:   homepage
+
+    
+    url(r'^share/$', 'share_test'),
+        # Function:   This page allows the user to share tests and/or test instances that they own with other testers.  When accessed from a test or test instance page, those options should be pre-populated.
+        # Links From: homepage, /<test_id>/, /<test_id>/<test_instance_id>/,
+        # Links To:   homepage, /<test_id>/ pages, /<test_id>/<test_instance_id>/ pages
 )

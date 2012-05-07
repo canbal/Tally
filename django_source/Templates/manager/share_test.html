@@ -2,21 +2,29 @@
 {% extends "manager/base_manager.html" %}
 
 {% block header %}
-    Export data page
+    Share test page
 {% endblock header %}
 
 {% block content %}
-    <p> Choose Test: (dropdown)</p>
-    {% for t in t_valid %}
+    <p> Choose Test: </p>
+    {% for t in t_own %}
         {{ t }}
     {% endfor %}
-    
-    <p> Choose Test Instance: (dropdown, with choice of 'all')</p>
-    {% for ti in ti_valid %}
-        {{ ti }}
+    <br/>
+    {% for t_ti in t_own_ti %}
+        {{ t_ti }}
     {% endfor %}
     
-    <p> Choose data format: (checkbox)</p>
+    <p> Choose Test Instance: </p>
+    {% for ti in ti_own %}
+        {{ ti }}
+    {% endfor %}
+    <br/>
+    {% for ti_t in ti_own_t %}
+        {{ ti_t }}
+    {% endfor %}
+    
+    <p> Share with: (checkbox)</p>
     
     {% if test_id %}
         <p> Selected Test: {{ test_id }} </p>
@@ -25,9 +33,9 @@
         <p> Selected Test Instance: {{ test_instance_id }} </p>
     {% endif %}    
     
-    <form id="form" action="{% url manager.views.save_data %}" method="post">
+    <form id="form" action="{% url manager.views.share_test %}" method="post">
         {% csrf_token %}
-        <input type="submit" name="save" value="Export" />
+        <input type="submit" name="share" value="Share" />
     </form>
 {% endblock content %}
 
