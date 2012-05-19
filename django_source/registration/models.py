@@ -7,7 +7,7 @@ GENDER_CHOICES = (
 )
 
 class UserProfile(models.Model):
-    age        = models.PositiveIntegerField()
+    birth_date = models.DateField()
     sex        = models.CharField(max_length=1, choices = GENDER_CHOICES)
     user       = models.OneToOneField(User)
         

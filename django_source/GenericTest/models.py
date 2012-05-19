@@ -9,12 +9,12 @@ METHOD_CHOICES = (
 )
 
 class Test(models.Model):
-    owner        = models.ForeignKey(UserProfile, related_name='test_owner')
-    collaborator = models.ManyToManyField(UserProfile, related_name='test_collaborator', null=True, blank=True)
-    title        = models.CharField(max_length=200, unique=True)
-    description  = models.CharField(max_length=400)
-    method       = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
-    create_time  = models.DateTimeField('Date created', auto_now_add=True)
+    owner         = models.ForeignKey(UserProfile, related_name='owner_tests')
+    collaborators = models.ManyToManyField(UserProfile, related_name='collaborators_tests', null=True, blank=True)
+    title         = models.CharField(max_length=200, unique=True)
+    description   = models.CharField(max_length=400)
+    method        = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
+    create_time   = models.DateTimeField('Date created', auto_now_add=True)
     
     def __unicode__(self):
         return self.title
@@ -24,17 +24,17 @@ class Test(models.Model):
     
     
 class TestInstance(models.Model):
-    test          = models.ForeignKey(Test)
-    owner         = models.ForeignKey(UserProfile, related_name='testinstance_owner')
-    collaborator  = models.ManyToManyField(UserProfile, related_name='testinstance_collaborator', null=True, blank=True)
-    subject       = models.ManyToManyField(UserProfile, related_name='testinstance_subjects', null=True)
-    create_time   = models.DateTimeField('Date created', auto_now_add=True)
-    schedule_time = models.DateTimeField('Date scheduled', null=True)
-    run_time      = models.DateTimeField('Date run', null=True)
-    path          = models.CharField(max_length=200)
-    description   = models.CharField(max_length=400)
-    location      = models.CharField(max_length=200)
-    counter       = models.IntegerField(default=0)
+    test           = models.ForeignKey(Test)
+    owner          = models.ForeignKey(UserProfile, related_name='owner_testinstances')
+    collaborators  = models.ManyToManyField(UserProfile, related_name='collaborators_testinstances', null=True, blank=True)
+    subjects       = models.ManyToManyField(UserProfile, related_name='subjects_testinstances', null=True)
+    create_time    = models.DateTimeField('Date created', auto_now_add=True)
+    schedule_time  = models.DateTimeField('Date scheduled', null=True)
+    run_time       = models.DateTimeField('Date run', null=True)
+    path           = models.CharField(max_length=200)
+    description    = models.CharField(max_length=400)
+    location       = models.CharField(max_length=200)
+    counter        = models.IntegerField(default=0)
     
     def __unicode__(self):
         return str(self.id) + ' : ' + self.owner.user.username + ' : ' + self.test.title
@@ -43,7 +43,7 @@ class TestInstance(models.Model):
 class Video(models.Model):
     test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)
-    description = models.CharField(max_length=400)
+    description = models.CharField(max_length=400, null=True, blank=True)
 
     class Meta:
         unique_together = ('test','filename')
@@ -52,8 +52,8 @@ class Video(models.Model):
     
 
 class TestCase(models.Model):
-    test  = models.ForeignKey(Test)
-    video = models.ManyToManyField(Video, through='TestCaseItem')
+    test   = models.ForeignKey(Test)
+    videos = models.ManyToManyField(Video, through='TestCaseItem')
     
     def __unicode__(self):
         return '%s : %d' % (str(self.test.title), self.pk)

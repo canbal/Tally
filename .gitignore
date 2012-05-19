@@ -7,5 +7,6 @@
 st2-build*
 qt_build_win7-64/
 qt_source_old/
+qt_source/st2.pro.user
 
 *.db

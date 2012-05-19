@@ -32,7 +32,7 @@ except User.DoesNotExist:
 try:
     tester_profile = UserProfile.objects.get(user=tester)
 except UserProfile.DoesNotExist:
-    tester_profile = UserProfile(age=0,sex='F',user=tester)
+    tester_profile = UserProfile(birth_date='2000-01-01',sex='F',user=tester)
     tester_profile.save()
     
 
@@ -55,7 +55,7 @@ except User.DoesNotExist:
 try:
     subject_profile = UserProfile.objects.get(user=subject)
 except UserProfile.DoesNotExist:
-    subject_profile = UserProfile(age=0,sex='M',user=subject)
+    subject_profile = UserProfile(birth_date='2000-01-01',sex='M',user=subject)
     subject_profile.save()
 
 try:
@@ -66,7 +66,7 @@ except Test.DoesNotExist:
     
     
 videoList = ['skydiving_largeBlur_blurOne_30.mp4', 'skydiving_largeBlur_inPhase_30.mp4', 'skydiving_largeBlur_outOfPhase_60.mp4', 'skydiving_smallBlur_blurOne_60.mp4']
-videoPath = 'd:/binocsupp/skydiving'
+videoPath = '/Users/canbal/Desktop/test'
 for filename in videoList:
     try:
         video = Video.objects.get(test=test,filename=filename)
@@ -86,7 +86,7 @@ test_instance = test.testinstance_set.create(owner=tester_profile,
                                              path=videoPath,
                                              description='An instance of the example test',
                                              location='UCSD Video Processing Lab')
-test_instance.subject.add(subject_profile)
+test_instance.subjects.add(subject_profile)
 test_instance.save()
 
 play_order = 1

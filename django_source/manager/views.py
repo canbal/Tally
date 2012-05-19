@@ -5,8 +5,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from GenericTest.models import *
-from forms import CreateTestInstanceForm, DisplayTestInstanceForm
-import random, csv
+from forms import CreateTestForm, DisplayTestForm, CreateTestInstanceForm, DisplayTestInstanceForm
+import random, csv, json
 
 
 def group_required(*group_names):
@@ -18,11 +18,45 @@ def group_required(*group_names):
         return False
     return user_passes_test(in_groups)
 
+    
+def is_video(file_type):
+    if file_type.split('/')[0] == 'video':
+        return True
+    else:
+        return False
+    
 
 @login_required
 @group_required('Testers')
 def create_test(request):
-    return render_to_response('manager/create_test.html',context_instance=RequestContext(request))
+    try:
+        up = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return HttpResponse('You do not have permission to add tests!')
+    else:
+        if request.method == 'POST':
+            tf = CreateTestForm(request.POST)
+            tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
+            if tf.is_valid():
+                # create new test
+                new_t = tf.save(commit=False)     # create new test instance from form, but don't save it yet
+                new_t.owner = up                  # when an admin is logged in, they are not recognized as a user!!!!!!
+                new_t.save()                      # save to database
+                
+                files = json.loads(request.POST['files_json'])
+                for f in files:
+                    file_type = f['name']
+                    if is_video(file_type):
+                        new_f = Video(test=new_t, filename=f['value'])
+                        new_f.save()
+                    
+                # redirect to test display page
+                return HttpResponseRedirect(reverse('manager.views.display_test', args=(new_t.pk,)))
+        else:
+            tf = CreateTestForm()
+            tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
+            
+        return render_to_response('manager/create_test.html',{'tf':tf,},context_instance=RequestContext(request))
     
     
 @login_required
@@ -41,9 +75,9 @@ def save_test(request):
 @group_required('Testers')
 def list_tests(request):
     up = UserProfile.objects.get(user=request.user)
-    t_o = up.test_owner.values_list('pk',flat=True)
-    t_c = up.test_collaborator.values_list('pk',flat=True)
-    ti_c = up.testinstance_collaborator.values_list('test__pk',flat=True)
+    t_o = up.owner_tests.values_list('pk',flat=True)
+    t_c = up.collaborators_tests.values_list('pk',flat=True)
+    ti_c = up.collaborators_testinstances.values_list('test__pk',flat=True)
     test_list = list(set(list(t_o) + list(t_c) + list(ti_c)))
     tests = Test.objects.filter(pk__in=test_list)
     return render_to_response('manager/list_tests.html', { 'tests': tests }, context_instance=RequestContext(request))
@@ -52,7 +86,21 @@ def list_tests(request):
 @login_required
 @group_required('Testers')
 def display_test(request, test_id):
-    return render_to_response('manager/display_test.html',context_instance=RequestContext(request))
+    t = get_object_or_404(Test, pk=test_id)
+    up = UserProfile.objects.get(user=request.user)
+    if (up == t.owner) or (up in t.collaborators.all()):
+        tf = DisplayTestForm(instance=t)
+        return render_to_response('manager/display_test.html', {'title': t.title,
+                                                                'tf': tf,
+                                                                'create_time_name': t._meta.get_field('create_time').verbose_name,
+                                                                'create_time': t.create_time,
+                                                                'test_id': test_id,
+                                                                'videos': Video.objects.filter(test=t),
+                                                                'can_share': (up == t.owner) or (up == t.test.owner),
+                                                                'can_export': True},  # anyone who can view it can export
+                                                                context_instance=RequestContext(request))
+    else:
+        return HttpResponse('must be owner or collaborator of this test instance or associated test')
 
 
 @login_required
@@ -60,7 +108,7 @@ def display_test(request, test_id):
 def display_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
     up = UserProfile.objects.get(user=request.user)
-    if (up == ti.owner) or (up in ti.collaborator.all()) or (up == ti.test.owner) or (up in ti.test.collaborator.all()):
+    if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
         tif = DisplayTestInstanceForm(instance=ti)
         if request.method == 'GET':
             try:
@@ -89,12 +137,9 @@ def display_test_instance(request, test_id, test_instance_id):
 def create_test_instance(request, test_id):
     t = get_object_or_404(Test, pk=test_id)
     up = UserProfile.objects.get(user=request.user)
-    if (up == t.owner) or (up in t.collaborator.all()):
-        subject_group = Group.objects.get(name='Subjects').user_set.all()
-        up_subjects = UserProfile.objects.filter(user__in=subject_group)
+    if (up == t.owner) or (up in t.collaborators.all()):
         if request.method == 'POST':
             tif = CreateTestInstanceForm(request.POST)
-            tif.fields['subject'].queryset = up_subjects
             if tif.is_valid():
                 owner = UserProfile.objects.get(user=request.user)  # all testers have an associated user profile
                 # create new instance
@@ -119,7 +164,6 @@ def create_test_instance(request, test_id):
                 return HttpResponseRedirect(reverse('manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
         else:
             tif = CreateTestInstanceForm()
-            tif.fields['subject'].queryset = up_subjects
         return render_to_response('manager/create_test_instance.html', { 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
     return render_to_response('manager/create_test_instance.html', { 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
 
@@ -151,7 +195,7 @@ def export_data(request):
         tmp_list = []
         tmp_list_pk = []
         for ti in t_ran_ti:
-            if (up == ti.owner) or (up in ti.collaborator.all()) or (up == ti.test.owner) or (up in ti.test.collaborator.all()):
+            if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
                 tmp_list.append(ti)
                 tmp_list_pk.append(ti.pk)
         if len(tmp_list) > 0:
@@ -245,7 +289,7 @@ def share_test(request):
     for t in t_own:
         sw1 = []
         for u in all_testers:
-            if (u.userprofile != t.owner) and (u.userprofile not in t.collaborator.all()):
+            if (u.userprofile != t.owner) and (u.userprofile not in t.collaborators.all()):
                 sw1.append(u)
         share_test_with.append(sw1)
     share_test_instance_with = []    # users with whom test instances can be shared (double-nested list, i.e. [[[u1,u2,u3],[u1,u4]], [[u2,u3],[u3,u4]]]
@@ -254,7 +298,7 @@ def share_test(request):
         for ti in ti_list:
             sw2 = []
             for u in all_testers:
-                if (u.userprofile != ti.owner) and (u.userprofile not in ti.collaborator.all()) and (u.userprofile != ti.test.owner) and (u.userprofile not in ti.test.collaborator.all()):
+                if (u.userprofile != ti.owner) and (u.userprofile not in ti.collaborators.all()) and (u.userprofile != ti.test.owner) and (u.userprofile not in ti.test.collaborators.all()):
                     sw2.append(u)
             sw1.append(sw2)
         share_test_instance_with.append(sw1)
@@ -322,7 +366,7 @@ def share_test_submit(request):
                 if up == t.owner:                                       # check that user owns test
                     for id in share_with:                               # add collaborators to test
                         u = get_object_or_404(UserProfile, pk=int(id))
-                        t.collaborator.add(u)
+                        t.collaborators.add(u)
                     return HttpResponseRedirect(reverse('manager.views.display_test', args=(t.pk,)))
                 else:
                     return HttpResponse('you cannot share this test')
@@ -336,7 +380,7 @@ def share_test_submit(request):
                     if (up == ti.owner) or (up == ti.test.owner):                   # check that user owns test instance or parent test
                         for id in share_with:                                       # add collaborators to test instance
                             u = get_object_or_404(UserProfile, pk=int(id))
-                            ti.collaborator.add(u)
+                            ti.collaborators.add(u)
                         return HttpResponseRedirect(reverse('manager.views.display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
                     else:
                         return HttpResponse('you cannot share this test instance')
