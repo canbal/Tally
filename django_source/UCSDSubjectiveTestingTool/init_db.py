@@ -66,7 +66,7 @@ except Test.DoesNotExist:
     
     
 videoList = ['skydiving_largeBlur_blurOne_30.mp4', 'skydiving_largeBlur_inPhase_30.mp4', 'skydiving_largeBlur_outOfPhase_60.mp4', 'skydiving_smallBlur_blurOne_60.mp4']
-videoPath = 'd:/binocsupp/skydiving'
+videoPath = '/Users/canbal/Desktop/test'
 for filename in videoList:
     try:
         video = Video.objects.get(test=test,filename=filename)

@@ -5,6 +5,7 @@ from GenericTest.models import *
 
 urlpatterns = patterns('GenericTest.views',
     url(r'^$','index'),
+    url(r'^testme/$','testme'), 
     url(r'^enroll/$','enroll'),
     url(r'^(?P<test_instance_id>\d+)/add/$', 'add_test_case_item'),
     url(r'^(?P<test_instance_id>\d+)/get_media/$', 'get_media'),

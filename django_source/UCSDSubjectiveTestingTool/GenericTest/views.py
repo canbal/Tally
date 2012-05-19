@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from GenericTest.models import *
 from GenericTest.forms import *
@@ -18,6 +19,25 @@ def group_required(*group_names):
         return False
     return user_passes_test(in_groups)
 
+def is_enrolled(subject, ti):
+    try:
+        _ti = subject.enrolled_testinstances.get(pk=ti.pk)
+    except TestInstance.DoesNotExist:
+        return False
+    else:
+        return True
+
+@csrf_exempt
+def testme(request):
+    if request.method == 'GET':
+        return HttpResponse('You successfully sent a GET request!\n')
+    elif request.method == 'POST':
+        data = request.POST['data']
+        print data
+        return HttpResponse('You successfully POSTed ' + data + '\n')
+    else:
+        return HttpResponse('Error: Unknown request method\n')
+    
     
 @login_required
 def index(request):
@@ -91,6 +111,10 @@ def get_media(request, test_instance_id):
 def tally(request,test_instance_id):
     # get the test instance
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    subject = UserProfile.objects.get(user=request.user)
+    if not is_enrolled(subject, ti):
+        return HttpResponseRedirect(reverse('registration.views.render_profile'))
+    
     choices = [(5,'Imperceptible'), (4,'Perceptible, but not annoying'), (3,'Slightly annoying'), (2,'Annoying'), (1,'Very annoying')]
     # check bounds of the counter (should handle these cases better)
     try:
@@ -98,7 +122,7 @@ def tally(request,test_instance_id):
     except(TestCaseInstance.DoesNotExist):
         return render_to_response('GenericTest/status.html', {'test_instance': ti})
     header = 'Test '+str(ti.counter)+'/'+str(ti.testcaseinstance_set.count())
-    subject = UserProfile.objects.get(user=request.user)
+    
     # make sure this subject has not submitted a score for this test case already
     try:
         sc = subject.score_set.get(test_case_instance=tci)

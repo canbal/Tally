@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from GenericTest.models import *
-from forms import CreateTestInstanceForm, DisplayTestInstanceForm
+from manager.forms import *
 import json, random, csv
 
 
@@ -17,11 +17,43 @@ def group_required(*group_names):
         return False
     return user_passes_test(in_groups)
 
-
+def is_video(file_type):
+    if file_type.split('/')[0] == 'video':
+        return True
+    else:
+        return False
+    
 @login_required
 @group_required('Testers')
 def create_test(request):
-    return render_to_response('manager/create_test.html',context_instance=RequestContext(request))
+    try:
+        up = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return HttpResponse('You do not have permission to add tests!')
+    else:
+        if request.method == 'POST':
+            tf = CreateTestForm(request.POST)
+            tf.fields['collaborator'].queryset = tf.fields['collaborator'].queryset.exclude(user=up.user)
+            if tf.is_valid():
+                # create new test
+                new_t = tf.save(commit=False)     # create new test instance from form, but don't save it yet
+                new_t.owner = up                  # when an admin is logged in, they are not recognized as a user!!!!!!
+                new_t.save()                      # save the new instance
+                
+                files = json.loads(request.POST['files_json'])
+                for f in files:
+                    file_type = f['name']
+                    if is_video(file_type):
+                        new_f = Video(test=new_t, filename=f['value'])
+                        new_f.save()
+                    
+                # redirect to test display page
+                return HttpResponseRedirect(reverse('manager.views.display_test', args=(new_t.pk,)))
+        else:
+            tf = CreateTestForm()
+            tf.fields['collaborator'].queryset = tf.fields['collaborator'].queryset.exclude(user=up.user)
+            
+        return render_to_response('manager/create_test.html',{'tf':tf,},context_instance=RequestContext(request))
     
     
 @login_required
@@ -39,7 +71,22 @@ def save_test(request):
 @login_required
 @group_required('Testers')
 def display_test(request, test_id):
-    return render_to_response('manager/display_test.html',context_instance=RequestContext(request))
+    t = get_object_or_404(Test, pk=test_id)
+    up = UserProfile.objects.get(user=request.user)
+    if (up == t.owner) or (up in t.collaborator.all()):
+        tf = DisplayTestForm(instance=t)
+        return render_to_response('manager/display_test.html', {'title': t.title,
+                                                                'tf': tf,
+                                                                'create_time_name': t._meta.get_field('create_time').verbose_name,
+                                                                'create_time': t.create_time,
+                                                                'test_id': test_id,
+                                                                'videos': Video.objects.filter(test=t),
+                                                                'can_share': (up == t.owner) or (up == t.test.owner),
+                                                                'can_export': True},  # anyone who can view it can export
+                                                                context_instance=RequestContext(request))
+    else:
+        return HttpResponse('must be owner or collaborator of this test instance or associated test')
+    
 
 
 @login_required

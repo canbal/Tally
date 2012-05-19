@@ -1,13 +1,22 @@
+{% load staticfiles %}
 
 <!DOCTYPE html> 
 <html> 
 	<head>
     <meta charset="utf-8">
 	<title>{% block title %}Default title{% endblock title %}</title>
-    <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+    <link type="text/css" href="{% static "css/smoothness/jquery-ui-1.8.18.custom.css" %}" rel="stylesheet" />
+    <script type="text/javascript" src="{% static "js/jquery-1.7.2.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery-ui-1.8.18.custom.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/json2.js" %}"></script>
     {% block head %}
     {% endblock head %}
 </head> 
+
+<style>
+{% block style %}
+{% endblock style %}
+</style>
 
 <body> 
 
@@ -18,8 +27,10 @@
 	</div>
 
     <div data-role="content">
-        <a href="/">Home</a>
-        <a href="/logout">Logout</a>
+        <p>
+            <a href="/">Home</a>
+            <a href="/logout">Logout</a>
+        </p>
         {% block content %}
             <p>Default content</p>
         {% endblock content %}

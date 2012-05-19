@@ -25,9 +25,9 @@ class Test(models.Model):
     
 class TestInstance(models.Model):
     test          = models.ForeignKey(Test)
-    owner         = models.ForeignKey(UserProfile, related_name='testinstance_owner')
+    owner         = models.ForeignKey(UserProfile, related_name='owned_testinstances')
     collaborator  = models.ManyToManyField(UserProfile, null=True)
-    subject       = models.ManyToManyField(UserProfile, related_name='testinstance_subjects', null=True)
+    subject       = models.ManyToManyField(UserProfile, related_name='enrolled_testinstances', null=True)
     create_time   = models.DateTimeField('Date created', auto_now_add=True)
     schedule_time = models.DateTimeField('Date scheduled', null=True)
     run_time      = models.DateTimeField('Date run', null=True)
@@ -43,7 +43,7 @@ class TestInstance(models.Model):
 class Video(models.Model):
     test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)
-    description = models.CharField(max_length=400)
+    description = models.CharField(max_length=400, null=True)
 
     class Meta:
         unique_together = ('test','filename')
