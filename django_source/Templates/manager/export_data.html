@@ -1,33 +1,42 @@
 
-{% extends "manager/base_manager.html" %}
+{% extends "manager/base_export_share.html" %}
 
 {% block header %}
-    Export data page
+    Export Data
 {% endblock header %}
 
-{% block content %}
-    <p> Choose Test: (dropdown)</p>
-    {% for t in t_valid %}
-        {{ t }}
-    {% endfor %}
-    
-    <p> Choose Test Instance: (dropdown, with choice of 'all')</p>
-    {% for ti in ti_valid %}
-        {{ ti }}
-    {% endfor %}
-    
-    <p> Choose data format: (checkbox)</p>
-    
-    {% if test_id %}
-        <p> Selected Test: {{ test_id }} </p>
-    {% endif %}
-    {% if test_instance_id %}
-        <p> Selected Test Instance: {{ test_instance_id }} </p>
-    {% endif %}    
-    
-    <form id="form" action="{% url manager.views.save_data %}" method="post">
-        {% csrf_token %}
-        <input type="submit" name="save" value="Export" />
-    </form>
-{% endblock content %}
+{% block form_action %} 
+    {% url manager.views.save_data %}
+{% endblock form_action %}
 
+{% block test_attr %}
+    onchange="update_ti_select()"
+{% endblock test_attr %}
+
+{% block form_additional_post %} 
+    <div class="control-group">
+        <label class="control-label" for="formatOptions">Format</label>
+        <div class="controls" id="formatOptions">
+            <label class="checkbox">
+                Test report (PDF)
+                <input type="checkbox" name="report" value="report" checked disabled>
+            </label>
+            <label class="checkbox">
+                CSV (Excel)
+                <input type="checkbox" name="formatCSV" value="csv">
+            </label>
+            <label class="checkbox">
+                MATLAB
+                <input type="checkbox" name="formatMATLAB" value="matlab">
+            </label>
+            <label class="checkbox">
+                Python
+                <input type="checkbox" name="formatPYTHON" value="python">
+            </label>
+        </div>
+    </div>
+{% endblock form_additional_post %}
+
+{% block form_control %}
+    <input type="submit" class="btn btn-primary" value="Export" />
+{% endblock form_control %}

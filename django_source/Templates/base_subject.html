@@ -17,8 +17,8 @@
 
 	<div data-role="header">
         <h1>{% block header %}Default header{% endblock header %}</h1>
-        <a href="/"        data-icon="home"   class="ui-btn-left">Home</a>
-        <a href="/logout/" data-icon="delete" class="ui-btn-right">Logout</a>
+        <a href="{% url GenericTest.views.index %}" data-icon="home" class="ui-btn-left">Home</a>
+        <a href="{% url django.contrib.auth.views.logout_then_login %}" data-icon="delete" class="ui-btn-right">Logout</a>
 	</div>
 
     <div data-role="content" data-theme="c">

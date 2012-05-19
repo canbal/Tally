@@ -8,6 +8,7 @@
 #include <sstream>
 #include <json/json.h>
 #include <QNetworkCookie>
+#include <QAuthenticator>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -23,12 +24,17 @@ MainWindow::MainWindow(QWidget *parent) :
     m_vidWidget->show();
     on_changeScreen_clicked();
     connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
+
+
     m_manager = new QNetworkAccessManager(this);
-    m_manager->setCookieJar(new QNetworkCookieJar);
+    m_manager->setCookieJar(new QNetworkCookieJar(this));
+    connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
+                SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
+
+
     m_rootURL = "";
     m_testInstanceID = 0;
 
-    //connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)), this, SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
 }
 
 
@@ -42,8 +48,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::authenticate(QNetworkReply* reply, QAuthenticator* auth)
 {
-    QMessageBox::information(this, tr("SSTT"), QString("command"));
+    QMessageBox::information(this, tr("SSTT"), "adfadfad");
+    auth->setUser(QString("tester"));
+    auth->setPassword(QString("1234"));
 }
+
 
 void MainWindow::on_startTest_clicked()
 {
@@ -54,25 +63,26 @@ void MainWindow::on_startTest_clicked()
    // likely due to CSRF not being handled.  some web searching reveals that @csrf_exempt decorator may
    // not actually remove CSRF handling.  when i tried this (@csrf_exempt), it still didn't work
 
-    QNetworkRequest requestGET(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
-    QNetworkReply *replyGET = m_manager->get(requestGET);
-    connect(replyGET, SIGNAL(finished()), this, SLOT(initTest()));
-
-    /*QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
+    //QNetworkRequest requestGET(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
+    //QNetworkReply *replyGET = m_manager->get(requestGET);
+    //connect(replyGET, SIGNAL(finished()), this, SLOT(initTest()));
+/*
+    //QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
+    QNetworkRequest request(QUrl(QString("%1/login/").arg(m_rootURL)));
     request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
     QUrl params;
     params.addQueryItem("username","tester");
     params.addQueryItem("password","1234");
-    params.addQueryItem("csrfmiddlewaretoken","2c9e7ed2454217f81016111fe42857b2");
+    //params.addQueryItem("csrfmiddlewaretoken","2c9e7ed2454217f81016111fe42857b2");
     //params.addQueryItem("next","");
     const QByteArray data = params.encodedQuery();
     QNetworkReply *reply = m_manager->post(request,data);
     connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
-/*
+*/
     QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
     connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
-    connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));*/
+    //connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));
 }
 
 
@@ -193,20 +203,22 @@ QString MainWindow::readHTTPResponse()
         QMessageBox::information(this, tr("SSTT"), reply->errorString());
     }
 
-
-    QVariant cookieVar = reply->header(QNetworkRequest::SetCookieHeader);
+//   QVariant cookieVar = reply->header(QNetworkRequest::SetCookieHeader);
+    QList<QNetworkReply::RawHeaderPair> cookieVar = reply->rawHeaderPairs();
+    qDebug() << cookieVar;
+    qDebug() << reply->readAll();
     //if (cookieVar.isValid()) {
-        QList<QNetworkCookie> cookies = cookieVar.value<QList<QNetworkCookie> >();
-        std::stringstream cnames;
-        for (int ii = 0; ii < cookies.size(); ii++) {
-            QNetworkCookie cookie = cookies.at(ii);
-            cnames << std::string(cookie.name().data()) << std::endl;
+       // QList<QNetworkCookie> cookies = cookieVar.value<QList<QNetworkCookie> >();
+        //std::stringstream cnames;
+        //for (int ii = 0; ii < cookies.size(); ii++) {
+          //  QNetworkCookie cookie = cookies.at(ii);
+            //cnames << std::string(cookie.name().data()) << std::endl;
             //if (cookie.name()=="csrfmiddlewaretoken") {
                 //QMessageBox::information(this, tr("SSTT"), cookie.value());
             //}
             // do whatever you want here
-        }
-        QMessageBox::information(this, tr("SSTT"), QString("%1").arg(cookies.size()).toStdString().c_str());//cnames.str().c_str());
+     //   }
+        //QMessageBox::information(this, tr("SSTT"), QString("%1").arg(cookies.size()).toStdString().c_str());//cnames.str().c_str());
     //}
 
 

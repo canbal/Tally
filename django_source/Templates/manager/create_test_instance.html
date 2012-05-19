@@ -1,27 +1,48 @@
 
 {% extends "manager/base_manager.html" %}
 
+{% block head %}
+    <style>
+        ul {
+            list-style: none;
+        }
+    </style>
+{% endblock head %}
+
 {% block header %}
-    Create test instance page
+    Create Test Instance
 {% endblock header %}
 
 {% block content %}
-    <form action="" method="post">
-        {% csrf_token %}
-        
-        <span style="color:red;font-weight:bold;font-size:1.1em">
-        {{ tif.non_field_errors }}
-        {% for field in tif %}
-            {% if field.errors %}{{ field.label }}:{{ field.errors }}{% endif %}
-        {% endfor %}
-        </span>
-        
-        <div data-role="fieldcontain">
-            {% for field in tif %}
-                <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}</p>
-            {% endfor %}
-        </div>
-        <input type="submit" value="Add" />
-    </form>
+    {% if error %}
+        {{ error }}
+    {% else %}
+        <form class="form-horizontal" action="" method="post">
+            <fieldset>
+                {% csrf_token %}
+                <span style="color:red;font-weight:bold;font-size:1.1em">
+                    {{ tif.non_field_errors }}
+                </span>
+                {% for field in tif %}
+                    <div class="control-group{% if field.errors %} error{% endif %}">
+                        <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            {% if field.errors %}
+                                <ul class="help-inline">
+                                    {% for error in field.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                <div class="form-actions">
+                    <a class="btn" href="{% url manager.views.display_test test_id=test_id %}">Cancel</a>
+                    <input type="submit" class="btn btn-primary" value="Add" />
+                </div>
+            </fieldset>
+        </form>
+    {% endif %}
 {% endblock content %}
-

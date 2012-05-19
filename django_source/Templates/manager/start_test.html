@@ -6,6 +6,10 @@
 {% endblock header %}
 
 {% block content %}
-<p> Press 'Start Test' button at the bottom of the desktop app window. </p>
+    {% if error %}
+        {{ error }}
+    {% else %}
+        Press 'Start Test' button at the bottom of the desktop app window.
+    {% endif %}
 {% endblock content %}
 

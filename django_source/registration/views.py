@@ -5,6 +5,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
+from registration.models import *
 from forms import RegistrationForm, UserProfileForm
 
 
@@ -25,7 +26,6 @@ def register(request):
             profile = pform.save(commit=False)
             profile.user = subject
             profile.save()
-            
             return HttpResponseRedirect(reverse('registration.views.render_profile'))
     else:
         rform = RegistrationForm()
@@ -36,15 +36,22 @@ def register(request):
         
 @login_required
 def render_profile(request):
-    return HttpResponseRedirect('/')
-    #if not request.user.is_superuser:
-    #    return HttpResponse('You are a normal user!')
-    #else:
-    #    return HttpResponse('You are a super user! You are awesome!')
+    try:
+    # A user may not have an associated UserProfile - i.e. SuperUser
+        up = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return HttpResponse('You are not registered as a subject or a tester in the system!')
+    else:
+        if request.user.groups.filter(name='Testers'):
+            return render_to_response('manager/profile.html', context_instance=RequestContext(request))
+        elif request.user.groups.filter(name='Subjects'):
+            return HttpResponseRedirect('/')
+        else:
+            return HttpResponse('You are not registered as a subject or a tester in the system!')
     
 
 def custom_login(request, *args, **kwargs):
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('registration.views.render_profile'))
+        return HttpResponseRedirect(reverse('GenericTest.views.index'))
     else:
         return login(request, *args, **kwargs)

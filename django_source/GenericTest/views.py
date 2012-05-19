@@ -27,8 +27,13 @@ def index(request):
     except UserProfile.DoesNotExist:
         return HttpResponse('You are not registered as a subject or a tester in the system!')
     else:
-        latest_test_instances = TestInstance.objects.filter(subject=subject).order_by('-create_time')
-        return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
+        if request.user.groups.filter(name='Testers'):
+            return render_to_response('manager/home.html', context_instance=RequestContext(request))
+        elif request.user.groups.filter(name='Subjects'):
+            latest_test_instances = TestInstance.objects.filter(subject=subject).order_by('-create_time')
+            return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
+        else:
+            return HttpResponse('You are not registered as a subject or a tester in the system!')
 
         
 @login_required
@@ -211,6 +216,11 @@ def add_test_case_item(request, test_instance_id):
                                                         
 
 def reset_test_instance(request, test_instance_id):
+    
+    # return HTTP 401 forbidden code
+    res = HttpResponse("Unauthorized")
+    res.status_code = 401
+    return res
 
     # check if request.user is in the tester_desktop group
     if request.method=='POST':
