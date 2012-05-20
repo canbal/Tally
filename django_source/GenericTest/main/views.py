@@ -5,9 +5,9 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from GenericTest.main.models import *
+from GenericTest.models.main import *
+from GenericTest.models.registration import UserProfile
 from GenericTest.main.forms import *
-from GenericTest.registration.models import UserProfile
 import json
 
 
@@ -51,7 +51,7 @@ def index(request):
         return HttpResponse('You are not registered as a subject or a tester in the system!')
     else:
         if request.user.groups.filter(name='Testers'):
-            return render_to_response('manager/home.html', context_instance=RequestContext(request))
+            return render_to_response('GenericTest/manager/home.html', context_instance=RequestContext(request))
         elif request.user.groups.filter(name='Subjects'):
             latest_test_instances = TestInstance.objects.filter(subjects=subject).order_by('-create_time')
             return render_to_response('GenericTest/main/index.html', {'latest_test_instances': latest_test_instances})

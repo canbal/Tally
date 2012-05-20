@@ -11,5 +11,7 @@ class UserProfile(models.Model):
     sex        = models.CharField(max_length=1, choices = GENDER_CHOICES)
     user       = models.OneToOneField(User)
         
+    class Meta:
+        app_label = 'GenericTest'
     def __unicode__(self):
         return self.user.username

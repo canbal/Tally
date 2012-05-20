@@ -1,5 +1,5 @@
-from GenericTest.main.models import *
-from GenericTest.registration.models import *
+from GenericTest.models.main import *
+from GenericTest.models.registration import *
 from django.contrib import admin
 
 class VideoAdmin(admin.ModelAdmin):

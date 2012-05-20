@@ -5,7 +5,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from GenericTest.registration.models import *
+from GenericTest.models.registration import *
 from forms import RegistrationForm, UserProfileForm
 
 

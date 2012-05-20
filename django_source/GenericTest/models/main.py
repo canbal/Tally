@@ -1,5 +1,5 @@
 from django.db import models
-from GenericTest.registration.models import UserProfile
+from GenericTest.models.registration import UserProfile
 import datetime
 
 METHOD_CHOICES = (
@@ -16,6 +16,8 @@ class Test(models.Model):
     method        = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
     create_time   = models.DateTimeField('Date created', auto_now_add=True)
     
+    class Meta:
+        app_label = 'GenericTest'
     def __unicode__(self):
         return self.title
     def was_created_today(self):
@@ -36,6 +38,8 @@ class TestInstance(models.Model):
     location       = models.CharField(max_length=200)
     counter        = models.IntegerField(default=0)
     
+    class Meta:
+        app_label = 'GenericTest'
     def __unicode__(self):
         return str(self.id) + ' : ' + self.owner.user.username + ' : ' + self.test.title
 
@@ -46,6 +50,7 @@ class Video(models.Model):
     description = models.CharField(max_length=400, null=True, blank=True)
 
     class Meta:
+        app_label = 'GenericTest'
         unique_together = ('test','filename')
     def __unicode__(self):
         return self.filename
@@ -55,6 +60,8 @@ class TestCase(models.Model):
     test   = models.ForeignKey(Test)
     videos = models.ManyToManyField(Video, through='TestCaseItem')
     
+    class Meta:
+        app_label = 'GenericTest'
     def __unicode__(self):
         return '%s : %d' % (str(self.test.title), self.pk)
     def getTest(self):
@@ -68,6 +75,7 @@ class TestCaseInstance(models.Model):
     play_order    = models.PositiveIntegerField()
     
     class Meta:
+        app_label = 'GenericTest'
         unique_together = ('test_instance', 'play_order')
     def __unicode__(self):
         return '%s : %d' % (str(self.test_instance), self.play_order)
@@ -80,6 +88,7 @@ class TestCaseItem(models.Model):
     is_reference = models.BooleanField(default=0)
     
     class Meta:
+        app_label = 'GenericTest'
         unique_together = ('test_case', 'play_order')
     def __unicode__(self):
         return '%s : %d : %s' % (unicode(self.test_case), self.play_order, self.video)
@@ -89,6 +98,8 @@ class Score(models.Model):
     test_case_instance = models.ForeignKey(TestCaseInstance)
     subject            = models.ForeignKey(UserProfile)
     value              = models.IntegerField()
-
+    
+    class Meta:
+        app_label = 'GenericTest'
     def __unicode__(self):
         return '%s : %s : %d' % (str(self.test_case_instance), str(self.subject), self.value)

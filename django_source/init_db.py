@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User, Group, Permission
-from registration.models import UserProfile
 from GenericTest.models import *
 import datetime
 

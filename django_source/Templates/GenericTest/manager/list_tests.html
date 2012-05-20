@@ -13,7 +13,7 @@
 
 {% block content %} 
     {% if tests|length == 0 %}
-        You do not own or have access to any tests.  Create one <a href="{% url manager.views.create_test %}">here</a>.
+        You do not own or have access to any tests.  Create one <a href="{% url GenericTest.manager.views.create_test %}">here</a>.
     {% else %}
         <table class="table">
             <thead>
@@ -25,7 +25,7 @@
             </thead>
             <tbody>
                 {% for t in tests %}
-                    <tr class="row-click" onclick="document.location.href = '{% url manager.views.display_test test_id=t.pk %}'">
+                    <tr class="row-click" onclick="document.location.href = '{% url GenericTest.manager.views.display_test test_id=t.pk %}'">
                         <td>{{ t.title }}</td>
                         <td>
                             {% if t.owner == request.user.userprofile %}
