@@ -1,5 +1,5 @@
 
-{% extends "manager/base_manager.html" %}
+{% extends "GenericTest/manager/base_manager.html" %}
 
 {% block header %}
     Test {{ test_id }} : {{ title }}
@@ -21,7 +21,7 @@
         </p>
     </div>
     {% if can_share %}
-        <form id="form" action="{% url manager.views.share_test %}" method="post">
+        <form id="form" action="{% url GenericTest.manager.views.share_test %}" method="post">
             {% csrf_token %}
             <input type="hidden" name="test_id" value="{{ test_id }}" />
             <input type="submit" name="share_test" value="Share" />

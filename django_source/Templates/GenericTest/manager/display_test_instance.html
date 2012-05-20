@@ -1,4 +1,4 @@
-{% extends "manager/base_manager.html" %}
+{% extends "GenericTest/manager/base_manager.html" %}
 
 {% block head %}
     <style>
@@ -40,9 +40,9 @@
             {% endfor %}
         </div>
         <div class="form-actions form-container">
-            <a class="btn" href="{% url manager.views.display_test test_id=test_id %}">Parent Test</a>
+            <a class="btn" href="{% url GenericTest.manager.views.display_test test_id=test_id %}">Parent Test</a>
             {% if can_share %}
-                <form action="{% url manager.views.share_test %}" method="post">
+                <form action="{% url GenericTest.manager.views.share_test %}" method="post">
                     {% csrf_token %}
                     <input type="hidden" name="test_id" value="{{ test_id }}" />
                     <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
@@ -57,7 +57,7 @@
                     <input type="submit" class="btn btn-primary" value="Export Data" />
                 </form>
             {% elif can_run %}
-                <a class="btn btn-success" href="{% url manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
+                <a class="btn btn-success" href="{% url GenericTest.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
             {% endif %}
         </div>
     {% endif %}

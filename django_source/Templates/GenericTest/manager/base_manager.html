@@ -71,15 +71,15 @@
                             <li class="info">{{ request.user.first_name }} {{ request.user.last_name }}</li>
                             <li class="info">{{ request.user.email }}</li>
                             <li class="divider"></li>
-                            <li><a href="{% url registration.views.render_profile %}"><i class="icon-th-list"></i> Profile</a></li>
+                            <li><a href="{% url GenericTest.registration.views.render_profile %}"><i class="icon-th-list"></i> Profile</a></li>
                             <li><a href="{% url django.contrib.auth.views.logout_then_login %}"><i class="icon-off"></i> Sign Out</a></li>
                         </ul>
                     </div>
                     <div class="nav-collapse">
                         <ul class="nav pull-right">
-                            <li class="{% active request 'GenericTest.views.index' %}"><a href="{% url GenericTest.views.index %}">Home</a></li>
-                            <li class="{% active request 'manager.views.about' %}"><a href="{% url manager.views.about %}">About</a></li>
-                            <li class="{% active request 'manager.views.help' %}"><a href="{% url manager.views.help %}">Help</a></li>
+                            <li class="{% active request 'GenericTest.main.views.index' %}"><a href="{% url GenericTest.main.views.index %}">Home</a></li>
+                            <li class="{% active request 'GenericTest.manager.views.about' %}"><a href="{% url GenericTest.manager.views.about %}">About</a></li>
+                            <li class="{% active request 'GenericTest.manager.views.help' %}"><a href="{% url GenericTest.manager.views.help %}">Help</a></li>
                         </ul>
                     </div><!--/.nav-collapse -->
                 </div>
@@ -92,11 +92,11 @@
                     <div class="well sidebar-nav">
                         <ul class="nav nav-list">
                             <li class="nav-header">Tests</li>
-                            <li class="{% active request 'manager.views.list_tests' %}"><a href="{% url manager.views.list_tests %}"><i class="icon-book"></i> My Tests</a></li>
-                            <li class="{% active request 'manager.views.create_test' %}"><a href="{% url manager.views.create_test %}"><i class="icon-file"></i> Create New Test</a></li>
-                            <li class="{% active request 'manager.views.share_test' %}"><a href="{% url manager.views.share_test %}"><i class="icon-share"></i> Share</a></li>
+                            <li class="{% active request 'GenericTest.manager.views.list_tests' %}"><a href="{% url GenericTest.manager.views.list_tests %}"><i class="icon-book"></i> My Tests</a></li>
+                            <li class="{% active request 'GenericTest.manager.views.create_test' %}"><a href="{% url GenericTest.manager.views.create_test %}"><i class="icon-file"></i> Create New Test</a></li>
+                            <li class="{% active request 'GenericTest.manager.views.share_test' %}"><a href="{% url GenericTest.manager.views.share_test %}"><i class="icon-share"></i> Share</a></li>
                             <li class="nav-header">Data</li>
-                            <li class="{% active request 'manager.views.export_data' %}"><a href="{% url manager.views.export_data %}"><i class="icon-briefcase"></i> Export</a></li>
+                            <li class="{% active request 'GenericTest.manager.views.export_data' %}"><a href="{% url GenericTest.manager.views.export_data %}"><i class="icon-briefcase"></i> Export</a></li>
                         </ul>
                     </div><!--/.well -->
                 </div><!--/span-->
@@ -120,19 +120,19 @@
         <!-- Le javascript
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/jquery.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-transition.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-alert.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-modal.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-dropdown.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-scrollspy.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-tab.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-tooltip.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-popover.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-button.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-collapse.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-carousel.js' %}></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-typeahead.js' %}></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/jquery.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-transition.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-alert.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-modal.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-dropdown.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-scrollspy.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-tab.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-tooltip.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-popover.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-button.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-collapse.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-carousel.js' %}"></script>
+        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-typeahead.js' %}"></script>
 
     </body>
 </html>

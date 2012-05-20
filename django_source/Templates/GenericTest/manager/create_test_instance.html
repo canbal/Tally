@@ -1,5 +1,5 @@
 
-{% extends "manager/base_manager.html" %}
+{% extends "GenericTest/manager/base_manager.html" %}
 
 {% block head %}
     <style>
@@ -39,7 +39,7 @@
                     </div>
                 {% endfor %}
                 <div class="form-actions">
-                    <a class="btn" href="{% url manager.views.display_test test_id=test_id %}">Cancel</a>
+                    <a class="btn" href="{% url GenericTest.manager.views.display_test test_id=test_id %}">Cancel</a>
                     <input type="submit" class="btn btn-primary" value="Add" />
                 </div>
             </fieldset>
