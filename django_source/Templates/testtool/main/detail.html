@@ -1,0 +1,26 @@
+
+{% extends "base_subject.html" %}
+
+{% block header %}
+    {{ header }}
+{% endblock header %}
+
+{% block content %}
+    <form id="form" action="{% url testtool.main.tally test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
+        {% csrf_token %}
+        <div data-role="fieldcontain">
+            <fieldset data-role="controlgroup"> 
+                <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
+                {% for elem in choices %}
+                    <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
+                    <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
+                {% endfor %}
+            </fieldset>
+        </div>
+        <span style="float:right">
+            <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
+        </span>
+        <input type="hidden" name="current_count" value="{{ test_instance.counter }}" />
+    </form>
+    {% if error_message %}<p style="color:red;font-weight:bold;font-size:1.1em">{{ error_message }}</p>{% endif %}
+{% endblock content %}

@@ -1,4 +1,4 @@
-from GenericTest.models import *
+from testtool.models import *
 from django.contrib.auth.models import Group
 from registration.models import UserProfile
 

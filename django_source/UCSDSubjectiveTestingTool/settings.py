@@ -13,8 +13,8 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        #'NAME': '/Users/canbal/Documents/Workspace/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
-        'NAME': 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
+        'NAME': '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/sqlite.db',    # Or path to database file if using sqlite3.
+        #'NAME': 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -58,7 +58,8 @@ MEDIA_URL = ''
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-STATIC_ROOT = 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/Static/'
+STATIC_ROOT = '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/static/'
+#STATIC_ROOT = 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/static/'
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -71,7 +72,6 @@ ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
-    #'/Users/canbal/Documents/Workspace/UCSD-Subjective-Testing-Tool/django_source/Static',
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -107,8 +107,8 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'UCSDSubjectiveTestingTool.urls'
 
 TEMPLATE_DIRS = (
-    #'/Users/canbal/Documents/Workspace/UCSD-Subjective-Testing-Tool/django_source/Templates',
-    'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/Templates',
+    '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/templates',
+    #'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/templates',
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -125,7 +125,7 @@ INSTALLED_APPS = (
     # 'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'GenericTest',
+    'testtool',
     # 'south',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
@@ -134,7 +134,7 @@ INSTALLED_APPS = (
 )
 
 # model that extends User model
-AUTH_PROFILE_MODULE = 'GenericTest.registration.UserProfile'
+AUTH_PROFILE_MODULE = 'testtool.registration.UserProfile'
 LOGIN_REDIRECT_URL  = '/'
 LOGIN_URL           = '/login/'
 LOGOUT_URL          = '/logout/'

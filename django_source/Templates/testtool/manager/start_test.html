@@ -1,0 +1,15 @@
+
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block header %}
+    Start test page
+{% endblock header %}
+
+{% block content %}
+    {% if error %}
+        {{ error }}
+    {% else %}
+        Press 'Start Test' button at the bottom of the desktop app window.
+    {% endif %}
+{% endblock content %}
+

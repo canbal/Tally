@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User, Group, Permission
-from GenericTest.models import *
+from testtool.models import *
 import datetime
 
 try:

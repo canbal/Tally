@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User, Group
-from GenericTest.models import *
+from testtool.models import *
 
 try:
     tester = User.objects.get(username='tester')

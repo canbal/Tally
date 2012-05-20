@@ -1,0 +1,31 @@
+
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block header %}
+    Test {{ test_id }} : {{ title }}
+{% endblock header %}
+
+{% block content %}
+    <div data-role="fieldcontain">
+        <p><label for="id_create_time">{{ create_time_name }}: </label> {{ create_time }}</p>
+        {% for field in tf %}
+            <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field.value }}</p>
+        {% endfor %}
+        <p>
+            Videos:
+            <ul>
+            {% for video in videos %}
+                <li>{{ video.filename }}</li>
+            {% endfor %}
+            </ul>
+        </p>
+    </div>
+    {% if can_share %}
+        <form id="form" action="{% url testtool.manager.views.share_test %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="test_id" value="{{ test_id }}" />
+            <input type="submit" name="share_test" value="Share" />
+        </form>
+    {% endif %}
+{% endblock content %}
+
