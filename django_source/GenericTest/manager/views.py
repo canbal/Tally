@@ -4,7 +4,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
-from GenericTest.models import *
+from GenericTest.main.models import *
 from forms import CreateTestForm, DisplayTestForm, CreateTestInstanceForm, DisplayTestInstanceForm
 import random, csv, json
 
@@ -51,24 +51,24 @@ def create_test(request):
                         new_f.save()
                     
                 # redirect to test display page
-                return HttpResponseRedirect(reverse('manager.views.display_test', args=(new_t.pk,)))
+                return HttpResponseRedirect(reverse('GenericTest.manager.views.display_test', args=(new_t.pk,)))
         else:
             tf = CreateTestForm()
             tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
             
-        return render_to_response('manager/create_test.html',{'tf':tf,},context_instance=RequestContext(request))
+        return render_to_response('GenericTest/manager/create_test.html',{'tf':tf,},context_instance=RequestContext(request))
     
     
 @login_required
 @group_required('Testers')
 def create_test_cases(request):
-    return render_to_response('manager/create_test_cases.html',context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/create_test_cases.html',context_instance=RequestContext(request))
     
     
 @login_required
 @group_required('Testers')
 def save_test(request):
-    return render_to_response('manager/save_test.html',context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/save_test.html',context_instance=RequestContext(request))
 
 
 @login_required
@@ -80,7 +80,7 @@ def list_tests(request):
     ti_c = up.collaborators_testinstances.values_list('test__pk',flat=True)
     test_list = list(set(list(t_o) + list(t_c) + list(ti_c)))
     tests = Test.objects.filter(pk__in=test_list)
-    return render_to_response('manager/list_tests.html', { 'tests': tests }, context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/list_tests.html', { 'tests': tests }, context_instance=RequestContext(request))
 
   
 @login_required
@@ -90,15 +90,15 @@ def display_test(request, test_id):
     up = UserProfile.objects.get(user=request.user)
     if (up == t.owner) or (up in t.collaborators.all()):
         tf = DisplayTestForm(instance=t)
-        return render_to_response('manager/display_test.html', {'title': t.title,
-                                                                'tf': tf,
-                                                                'create_time_name': t._meta.get_field('create_time').verbose_name,
-                                                                'create_time': t.create_time,
-                                                                'test_id': test_id,
-                                                                'videos': Video.objects.filter(test=t),
-                                                                'can_share': (up == t.owner) or (up == t.test.owner),
-                                                                'can_export': True},  # anyone who can view it can export
-                                                                context_instance=RequestContext(request))
+        return render_to_response('GenericTest/manager/display_test.html', {'title': t.title,
+                                                                            'tf': tf,
+                                                                            'create_time_name': t._meta.get_field('create_time').verbose_name,
+                                                                            'create_time': t.create_time,
+                                                                            'test_id': test_id,
+                                                                            'videos': Video.objects.filter(test=t),
+                                                                            'can_share': (up == t.owner) or (up == t.test.owner),
+                                                                            'can_export': True},  # anyone who can view it can export
+                                  context_instance=RequestContext(request))
     else:
         return HttpResponse('must be owner or collaborator of this test instance or associated test')
 
@@ -115,20 +115,20 @@ def display_test_instance(request, test_id, test_instance_id):
                 alert = request.GET['alert']
             except KeyError:
                 alert = ''
-        return render_to_response('manager/display_test_instance.html',  { 'tif': tif,
-                                                                           'create_time_name': ti._meta.get_field('create_time').verbose_name,
-                                                                           'create_time': ti.create_time,
-                                                                           'test_id': test_id,
-                                                                           'test_instance_id': test_instance_id,
-                                                                           'already_run': ti.run_time is not None,
-                                                                           'can_share': (up == ti.owner) or (up == ti.test.owner),
-                                                                           'can_export': True,  # anyone who can view it can export
-                                                                           'can_run': (up == ti.owner),
-                                                                           'alert': alert },
+        return render_to_response('GenericTest/manager/display_test_instance.html',  { 'tif': tif,
+                                                                                       'create_time_name': ti._meta.get_field('create_time').verbose_name,
+                                                                                       'create_time': ti.create_time,
+                                                                                       'test_id': test_id,
+                                                                                       'test_instance_id': test_instance_id,
+                                                                                       'already_run': ti.run_time is not None,
+                                                                                       'can_share': (up == ti.owner) or (up == ti.test.owner),
+                                                                                       'can_export': True,  # anyone who can view it can export
+                                                                                       'can_run': (up == ti.owner),
+                                                                                       'alert': alert },
                                  context_instance=RequestContext(request))
-    return render_to_response('manager/display_test_instance.html',  { 'test_id': test_id,
-                                                                       'test_instance_id': test_instance_id,
-                                                                       'error': 'You do not have access to this test instance.'},
+    return render_to_response('GenericTest/manager/display_test_instance.html',  { 'test_id': test_id,
+                                                                                   'test_instance_id': test_instance_id,
+                                                                                   'error': 'You do not have access to this test instance.'},
                              context_instance=RequestContext(request))
 
 
@@ -164,8 +164,8 @@ def create_test_instance(request, test_id):
                 return HttpResponseRedirect(reverse('manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
         else:
             tif = CreateTestInstanceForm()
-        return render_to_response('manager/create_test_instance.html', { 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
-    return render_to_response('manager/create_test_instance.html', { 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
+        return render_to_response('GenericTest/manager/create_test_instance.html', { 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/create_test_instance.html', { 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
 
 
 @login_required
@@ -174,8 +174,8 @@ def start_test(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     up = UserProfile.objects.get(user=request.user)
     if up == ti.owner:
-        return render_to_response('manager/start_test.html',context_instance=RequestContext(request))
-    return render_to_response('manager/start_test.html',{ 'error': 'You must be the owner of this test instance in order to run it.' }, context_instance=RequestContext(request))
+        return render_to_response('GenericTest/manager/start_test.html',context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/start_test.html',{ 'error': 'You must be the owner of this test instance in order to run it.' }, context_instance=RequestContext(request))
 
     
 @login_required
@@ -223,13 +223,13 @@ def export_data(request):
                         if test_instance_id in ti_valid_id[t_valid_index_default]:
                             ti_valid_index_default = ti_valid_id[t_valid_index_default].index(test_instance_id)
                         else:
-                            return render_to_response('manager/export_data.html', { 'error': 'You do not have access to this test instance data' }, context_instance=RequestContext(request))
+                            return render_to_response('GenericTest/manager/export_data.html', { 'error': 'You do not have access to this test instance data' }, context_instance=RequestContext(request))
                 else:
-                    return render_to_response('manager/export_data.html', { 'error': 'You do not have access to this test data' }, context_instance=RequestContext(request))
+                    return render_to_response('GenericTest/manager/export_data.html', { 'error': 'You do not have access to this test data' }, context_instance=RequestContext(request))
         data = {'t_valid': t_valid, 'ti_valid': ti_valid, 't_valid_index_default': t_valid_index_default, 'ti_valid_index_default': ti_valid_index_default }
     else:
         data = {'error': 'There are no test instances that have been run for which you have export permissions.' }
-    return render_to_response('manager/export_data.html', data, context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/export_data.html', data, context_instance=RequestContext(request))
         
     
 @login_required
@@ -244,7 +244,7 @@ def save_data(request):
         writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
         writer.writerow(['Second row', 'A', 'B', 'C', '"Testing"', "Here's a quote"])
         return response
-    return HttpResponseRedirect(reverse('manager.views.export_data'))
+    return HttpResponseRedirect(reverse('GenericTest.manager.views.export_data'))
     
     
 @login_required
@@ -324,7 +324,7 @@ def share_test(request):
                     radio_default = 0
                     t_valid_index_default = list(t_own_id_values).index(test_id)
                 else:
-                    return render_to_response('manager/share_test.html', 'You do not have permission to share this test.', context_instance=RequestContext(request))
+                    return render_to_response('GenericTest/manager/share_test.html', 'You do not have permission to share this test.', context_instance=RequestContext(request))
             else:
                 # a test instance of a test was requested to be shared
                 if test_id in t_valid_id:
@@ -333,9 +333,9 @@ def share_test(request):
                         ti_valid_index_default = ti_valid_id[t_idx].index(test_instance_id)
                         t_valid_index_default = t_idx
                     else:
-                        return render_to_response('manager/share_test.html', 'You do not have access to this test instance data.', context_instance=RequestContext(request))
+                        return render_to_response('GenericTest/manager/share_test.html', 'You do not have access to this test instance data.', context_instance=RequestContext(request))
                 else:
-                    return render_to_response('manager/share_test.html', 'You do not have access to this test data.', context_instance=RequestContext(request))
+                    return render_to_response('GenericTest/manager/share_test.html', 'You do not have access to this test data.', context_instance=RequestContext(request))
     data = {'t_own': t_own,
             't_valid': t_valid,
             'ti_valid': ti_valid,
@@ -344,7 +344,7 @@ def share_test(request):
             'radio_default': radio_default,
             'share_test_with': share_test_with,
             'share_test_instance_with': share_test_instance_with }
-    return render_to_response('manager/share_test.html', data, context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/share_test.html', data, context_instance=RequestContext(request))
     
     
 @login_required
@@ -367,7 +367,7 @@ def share_test_submit(request):
                     for id in share_with:                               # add collaborators to test
                         u = get_object_or_404(UserProfile, pk=int(id))
                         t.collaborators.add(u)
-                    return HttpResponseRedirect(reverse('manager.views.display_test', args=(t.pk,)))
+                    return HttpResponseRedirect(reverse('GenericTest.manager.views.display_test', args=(t.pk,)))
                 else:
                     return HttpResponse('you cannot share this test')
             elif mode == 'share_test_instance':
@@ -381,31 +381,22 @@ def share_test_submit(request):
                         for id in share_with:                                       # add collaborators to test instance
                             u = get_object_or_404(UserProfile, pk=int(id))
                             ti.collaborators.add(u)
-                        return HttpResponseRedirect(reverse('manager.views.display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
+                        return HttpResponseRedirect(reverse('GenericTest.manager.views.display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
                     else:
                         return HttpResponse('you cannot share this test instance')
             else:
                 return HttpResponse('mode must be ''share_test'' or ''share_test_instance''')
     else:
-        return HttpResponseRedirect(reverse('manager.views.share_test'))
-        
-        
-        
-        
-        
-@login_required
-@group_required('Testers')
-def home(request):
-    return render_to_response('manager/home.html',context_instance=RequestContext(request))
+        return HttpResponseRedirect(reverse('GenericTest.manager.views.share_test'))
 
     
 @login_required
 @group_required('Testers')
 def about(request):
-    return render_to_response('manager/about.html',context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/about.html',context_instance=RequestContext(request))
     
 
 @login_required
 @group_required('Testers')
 def help(request):
-    return render_to_response('manager/help.html',context_instance=RequestContext(request))
+    return render_to_response('GenericTest/manager/help.html',context_instance=RequestContext(request))

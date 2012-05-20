@@ -126,8 +126,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'GenericTest',
-    'registration',
-    'manager',
     # 'south',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
@@ -136,7 +134,7 @@ INSTALLED_APPS = (
 )
 
 # model that extends User model
-AUTH_PROFILE_MODULE = 'registration.UserProfile'
+AUTH_PROFILE_MODULE = 'GenericTest.registration.UserProfile'
 LOGIN_REDIRECT_URL  = '/'
 LOGIN_URL           = '/login/'
 LOGOUT_URL          = '/logout/'

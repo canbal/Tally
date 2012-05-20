@@ -1,9 +1,7 @@
 from django.conf.urls.defaults import *
-from django.views.generic import DetailView, ListView
-from GenericTest.models import *
 
 
-urlpatterns = patterns('GenericTest.views',
+urlpatterns = patterns('GenericTest.main.views',
     url(r'^$','index'),
     url(r'^testme/$','testme'), 
     url(r'^enroll/$','enroll'),
@@ -13,10 +11,4 @@ urlpatterns = patterns('GenericTest.views',
     url(r'^(?P<test_instance_id>\d+)/status/$', 'status'),
     url(r'^(?P<test_instance_id>\d+)/reset/$', 'reset_test_instance'),
     url(r'^(?P<test_instance_id>\d+)/enroll/$', 'enroll_to_test_instance'),
-)
-
-# URLS from other apps
-urlpatterns += patterns('',
-    url(r'^', include('registration.urls')),
-    url(r'^', include('manager.urls')),
 )

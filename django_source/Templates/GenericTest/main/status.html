@@ -8,7 +8,7 @@
             $( "#error" ).empty();
         }
         function updateStatus() {
-            $.getJSON("{% url GenericTest.views.status test_instance_id=test_instance.pk %}", function(data) {
+            $.getJSON("{% url GenericTest.main.views.status test_instance_id=test_instance.pk %}", function(data) {
                 if(data.status=="4") {
                     window.location = "/{{ test_instance.pk }}/tally";
                 }

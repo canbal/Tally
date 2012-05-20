@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
 
-urlpatterns = patterns('manager.views',
+urlpatterns = patterns('GenericTest.manager.views',
 
     ### Create Test
         # Allows user to input test details (name, title, etc.) and possibly add videos for a Test to create

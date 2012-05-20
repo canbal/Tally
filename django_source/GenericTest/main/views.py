@@ -5,10 +5,11 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from GenericTest.models import *
-from GenericTest.forms import *
-from registration.models import UserProfile
+from GenericTest.main.models import *
+from GenericTest.main.forms import *
+from GenericTest.registration.models import UserProfile
 import json
+
 
 def group_required(*group_names):
     """Requires user membership in at least one of the groups passed in."""
@@ -19,6 +20,7 @@ def group_required(*group_names):
         return False
     return user_passes_test(in_groups)
 
+
 def is_enrolled(subject, ti):
     try:
         _ti = subject.subjects_testinstances.get(pk=ti.pk)
@@ -27,6 +29,7 @@ def is_enrolled(subject, ti):
     else:
         return True
 
+        
 @csrf_exempt
 def testme(request):
     if request.method == 'GET':
@@ -51,7 +54,7 @@ def index(request):
             return render_to_response('manager/home.html', context_instance=RequestContext(request))
         elif request.user.groups.filter(name='Subjects'):
             latest_test_instances = TestInstance.objects.filter(subjects=subject).order_by('-create_time')
-            return render_to_response('GenericTest/index.html', {'latest_test_instances': latest_test_instances})
+            return render_to_response('GenericTest/main/index.html', {'latest_test_instances': latest_test_instances})
         else:
             return HttpResponse('You are not registered as a subject or a tester in the system!')
 
@@ -61,7 +64,7 @@ def index(request):
 def enroll(request):
     subject = UserProfile.objects.get(user=request.user)
     latest_test_instances = TestInstance.objects.exclude(subjects=subject).order_by('-create_time')
-    return render_to_response('GenericTest/enroll.html', {'latest_test_instances': latest_test_instances})
+    return render_to_response('GenericTest/main/enroll.html', {'latest_test_instances': latest_test_instances})
 
     
 #@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
@@ -112,20 +115,20 @@ def get_media(request, test_instance_id):
             
 @login_required
 @group_required('Subjects')
-@permission_required('GenericTest.add_score')
+@permission_required('GenericTest.main.add_score')
 def tally(request,test_instance_id):
     # get the test instance
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     subject = UserProfile.objects.get(user=request.user)
     if not is_enrolled(subject, ti):
-        return HttpResponseRedirect(reverse('registration.views.render_profile'))
+        return HttpResponseRedirect(reverse('GenericTest.registration.views.render_profile'))
     
     choices = [(5,'Imperceptible'), (4,'Perceptible, but not annoying'), (3,'Slightly annoying'), (2,'Annoying'), (1,'Very annoying')]
     # check bounds of the counter (should handle these cases better)
     try:
         tci = ti.testcaseinstance_set.get(play_order=ti.counter)
     except(TestCaseInstance.DoesNotExist):
-        return render_to_response('GenericTest/status.html', {'test_instance': ti})
+        return render_to_response('GenericTest/main/status.html', {'test_instance': ti})
     header = 'Test '+str(ti.counter)+'/'+str(ti.testcaseinstance_set.count())
     
     # make sure this subject has not submitted a score for this test case already
@@ -133,7 +136,7 @@ def tally(request,test_instance_id):
         sc = subject.score_set.get(test_case_instance=tci)
     except(Score.DoesNotExist):
         if request.method == 'GET':
-            return render_to_response('GenericTest/detail.html',
+            return render_to_response('GenericTest/main/detail.html',
                                       {'test_instance': ti, 'header': header, 'choices': choices},
                                       context_instance=RequestContext(request))
         else:
@@ -142,20 +145,20 @@ def tally(request,test_instance_id):
                 selection = request.POST['value']
                 current_count = int(request.POST['current_count'])
             except KeyError:
-                return render_to_response('GenericTest/detail.html',
+                return render_to_response('GenericTest/main/detail.html',
                                           {'test_instance': ti, 'header': header, 'choices': choices,
                                            'error_message': 'Please select a choice.'},
                                           context_instance=RequestContext(request))
             if current_count is ti.counter:
                 score = Score(test_case_instance=tci, subjects=subject, value=selection)
                 score.save()
-                return render_to_response('GenericTest/status.html', {'test_instance': ti})
+                return render_to_response('GenericTest/main/status.html', {'test_instance': ti})
             else:
-                return render_to_response('GenericTest/detail.html', 
+                return render_to_response('GenericTest/main/detail.html', 
                                           {'test_instance': ti, 'header': header, 'choices': choices},
                                           context_instance=RequestContext(request))
     else:
-        return render_to_response('GenericTest/status.html',
+        return render_to_response('GenericTest/main/status.html',
                                   {'test_instance': ti,
                                    'error_message': 'You already selected a choice for this test!'})
 
@@ -222,7 +225,7 @@ def enroll_to_test_instance(request, test_instance_id):
     
     
 @login_required
-@permission_required('GenericTest.add_testcaseitem')
+@permission_required('GenericTest.main.add_testcaseitem')
 def add_test_case_item(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     t  = ti.test
@@ -235,7 +238,7 @@ def add_test_case_item(request, test_instance_id):
     else:
         form = TestCaseItemForm()
         form.fields['video'].queryset = Video.objects.filter(test=t)
-    return render_to_response('GenericTest/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
+    return render_to_response('GenericTest/main/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
                               context_instance=RequestContext(request))
                                                         
 

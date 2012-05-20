@@ -1,5 +1,5 @@
 from django.db import models
-from registration.models import UserProfile
+from GenericTest.registration.models import UserProfile
 import datetime
 
 METHOD_CHOICES = (

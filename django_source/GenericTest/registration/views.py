@@ -5,7 +5,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from registration.models import *
+from GenericTest.registration.models import *
 from forms import RegistrationForm, UserProfileForm
 
 
@@ -26,12 +26,12 @@ def register(request):
             profile = pform.save(commit=False)
             profile.user = subject
             profile.save()
-            return HttpResponseRedirect(reverse('registration.views.render_profile'))
+            return HttpResponseRedirect(reverse('GenericTest.registration.views.render_profile'))
     else:
         rform = RegistrationForm()
         pform = UserProfileForm()
  
-    return render_to_response('registration/register.html',  {'rform': rform, 'pform': pform },
+    return render_to_response('GenericTest/registration/register.html',  {'rform': rform, 'pform': pform },
                               context_instance=RequestContext(request))
         
 @login_required
@@ -43,7 +43,7 @@ def render_profile(request):
         return HttpResponse('You are not registered as a subject or a tester in the system!')
     else:
         if request.user.groups.filter(name='Testers'):
-            return render_to_response('manager/profile.html', context_instance=RequestContext(request))
+            return render_to_response('GenericTest/manager/profile.html', context_instance=RequestContext(request))
         elif request.user.groups.filter(name='Subjects'):
             return HttpResponseRedirect('/')
         else:
@@ -52,6 +52,6 @@ def render_profile(request):
 
 def custom_login(request, *args, **kwargs):
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('GenericTest.views.index'))
+        return HttpResponseRedirect(reverse('GenericTest.main.views.index'))
     else:
         return login(request, *args, **kwargs)

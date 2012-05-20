@@ -6,7 +6,7 @@
 {% endblock header %}
 
 {% block content %}
-    <form id="form" action="{% url GenericTest.tally test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
+    <form id="form" action="{% url GenericTest.main.tally test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
         {% csrf_token %}
         <div data-role="fieldcontain">
             <fieldset data-role="controlgroup"> 

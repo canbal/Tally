@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import ModelForm, Textarea, ModelMultipleChoiceField
-from GenericTest.models import *
+from GenericTest.main.models import *
 
 
 class CreateTestForm(ModelForm):
@@ -9,6 +9,7 @@ class CreateTestForm(ModelForm):
     class Meta:
         model = Test
         exclude = ('owner','create_time')
+        
         
 class DisplayTestForm(ModelForm):
     class Meta:

@@ -1,5 +1,5 @@
 
-{% extends "manager/base_manager.html" %}
+{% extends "GenericTest/manager/base_manager.html" %}
 
 {% block head %}
     <script type="text/javascript">
@@ -53,7 +53,7 @@
             {% block form_additional_post %}
             {% endblock form_additional_post %}
             <div class="form-actions">
-                <a class="btn" href="{% url manager.views.list_tests %}">Cancel</a>
+                <a class="btn" href="{% url GenericTest.manager.views.list_tests %}">Cancel</a>
                 {% block form_control %}
                 {% endblock form_control %}
             </div>
