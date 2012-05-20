@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import ModelForm, Textarea, ModelMultipleChoiceField
-from GenericTest.models.main import *
+from GenericTest.models import *
 
 
 class CreateTestForm(ModelForm):

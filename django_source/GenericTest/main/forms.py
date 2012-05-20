@@ -1,5 +1,5 @@
 from django import forms
-from GenericTest.models.main import TestCaseItem
+from GenericTest.models import TestCaseItem
 
 class TestCaseItemForm(forms.ModelForm):
     class Meta:
