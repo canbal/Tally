@@ -1,22 +1,13 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from testtool.models import *
+from testtool.decorators import group_required
 from forms import CreateTestForm, DisplayTestForm, CreateTestInstanceForm, DisplayTestInstanceForm
 import random, csv, json
-
-
-def group_required(*group_names):
-    """Requires user membership in at least one of the groups passed in."""
-    def in_groups(u):
-        if u.is_authenticated():
-            if bool(u.groups.filter(name__in=group_names)):
-                return True
-        return False
-    return user_passes_test(in_groups)
 
     
 def is_video(file_type):
