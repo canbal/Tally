@@ -18,6 +18,7 @@ class DisplayTestForm(ModelForm):
 
 
 class CreateTestInstanceForm(ModelForm):
+    collaborators = ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Testers'), required=False)
     subjects = ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
     class Meta:
         model = TestInstance

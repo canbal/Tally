@@ -131,6 +131,7 @@ def create_test_instance(request, test_id):
     if (up == t.owner) or (up in t.collaborators.all()):
         if request.method == 'POST':
             tif = CreateTestInstanceForm(request.POST)
+            tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
             if tif.is_valid():
                 owner = UserProfile.objects.get(user=request.user)  # all testers have an associated user profile
                 # create new instance
@@ -155,6 +156,7 @@ def create_test_instance(request, test_id):
                 return HttpResponseRedirect(reverse('manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
         else:
             tif = CreateTestInstanceForm()
+            tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
         return render_to_response('testtool/manager/create_test_instance.html', { 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
     return render_to_response('testtool/manager/create_test_instance.html', { 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
 
