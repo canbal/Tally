@@ -1,14 +1,14 @@
-{% extends "base_registration.html" %}
+{% extends "testtool/registration/base_registration.html" %}
 
 {% block header %}
     Please register to the test system
 {% endblock header %}
 
 {% block content %}
-    <form action="" method="post">
+    <form action="" method="post" data-ajax="false">
         {% csrf_token %}
         
-        <span style="color:red;font-weight:bold;font-size:1.1em">
+        <span style="color:red">
         {{ rform.non_field_errors }}
         {{ pform.non_field_errors }}
         {% for field in rform %}
@@ -20,29 +20,20 @@
         </span>
         
 	<div data-role="fieldcontain">
-            <label for="id_username">{{ rform.username.label }}: </label>
-            {{ rform.username }}
-
-            <label for="id_first_name">{{ rform.first_name.label }}: </label>
-            {{ rform.first_name }}
-
-            <label for="id_last_name">{{ rform.last_name.label }}: </label>
-            {{ rform.last_name }}
-
-            <label for="id_age">{{ pform.age.label }}: </label>
-            {{ pform.age }}
-
-            <label for="id_sex">{{ pform.sex.label }}: </label>
-            {{ pform.sex }}
-
-            <label for="id_email">{{ rform.email.label }}: </label>
-            {{ rform.email }}
-
-            <label for="id_password1">{{ rform.password1.label }}: </label>
-            {{ rform.password1 }}
-
-            <label for="id_password2">{{ rform.password2.label }}: </label>
-            {{ rform.password2 }}
+        {% for field in rform %}
+            {% if field.name != "password1" and field.name != "password2" %}
+            <label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}
+            {% endif %}
+        {% endfor %}
+        {% for field in pform %}
+            {% if field.name != "birth_date"%}
+            <label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}
+            {% else %}
+            <fieldset data-role="controlgroup" data-type="horizontal"><legend>{{ field.label }}: </legend>{{ field }}</fieldset>
+            {% endif %}
+        {% endfor %}
+            <label for="id_password1">{{ rform.password1.label }}: </label>{{ rform.password1 }}
+            <label for="id_password2">{{ rform.password2.label }}: </label>{{ rform.password2 }}
         </div>
         <input type="submit" data-theme="e" value="Register" />
     </form>

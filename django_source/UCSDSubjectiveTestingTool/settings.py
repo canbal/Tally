@@ -13,8 +13,8 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        #'NAME': '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/sqlite.db',    # Or path to database file if using sqlite3.
-        'NAME': 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
+        'NAME': '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/sqlite.db',    # Or path to database file if using sqlite3.
+        #'NAME': 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/sqlite.db',    # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -58,8 +58,8 @@ MEDIA_URL = ''
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/home/media/media.lawrence.com/static/"
-#STATIC_ROOT = '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/static/'
-STATIC_ROOT = 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/static/'
+STATIC_ROOT = '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/static/'
+#STATIC_ROOT = 'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/static/'
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
@@ -107,8 +107,8 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'UCSDSubjectiveTestingTool.urls'
 
 TEMPLATE_DIRS = (
-    #'/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/templates',
-    'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/templates',
+    '/Users/canbal/Documents/Workspace/Django/UCSDSubjectiveTestingTool/templates',
+    #'C:/Users/Ankit/Desktop/UCSD-Subjective-Testing-Tool/django_source/templates',
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.

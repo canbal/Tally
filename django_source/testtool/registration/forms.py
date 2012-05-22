@@ -1,12 +1,17 @@
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 from django.contrib.auth.models import User
+from django.forms.extras.widgets import SelectDateWidget
 from testtool.models import UserProfile
+import datetime
+
+now = datetime.datetime.now()
 
 class UserProfileForm(forms.ModelForm):
+    birth_date = forms.DateField(label='Date of birth', widget=SelectDateWidget(years=range(now.year,1940,-1)))
     class Meta:
         model = UserProfile
-        exclude = ['user',]
+        exclude = ('user',)
         
 class RegistrationForm(UserCreationForm):
     first_name = forms.CharField(label='First name', max_length=30)
