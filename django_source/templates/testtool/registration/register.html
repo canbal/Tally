@@ -1,0 +1,40 @@
+{% extends "testtool/registration/base_registration.html" %}
+
+{% block header %}
+    Please register to the test system
+{% endblock header %}
+
+{% block content %}
+    <form action="" method="post" data-ajax="false">
+        {% csrf_token %}
+        
+        <span style="color:red">
+        {{ rform.non_field_errors }}
+        {{ pform.non_field_errors }}
+        {% for field in rform %}
+            {% if field.errors %}{{ field.label }}:{{ field.errors }}{% endif %}
+        {% endfor %}
+        {% for field in pform %}
+            {% if field.errors %}{{ field.label }}:{{ field.errors }}{% endif %}
+        {% endfor %}
+        </span>
+        
+	<div data-role="fieldcontain">
+        {% for field in rform %}
+            {% if field.name != "password1" and field.name != "password2" %}
+            <label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}
+            {% endif %}
+        {% endfor %}
+        {% for field in pform %}
+            {% if field.name != "birth_date"%}
+            <label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}
+            {% else %}
+            <fieldset data-role="controlgroup" data-type="horizontal"><legend>{{ field.label }}: </legend>{{ field }}</fieldset>
+            {% endif %}
+        {% endfor %}
+            <label for="id_password1">{{ rform.password1.label }}: </label>{{ rform.password1 }}
+            <label for="id_password2">{{ rform.password2.label }}: </label>{{ rform.password2 }}
+        </div>
+        <input type="submit" data-theme="e" value="Register" />
+    </form>
+{% endblock %}

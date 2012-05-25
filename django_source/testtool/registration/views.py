@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Group, Permission
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.views import login
 from django.shortcuts import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
@@ -8,8 +8,10 @@ from django.template import RequestContext
 from testtool.models import UserProfile
 from forms import RegistrationForm, UserProfileForm
 
-
 def register(request):
+    return render_to_response('testtool/registration/register_select.html')
+
+def register_subject(request):
     if request.method == 'POST':
         rform = RegistrationForm(request.POST)
         pform = UserProfileForm(request.POST)
@@ -27,6 +29,30 @@ def register(request):
             profile.user = subject
             profile.save()
             return HttpResponseRedirect(reverse('testtool.registration.views.render_profile'))
+    else:
+        rform = RegistrationForm()
+        pform = UserProfileForm()
+ 
+    return render_to_response('testtool/registration/register.html',  {'rform': rform, 'pform': pform },
+                              context_instance=RequestContext(request))
+
+@user_passes_test(lambda u: u.is_superuser)
+def register_tester(request):
+    if request.method == 'POST':
+        rform = RegistrationForm(request.POST)
+        pform = UserProfileForm(request.POST)
+        if rform.is_valid() and pform.is_valid():
+            tester = rform.save()
+            try:
+                testers = Group.objects.get(name='Testers')
+            except Group.DoesNotExist:
+                testers = Group(name='Testers')
+                testers.save()
+            tester.groups.add(testers)
+            profile = pform.save(commit=False)
+            profile.user = tester
+            profile.save()
+            return HttpResponseRedirect(reverse('admin:index'))
     else:
         rform = RegistrationForm()
         pform = UserProfileForm()
