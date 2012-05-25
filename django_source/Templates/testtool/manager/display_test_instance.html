@@ -50,7 +50,7 @@
                 </form>
             {% endif %}
             {% if already_run and can_export %}
-                <form action="{% url manager.views.export_data %}" method="post">
+                <form action="{% url testtool.manager.views.export_data %}" method="post">
                     {% csrf_token %}
                     <input type="hidden" name="test_id" value="{{ test_id }}" />
                     <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />

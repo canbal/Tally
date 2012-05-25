@@ -27,9 +27,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     m_manager = new QNetworkAccessManager(this);
-    m_manager->setCookieJar(new QNetworkCookieJar(this));
-    connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
-                SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
+    //m_manager->setCookieJar(new QNetworkCookieJar(this));
+    //connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
+    //            SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
 
 
     m_rootURL = "";
@@ -82,7 +82,7 @@ void MainWindow::on_startTest_clicked()
     QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
     QNetworkReply *reply = m_manager->get(request);
     connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
-    //connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));
+    connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));
 }
 
 
@@ -159,7 +159,7 @@ void MainWindow::initTest()
 {
     // read command from server
     QString command = readHTTPResponse();
-/*
+
     // interpret command
     std::stringstream err;
     bool success = true;
@@ -188,7 +188,7 @@ void MainWindow::initTest()
         msgBox.setText("Error with test instance");
         msgBox.setDetailedText(QString(err.str().c_str()));
         msgBox.exec();
-    }*/
+    }
 }
 
 
@@ -203,7 +203,7 @@ QString MainWindow::readHTTPResponse()
         QMessageBox::information(this, tr("SSTT"), reply->errorString());
     }
 
-//   QVariant cookieVar = reply->header(QNetworkRequest::SetCookieHeader);
+/*   QVariant cookieVar = reply->header(QNetworkRequest::SetCookieHeader);
     QList<QNetworkReply::RawHeaderPair> cookieVar = reply->rawHeaderPairs();
     qDebug() << cookieVar;
     qDebug() << reply->readAll();
@@ -220,7 +220,7 @@ QString MainWindow::readHTTPResponse()
      //   }
         //QMessageBox::information(this, tr("SSTT"), QString("%1").arg(cookies.size()).toStdString().c_str());//cnames.str().c_str());
     //}
-
+*/
 
     reply->deleteLater();
     return(command);

@@ -105,7 +105,7 @@ def get_media(request, test_instance_id):
             
 @login_required
 @group_required('Subjects')
-@permission_required('testtool.main.add_score')
+#@permission_required('testtool.main.add_score')
 def tally(request,test_instance_id):
     # get the test instance
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
@@ -140,7 +140,7 @@ def tally(request,test_instance_id):
                                            'error_message': 'Please select a choice.'},
                                           context_instance=RequestContext(request))
             if current_count is ti.counter:
-                score = Score(test_case_instance=tci, subjects=subject, value=selection)
+                score = Score(test_case_instance=tci, subject=subject, value=selection)
                 score.save()
                 return render_to_response('testtool/main/status.html', {'test_instance': ti})
             else:
@@ -186,7 +186,7 @@ def status(request, test_instance_id):
                 else:
                     # update status if there exist any subjects who has not voted yet
                     try:
-                        for subject in ti.subject.all():
+                        for subject in ti.subjects.all():
                             sc = subject.score_set.get(test_case_instance=tci)
                     except(Score.DoesNotExist):
                         status = 1
@@ -233,29 +233,48 @@ def add_test_case_item(request, test_instance_id):
                                                         
 
 def reset_test_instance(request, test_instance_id):
-    
-    # return HTTP 401 forbidden code
-    res = HttpResponse("Unauthorized")
-    res.status_code = 401
-    return res
+    # reset test instance
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    ti.counter = 0
+    ti.save()
+    tci = TestCaseInstance.objects.filter(test_instance=ti)
+    for t in tci:
+        t.is_done = False
+        t.save()
+        scores = Score.objects.filter(test_case_instance=t)
+        for s in scores:
+            s.delete()
+    # return HttpResponse("Test Instance " + test_instance_id + " has been reset.")
+    # send list of all videos so desktop app can verify that they exist
+    vid = Video.objects.filter(test=ti.test)
+    vidList = []
+    for v in vid:
+        vidList.append(v.filename)
+    return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList}))
 
-    # check if request.user is in the tester_desktop group
-    if request.method=='POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                return HttpResponse(request.user.first_name)
-                # Redirect to a success page.
-            else:
-                return HttpResponse('disabled account')
-                # Return a 'disabled account' error message
-        else:
-            return HttpResponse('invalid login')
-            # Return an 'invalid login' error message.
-    return HttpResponse(request.COOKIES)
+    
+    # # return HTTP 401 forbidden code
+    # res = HttpResponse("Unauthorized")
+    # res.status_code = 401
+    # return res
+
+    # # check if request.user is in the tester_desktop group
+    # if request.method=='POST':
+        # username = request.POST['username']
+        # password = request.POST['password']
+        # user = authenticate(username=username, password=password)
+        # if user is not None:
+            # if user.is_active:
+                # login(request, user)
+                # return HttpResponse(request.user.first_name)
+                # # Redirect to a success page.
+            # else:
+                # return HttpResponse('disabled account')
+                # # Return a 'disabled account' error message
+        # else:
+            # return HttpResponse('invalid login')
+            # # Return an 'invalid login' error message.
+    # return HttpResponse(request.COOKIES)
 
 
     # if request.user.groups.filter(name='Testers'):

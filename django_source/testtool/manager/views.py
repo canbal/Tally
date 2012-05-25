@@ -153,7 +153,7 @@ def create_test_instance(request, test_id):
                         idx += 1
                         tci.save()
                 # redirect to test instance display page
-                return HttpResponseRedirect(reverse('manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
+                return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
         else:
             tif = CreateTestInstanceForm()
             tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
