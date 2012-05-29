@@ -1,17 +1,15 @@
 from django import forms
-from django.forms import ModelForm, Textarea, ModelMultipleChoiceField
+from django.forms import ModelForm, Textarea, ModelMultipleChoiceField, TypedMultipleChoiceField
 from testtool.models import *
 
 
-class CreateTestForm(ModelForm):
+class TestCreateForm(ModelForm):
     collaborators = ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Testers'), required=False)
-    
     class Meta:
         model = Test
         exclude = ('owner','create_time')
-        
-        
-class DisplayTestForm(ModelForm):
+            
+class TestDisplayForm(ModelForm):
     class Meta:
         model = Test
         exclude = ('title',)

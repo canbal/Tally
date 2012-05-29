@@ -1,10 +1,11 @@
 from django.conf.urls.defaults import *
+from testtool.manager.views import TestCreateView, TestUpdateView
 
 urlpatterns = patterns('testtool.manager.views',
 
     ### Create Test
         # Allows user to input test details (name, title, etc.) and possibly add videos for a Test to create
-    url(r'^createtest/$', 'create_test'),
+    url(r'^createtestold/$', 'create_test_old'), # old way of handling it
         
         # Allows user to create TestCases using a drag-and-drop tool
     url(r'^createtest/cases/$', 'create_test_cases'),
@@ -50,4 +51,9 @@ urlpatterns = patterns('testtool.manager.views',
     url(r'^about/$', 'about'),
     url(r'^help/$', 'help'),
     
+)
+
+urlpatterns += patterns('',
+    url(r'^createtest/$',         TestCreateView.as_view(), name='create_test'),
+    url(r'^(?P<pk>\d+)/update/$', TestUpdateView.as_view(), name='update_test'),
 )

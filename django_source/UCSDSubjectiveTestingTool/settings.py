@@ -134,7 +134,7 @@ INSTALLED_APPS = (
 )
 
 # model that extends User model
-AUTH_PROFILE_MODULE = 'testtool.registration.UserProfile'
+AUTH_PROFILE_MODULE = 'testtool.UserProfile'
 LOGIN_REDIRECT_URL  = '/'
 LOGIN_URL           = '/login/'
 LOGOUT_URL          = '/logout/'

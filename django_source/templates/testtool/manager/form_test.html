@@ -1,0 +1,54 @@
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block head %}
+<script type="text/javascript">  
+    function handleFileSelect(evt) {
+        var files = evt.target.files;
+        var show = [];
+        var form = [];
+        for (var i = 0, f; f = files[i]; i++) {
+            show.push('<li>', escape(f.name), '</li>');
+            form.push('<input type=hidden name="filename" value=', escape(f.name), '>')
+        }
+        $("#files_show").append(show.join(''));
+        $("#test_create_form").append(form.join(''));
+    }
+    $(document).ready(function(){
+        $("#file_select").on('change',handleFileSelect);
+    });
+</script>
+{% endblock head %}
+
+{% block header %}
+    Create test page
+{% endblock header %}
+
+{% block content %}
+<form id="test_create_form" action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <span style="color:red;font-weight:bold;font-size:1.1em">
+    {{ form.non_field_errors }}
+    {% for field in form %}
+        {% if field.errors %}{{ field.label }}:{{ field.errors }}{% endif %}
+    {% endfor %}
+    </span>
+        
+    <div data-role="fieldcontain">
+        {% for field in form %}
+            <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}</p>
+        {% endfor %}
+    </div>
+    <p><label for="files">Files: </label><ol id="files_show">
+        {% for file in files %}
+        <li>{{ file.filename }}</li>
+        {% endfor %}
+    </ol></p>
+    <input type="submit" id="create_button" value="Create">
+</form>
+
+<p><input type="file" id="file_select" name="file_select" multiple=""></p>
+
+
+{% endblock content %}
+

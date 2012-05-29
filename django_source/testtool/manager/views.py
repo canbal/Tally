@@ -1,12 +1,15 @@
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import RequestContext
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, reverse_lazy
+from django.views.generic import CreateView, UpdateView
+from django.utils.decorators import method_decorator
 from testtool.models import *
 from testtool.decorators import group_required
-from forms import CreateTestForm, DisplayTestForm, CreateTestInstanceForm, DisplayTestInstanceForm
+from testtool.shortcuts import has_user_profile
+from forms import TestCreateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
 import random, csv, json
 
     
@@ -15,39 +18,99 @@ def is_video(file_type):
         return True
     else:
         return False
-    
 
+class TestCreateView(CreateView):
+    model = Test
+    form_class = TestCreateForm
+    template_name = 'testtool/manager/form_test.html'
+    success_url = reverse_lazy('update_test')
+                
+    @method_decorator(login_required)
+    @method_decorator(group_required('Testers'))
+    @method_decorator(user_passes_test(has_user_profile))
+    def dispatch(self, *args, **kwargs):
+        return super(TestCreateView, self).dispatch(*args, **kwargs)
+    
+    def get_form(self, form_class):
+        form = super(TestCreateView, self).get_form(form_class)
+        form.fields['collaborators'].queryset = form.fields['collaborators'].queryset.exclude(user=self.request.user)
+        return form
+    
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.owner = self.request.user.get_profile()
+        self.object.save()
+        for filename in self.request.POST.getlist('filename'):
+            try:
+                f = Video.objects.get(test=self.object, filename=filename)
+            except Video.DoesNotExist:
+                f = Video(test=self.object, filename=filename)
+                f.save()
+        
+        return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))
+    
+class TestUpdateView(UpdateView):
+    model = Test
+    form_class = TestCreateForm
+    template_name = 'testtool/manager/form_test.html'
+                
+    @method_decorator(login_required)
+    @method_decorator(group_required('Testers'))
+    @method_decorator(user_passes_test(has_user_profile))
+    def dispatch(self, *args, **kwargs):
+        return super(TestUpdateView, self).dispatch(*args, **kwargs)
+    
+    def get_form(self, form_class):
+        form = super(TestUpdateView, self).get_form(form_class)
+        form.fields['collaborators'].queryset = form.fields['collaborators'].queryset.exclude(user=self.request.user)
+        return form
+    
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.owner = self.request.user.get_profile()
+        self.object.save()
+        for filename in self.request.POST.getlist('filename'):
+            try:
+                f = Video.objects.get(test=self.object, filename=filename)
+            except Video.DoesNotExist:
+                f = Video(test=self.object, filename=filename)
+                f.save()
+        
+        return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))    
+    
+    def get_context_data(self, **kwargs):
+        context = super(TestUpdateView, self).get_context_data(**kwargs)
+        context['files'] = Video.objects.filter(test=self.object)
+        return context
+    
 @login_required
 @group_required('Testers')
-def create_test(request):
-    try:
-        up = UserProfile.objects.get(user=request.user)
-    except UserProfile.DoesNotExist:
-        return HttpResponse('You do not have permission to add tests!')
-    else:
-        if request.method == 'POST':
-            tf = CreateTestForm(request.POST)
-            tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
-            if tf.is_valid():
-                # create new test
-                new_t = tf.save(commit=False)     # create new test instance from form, but don't save it yet
-                new_t.owner = up                  # when an admin is logged in, they are not recognized as a user!!!!!!
-                new_t.save()                      # save to database
+@user_passes_test(has_user_profile)
+def create_test_old(request):
+    up = request.user.get_profile()
+    if request.method == 'POST':
+        tf = TestCreateForm(request.POST)
+        tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
+        if tf.is_valid():
+            # create new test
+            new_t = tf.save(commit=False)     # create new test instance from form, but don't save it yet
+            new_t.owner = up                  # when an admin is logged in, they are not recognized as a user!!!!!!
+            new_t.save()                      # save to database
                 
-                files = json.loads(request.POST['files_json'])
-                for f in files:
-                    file_type = f['name']
-                    if is_video(file_type):
-                        new_f = Video(test=new_t, filename=f['value'])
-                        new_f.save()
+            files = json.loads(request.POST['files_json'])
+            for f in files:
+                file_type = f['name']
+                if is_video(file_type):
+                    new_f = Video(test=new_t, filename=f['value'])
+                    new_f.save()
                     
-                # redirect to test display page
-                return HttpResponseRedirect(reverse('testtool.manager.views.display_test', args=(new_t.pk,)))
-        else:
-            tf = CreateTestForm()
-            tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
+            # redirect to test display page
+            return HttpResponseRedirect(reverse('testtool.manager.views.display_test', args=(new_t.pk,)))
+    else:
+        tf = TestCreateForm()
+        tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
             
-        return render_to_response('testtool/manager/create_test.html',{'tf':tf,},context_instance=RequestContext(request))
+    return render_to_response('testtool/manager/create_test_old.html',{'tf':tf,},context_instance=RequestContext(request))
     
     
 @login_required
@@ -64,8 +127,9 @@ def save_test(request):
 
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def list_tests(request):
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     t_o = up.owner_tests.values_list('pk',flat=True)
     t_c = up.collaborators_tests.values_list('pk',flat=True)
     ti_c = up.collaborators_testinstances.values_list('test__pk',flat=True)
@@ -76,11 +140,12 @@ def list_tests(request):
   
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def display_test(request, test_id):
     t = get_object_or_404(Test, pk=test_id)
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     if (up == t.owner) or (up in t.collaborators.all()):
-        tf = DisplayTestForm(instance=t)
+        tf = TestDisplayForm(instance=t)
         return render_to_response('testtool/manager/display_test.html', {'title': t.title,
                                                                             'tf': tf,
                                                                             'create_time_name': t._meta.get_field('create_time').verbose_name,
@@ -96,9 +161,10 @@ def display_test(request, test_id):
 
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def display_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
         tif = DisplayTestInstanceForm(instance=ti)
         if request.method == 'GET':
@@ -125,9 +191,10 @@ def display_test_instance(request, test_id, test_instance_id):
 
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def create_test_instance(request, test_id):
     t = get_object_or_404(Test, pk=test_id)
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     if (up == t.owner) or (up in t.collaborators.all()):
         if request.method == 'POST':
             tif = CreateTestInstanceForm(request.POST)
@@ -163,9 +230,10 @@ def create_test_instance(request, test_id):
 
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def start_test(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     if up == ti.owner:
         return render_to_response('testtool/manager/start_test.html',context_instance=RequestContext(request))
     return render_to_response('testtool/manager/start_test.html',{ 'error': 'You must be the owner of this test instance in order to run it.' }, context_instance=RequestContext(request))
@@ -173,10 +241,11 @@ def start_test(request, test_id, test_instance_id):
     
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def export_data(request):
     test_instance_ran = TestInstance.objects.exclude(run_time=None)                 # all test instances that have been run
     test_id_ran = test_instance_ran.values_list('test__pk',flat=True).distinct()    # pk's of all tests that have test instances that have been run
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     # of these, find the ones of which the user is an owner or collaborator
     t_valid = []
     ti_valid = []
@@ -227,6 +296,7 @@ def export_data(request):
     
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def save_data(request):
     # eventually this request will have test_id/test_instance_id data along with it.
     # check for owner/collaborator status
@@ -242,10 +312,11 @@ def save_data(request):
     
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def share_test(request):
     # test owners can share tests and and child test instances of tests they own
     # test instance owners can share their test instances
-    up = UserProfile.objects.get(user=request.user)
+    up = request.user.get_profile()
     
     # tests user owns and their test instances
     t_own = Test.objects.filter(owner=up)               # tests user owns
@@ -342,6 +413,7 @@ def share_test(request):
     
 @login_required
 @group_required('Testers')
+@user_passes_test(has_user_profile)
 def share_test_submit(request):
     if request.method == 'POST':
         try:
@@ -353,7 +425,7 @@ def share_test_submit(request):
         else:
             if len(share_with) == 0:
                 return HttpResponse('please select a choice')
-            up = UserProfile.objects.get(user=request.user)
+            up = request.user.get_profile()
             if mode == 'share_test':
                 t = get_object_or_404(Test, pk=t_pk)
                 if up == t.owner:                                       # check that user owns test
