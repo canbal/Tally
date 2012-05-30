@@ -11,12 +11,46 @@ import random, csv, json
 
     
 def is_video(file_type):
-    if file_type.split('/')[0] == 'video':
-        return True
+    return (file_type.split('/')[0] == 'video')
+
+    
+def user_can(action,up,obj):
+    if isinstance(obj,Test):
+        return test_permission(action,up,obj)
+    elif isinstance(obj,TestInstance):
+        return test_instance_permission(action,up,obj)
     else:
-        return False
+        pass
+        # raise error
     
 
+def test_permission(action,up,t):
+    if action is 'view':
+        return True
+        # test owner, collaborator, or any owner/collaborator of any child test instances
+    elif action is 'export':
+        return ((up == t.owner) or (up in t.collaborators.all()))
+    elif action is 'share':
+        return (up == t.owner)
+    elif action is 'create':
+        return ((up == t.owner) or (up in t.collaborators.all()))       # refers to creating test instances from the test
+    else:
+        pass
+        # raise error  
+    
+    
+def test_instance_permission(action,up,ti):
+    if action is 'view' or 'export':
+        return ((up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()))
+    elif action is 'share':
+        return ((up == ti.owner) or (up == ti.test.owner))
+    elif action is 'run':
+        return (up == ti.owner)
+    else:
+        pass
+        # raise error        
+
+        
 @login_required
 @group_required('Testers')
 def create_test(request):
@@ -99,7 +133,7 @@ def display_test(request, test_id):
 def display_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
     up = UserProfile.objects.get(user=request.user)
-    if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
+    if user_can('view',up,ti):
         tif = DisplayTestInstanceForm(instance=ti)
         if request.method == 'GET':
             try:
@@ -112,9 +146,9 @@ def display_test_instance(request, test_id, test_instance_id):
                                                                                        'test_id': test_id,
                                                                                        'test_instance_id': test_instance_id,
                                                                                        'already_run': ti.run_time is not None,
-                                                                                       'can_share': (up == ti.owner) or (up == ti.test.owner),
-                                                                                       'can_export': True,  # anyone who can view it can export
-                                                                                       'can_run': (up == ti.owner),
+                                                                                       'can_share': user_can('share',up,ti),
+                                                                                       'can_export': user_can('export',up,ti),
+                                                                                       'can_run': user_can('run',up,ti),
                                                                                        'alert': alert },
                                  context_instance=RequestContext(request))
     return render_to_response('testtool/manager/display_test_instance.html',  { 'test_id': test_id,
@@ -128,7 +162,7 @@ def display_test_instance(request, test_id, test_instance_id):
 def create_test_instance(request, test_id):
     t = get_object_or_404(Test, pk=test_id)
     up = UserProfile.objects.get(user=request.user)
-    if (up == t.owner) or (up in t.collaborators.all()):
+    if user_can('create',up,t):
         if request.method == 'POST':
             tif = CreateTestInstanceForm(request.POST)
             tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
@@ -166,7 +200,7 @@ def create_test_instance(request, test_id):
 def start_test(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     up = UserProfile.objects.get(user=request.user)
-    if up == ti.owner:
+    if user_can('run',up,ti):
         return render_to_response('testtool/manager/start_test.html',context_instance=RequestContext(request))
     return render_to_response('testtool/manager/start_test.html',{ 'error': 'You must be the owner of this test instance in order to run it.' }, context_instance=RequestContext(request))
 
@@ -188,7 +222,7 @@ def export_data(request):
         tmp_list = []
         tmp_list_pk = []
         for ti in t_ran_ti:
-            if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
+            if user_can('export',up,ti):
                 tmp_list.append(ti)
                 tmp_list_pk.append(ti.pk)
         if len(tmp_list) > 0:
@@ -356,7 +390,7 @@ def share_test_submit(request):
             up = UserProfile.objects.get(user=request.user)
             if mode == 'share_test':
                 t = get_object_or_404(Test, pk=t_pk)
-                if up == t.owner:                                       # check that user owns test
+                if user_can('share',up,t):                              # check that user can share test
                     for id in share_with:                               # add collaborators to test
                         u = get_object_or_404(UserProfile, pk=int(id))
                         t.collaborators.add(u)
@@ -370,7 +404,7 @@ def share_test_submit(request):
                     return HttpResponse('please select a test instance')
                 else:
                     ti = get_object_or_404(TestInstance, pk=ti_pk, test__pk=t_pk)   # ensures that test instance belongs to test
-                    if (up == ti.owner) or (up == ti.test.owner):                   # check that user owns test instance or parent test
+                    if user_can('share',up,ti):                                     # check that user can share test instance
                         for id in share_with:                                       # add collaborators to test instance
                             u = get_object_or_404(UserProfile, pk=int(id))
                             ti.collaborators.add(u)
