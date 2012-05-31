@@ -5,7 +5,7 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from testtool.models import UserProfile
+from testtool.shortcuts import has_user_profile
 from forms import RegistrationForm, UserProfileForm
 
 def register(request):
@@ -61,19 +61,15 @@ def register_tester(request):
                               context_instance=RequestContext(request))
         
 @login_required
+@user_passes_test(has_user_profile)
 def render_profile(request):
-    try:
-    # A user may not have an associated UserProfile - i.e. SuperUser
-        up = UserProfile.objects.get(user=request.user)
-    except UserProfile.DoesNotExist:
-        return HttpResponse('You are not registered as a subject or a tester in the system!')
+    up = request.user.get_profile()
+    if request.user.groups.filter(name='Testers'):
+        return render_to_response('testtool/manager/profile.html', context_instance=RequestContext(request))
+    elif request.user.groups.filter(name='Subjects'):
+        return HttpResponseRedirect('/')
     else:
-        if request.user.groups.filter(name='Testers'):
-            return render_to_response('testtool/manager/profile.html', context_instance=RequestContext(request))
-        elif request.user.groups.filter(name='Subjects'):
-            return HttpResponseRedirect('/')
-        else:
-            return HttpResponse('You are not registered as a subject or a tester in the system!')
+        return HttpResponse('You are not registered as a subject or a tester in the system!')
     
 
 def custom_login(request, *args, **kwargs):
