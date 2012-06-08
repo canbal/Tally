@@ -1,30 +1,57 @@
 {% extends "testtool/manager/base_manager.html" %}
 
 {% block head %}
-<script type="text/javascript">  
+<script type="text/javascript">
+    function postDeleteFile(url, file_pk) {
+        $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}"}, function(data) {
+            if (data.status=="0") {
+                $("#row_del_"+file_pk).fadeOut(300, function() {
+                    $("#row_del_"+file_pk).hide();
+                });
+            } else {
+                alert("Error: "+data.message);
+            }
+        },"json");
+    }
+    function postAddFile(url, file_pk, str) {
+        $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}", filename: str}, function(data) {
+            if (data.status=="0") {
+                $("#btn_add_"+file_pk).hide();
+            } else {
+                alert("Error: "+data.message);
+                $("#row_add_"+file_pk).fadeOut(300, function() {
+                    $("#row_add_"+file_pk).hide();
+                });
+            }
+        },"json");
+    }
     function handleFileSelect(evt) {
         var files = evt.target.files;
         var show = [];
         var form = [];
+        var   js = [];
         for (var i = 0, f; f = files[i]; i++) {
-            show.push('<li>', escape(f.name), '</li>');
-            form.push('<option value="',i,'">', escape(f.name), '</option>')
+            show.push('<tr id="row_add_',i,'"><td>', escape(f.name), '</td>',
+                      '<td><button class="btn btn-mini btn-success" id="btn_add_',i,'"><i class="icon-upload"></i></button></td></tr>');
+            js.push('$("#btn_add_',i,'").click(function() { postAddFile("{% url add_video test_pk %}",',i,',"',escape(f.name),'") });\n');
         }
-        $("#files_show").html(show.join(''));
-        $("#id_files").append(form.join(''));
+        $("#files_show").append(show.join(''));
+        $("#btn_add_scripts").append(js.join(''));
+        $("#file_select").hide();
     }
     $(document).ready(function(){
-        $("#files").on('change',handleFileSelect);
+        $("#file_select").on('change',handleFileSelect);
     });
 </script>
 {% endblock head %}
 
 {% block header %}
-    Update Test
+    Create test page
 {% endblock header %}
 
 {% block content %}
-<form id="test_create_form" action="" method="post" enctype="multipart/form-data">
+<div class="span3">
+<form id="test_update_form" action="" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     
     <span style="color:red;font-weight:bold;font-size:1.1em">
@@ -34,16 +61,32 @@
     {% endfor %}
     </span>
         
-    <div data-role="fieldcontain">
-        {% for field in form %}
-            <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}</p>
-        {% endfor %}
+    <div>
+    {% for field in form %}
+        <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}</p>
+    {% endfor %}
+    <input type="submit" id="upload_button" value="Update">
     </div>
-    <input type="submit" id="create_button" value="Create">
 </form>
+<table class="table table-striped table-condensed" id="files_show">
+    <caption style="text-align:left">Files:</caption>
+    {% for file in files %}
+    <tr id="row_del_{{ file.pk }}">
+        <td>{{ file.filename }}</td>
+        <td><button class="btn btn-mini btn-danger" id="btn_del_{{ file.pk }}"><i class="icon-remove"></i></button></td>
+    </tr>
+    {% endfor %}
+</table>
+<input type="file" id="file_select" name="file_select" multiple="">
+</div>
+<div id="btns"></div>
 
-<p><input type="file" id="files" name="files" multiple=""></p>
-<ol id="files_show"></ol>
 
+<script type="text/javascript">
+{% for file in files %}
+$("#btn_del_{{ file.pk }}").click(function() { postDeleteFile("{% url delete_video file.pk %}", {{ file.pk }}); });
+{% endfor %}
+</script>
+<script type="text/javascript" id="btn_add_scripts"></script>
 {% endblock content %}
 

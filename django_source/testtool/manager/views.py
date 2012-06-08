@@ -1,20 +1,29 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group
 from django.shortcuts import render_to_response, get_object_or_404
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.template import RequestContext
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.views.generic import CreateView, UpdateView
 from django.utils.decorators import method_decorator
+from django.conf import settings
 from testtool.models import *
 from testtool.decorators import group_required
 from testtool.shortcuts import has_user_profile
 from forms import TestCreateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
-import random, csv, json
+import random, csv, json, os
 
+class JSONResponse(HttpResponse):
+    """JSON response class."""
+    def __init__(self,data='',json_opts={},mimetype="application/json",*args,**kwargs):
+        content = json.dumps(data,**json_opts)
+        super(JSONResponse,self).__init__(content,mimetype,*args,**kwargs)
     
-def is_video(file_type):
-    if file_type.split('/')[0] == 'video':
+def is_file_supported(filename):
+    ext = os.path.splitext(filename)[1]
+    print ext
+    if (ext=='.avi' or ext=='.mp4' or ext=='.m4v' or ext=='.wmv' or 
+        ext=='.flv' or ext=='.mpg' or ext=='.mov'):
         return True
     else:
         return False
@@ -22,7 +31,7 @@ def is_video(file_type):
 class TestCreateView(CreateView):
     model = Test
     form_class = TestCreateForm
-    template_name = 'testtool/manager/form_test.html'
+    template_name = 'testtool/manager/create_test.html'
     success_url = reverse_lazy('update_test')
                 
     @method_decorator(login_required)
@@ -40,19 +49,12 @@ class TestCreateView(CreateView):
         self.object = form.save(commit=False)
         self.object.owner = self.request.user.get_profile()
         self.object.save()
-        for filename in self.request.POST.getlist('filename'):
-            try:
-                f = Video.objects.get(test=self.object, filename=filename)
-            except Video.DoesNotExist:
-                f = Video(test=self.object, filename=filename)
-                f.save()
-        
         return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))
     
 class TestUpdateView(UpdateView):
     model = Test
     form_class = TestCreateForm
-    template_name = 'testtool/manager/form_test.html'
+    template_name = 'testtool/manager/update_test.html'
                 
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
@@ -69,49 +71,84 @@ class TestUpdateView(UpdateView):
         self.object = form.save(commit=False)
         self.object.owner = self.request.user.get_profile()
         self.object.save()
-        for filename in self.request.POST.getlist('filename'):
-            try:
-                f = Video.objects.get(test=self.object, filename=filename)
-            except Video.DoesNotExist:
-                f = Video(test=self.object, filename=filename)
-                f.save()
-        
         return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))    
     
     def get_context_data(self, **kwargs):
         context = super(TestUpdateView, self).get_context_data(**kwargs)
         context['files'] = Video.objects.filter(test=self.object)
+        context['test_pk'] = self.object.pk
         return context
-    
+
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def create_test_old(request):
-    up = request.user.get_profile()
+def add_video(request, test_pk):
     if request.method == 'POST':
-        tf = TestCreateForm(request.POST)
-        tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
-        if tf.is_valid():
-            # create new test
-            new_t = tf.save(commit=False)     # create new test instance from form, but don't save it yet
-            new_t.owner = up                  # when an admin is logged in, they are not recognized as a user!!!!!!
-            new_t.save()                      # save to database
-                
-            files = json.loads(request.POST['files_json'])
-            for f in files:
-                file_type = f['name']
-                if is_video(file_type):
-                    new_f = Video(test=new_t, filename=f['value'])
-                    new_f.save()
-                    
-            # redirect to test display page
-            return HttpResponseRedirect(reverse('testtool.manager.views.display_test', args=(new_t.pk,)))
-    else:
-        tf = TestCreateForm()
-        tf.fields['collaborators'].queryset = tf.fields['collaborators'].queryset.exclude(user=up.user)
+        print request.POST
+        messages = {'0': 'Done', '1': 'Test does not exist', '2': 'No file provided', '3':'Video already exists', '4':'File type is not supported', '5':'Permission failed'}
+        
+        #checking for json data type
+        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
+            mimetype = 'application/json'
+        else:
+            mimetype = 'text/plain'
             
-    return render_to_response('testtool/manager/create_test_old.html',{'tf':tf,},context_instance=RequestContext(request))
-    
+        try:
+            t = Test.objects.get(pk=test_pk)
+        except Test.DoesNotExist:
+            status = 1;
+        else:
+            try:
+                filename =  request.POST['filename']
+            except KeyError:
+                status = 2; #TODO: should change when file upload support is here
+            else:
+                if is_file_supported(filename):
+                    try:
+                        f = Video.objects.get(test=t, filename=filename)
+                    except Video.DoesNotExist:
+                        f = Video(test=t, filename=filename)
+                        f.save()
+                        status = 0;
+                    else:
+                        status = 3;
+                else:
+                    status = 4;
+        
+        data = {'status':status,'message':messages[str(status)]}
+        response = JSONResponse(data, {}, mimetype)
+        return response
+    else:
+        return HttpResponseBadRequest('GET is not supported')
+
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def delete_video(request, video_pk):
+    if request.method == 'POST':
+        messages = {'0': 'Done', '1': 'Video does not exist', '2': 'Permission failed'}
+        
+        #checking for json data type
+        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
+            mimetype = 'application/json'
+        else:
+            mimetype = 'text/plain'
+            
+        try:
+            f = Video.objects.get(pk=video_pk)
+            t = f.test
+        except Video.DoesNotExist:
+            status = 1;
+        else:
+            # TODO: check if the user has proper permissions for deleting the video
+            f.delete()
+            status = 0;
+            
+        data = {'status':status,'message':messages[str(status)]}
+        response = JSONResponse(data, {}, mimetype)
+        return response
+    else:
+        return HttpResponseBadRequest('GET is not supported')
     
 @login_required
 @group_required('Testers')
