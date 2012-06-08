@@ -48,7 +48,6 @@ class Video(models.Model):
     test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)
     file        = models.FileField(upload_to='videos/%Y/%m/%d', null=True, blank=True)
-    delete_url  = models.URLField(max_length=200)
     description = models.CharField(max_length=400, null=True, blank=True)
 
     class Meta:

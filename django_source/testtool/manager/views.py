@@ -21,13 +21,50 @@ class JSONResponse(HttpResponse):
     
 def is_file_supported(filename):
     ext = os.path.splitext(filename)[1]
-    print ext
     if (ext=='.avi' or ext=='.mp4' or ext=='.m4v' or ext=='.wmv' or 
         ext=='.flv' or ext=='.mpg' or ext=='.mov'):
         return True
     else:
         return False
 
+    
+def user_can(action,up,obj):
+    if isinstance(obj,Test):
+        return test_permission(action,up,obj)
+    elif isinstance(obj,TestInstance):
+        return test_instance_permission(action,up,obj)
+    else:
+        pass
+        # raise error
+    
+
+def test_permission(action,up,t):
+    if action is 'view':
+        return True
+        # test owner, collaborator, or any owner/collaborator of any child test instances
+    elif action is 'export':
+        return ((up == t.owner) or (up in t.collaborators.all()))
+    elif action is 'share':
+        return (up == t.owner)
+    elif action is 'create':
+        return ((up == t.owner) or (up in t.collaborators.all()))       # refers to creating test instances from the test
+    else:
+        pass
+        # raise error  
+    
+    
+def test_instance_permission(action,up,ti):
+    if action is 'view' or 'export':
+        return ((up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()))
+    elif action is 'share':
+        return ((up == ti.owner) or (up == ti.test.owner))
+    elif action is 'run':
+        return (up == ti.owner)
+    else:
+        pass
+        # raise error        
+
+        
 class TestCreateView(CreateView):
     model = Test
     form_class = TestCreateForm
@@ -84,7 +121,6 @@ class TestUpdateView(UpdateView):
 @user_passes_test(has_user_profile)
 def add_video(request, test_pk):
     if request.method == 'POST':
-        print request.POST
         messages = {'0': 'Done', '1': 'Test does not exist', '2': 'No file provided', '3':'Video already exists', '4':'File type is not supported', '5':'Permission failed'}
         
         #checking for json data type
@@ -98,22 +134,25 @@ def add_video(request, test_pk):
         except Test.DoesNotExist:
             status = 1;
         else:
-            try:
-                filename =  request.POST['filename']
-            except KeyError:
-                status = 2; #TODO: should change when file upload support is here
-            else:
-                if is_file_supported(filename):
-                    try:
-                        f = Video.objects.get(test=t, filename=filename)
-                    except Video.DoesNotExist:
-                        f = Video(test=t, filename=filename)
-                        f.save()
-                        status = 0;
-                    else:
-                        status = 3;
+            if test_permission('create',request.user.get_profile(),t):
+                try:
+                    filename =  request.POST['filename']
+                except KeyError:
+                    status = 2; #TODO: should change when file upload is supported
                 else:
-                    status = 4;
+                    if is_file_supported(filename):
+                        try:
+                            f = Video.objects.get(test=t, filename=filename)
+                        except Video.DoesNotExist:
+                            f = Video(test=t, filename=filename)
+                            f.save()
+                            status = 0;
+                        else:
+                            status = 3;
+                    else:
+                        status = 4;
+            else:
+                status = 5;
         
         data = {'status':status,'message':messages[str(status)]}
         response = JSONResponse(data, {}, mimetype)
@@ -126,7 +165,7 @@ def add_video(request, test_pk):
 @user_passes_test(has_user_profile)
 def delete_video(request, video_pk):
     if request.method == 'POST':
-        messages = {'0': 'Done', '1': 'Video does not exist', '2': 'Permission failed'}
+        messages = {'0': 'Done', '1': 'Video does not exist', '5': 'Permission failed'}
         
         #checking for json data type
         if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
@@ -140,9 +179,11 @@ def delete_video(request, video_pk):
         except Video.DoesNotExist:
             status = 1;
         else:
-            # TODO: check if the user has proper permissions for deleting the video
-            f.delete()
-            status = 0;
+            if test_permission('create',request.user.get_profile(),t):
+                f.delete()
+                status = 0;
+            else:
+                status = 5;
             
         data = {'status':status,'message':messages[str(status)]}
         response = JSONResponse(data, {}, mimetype)
@@ -202,7 +243,7 @@ def display_test(request, test_id):
 def display_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
     up = request.user.get_profile()
-    if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
+    if user_can('view',up,ti):
         tif = DisplayTestInstanceForm(instance=ti)
         if request.method == 'GET':
             try:
@@ -215,15 +256,15 @@ def display_test_instance(request, test_id, test_instance_id):
                                                                                        'test_id': test_id,
                                                                                        'test_instance_id': test_instance_id,
                                                                                        'already_run': ti.run_time is not None,
-                                                                                       'can_share': (up == ti.owner) or (up == ti.test.owner),
-                                                                                       'can_export': True,  # anyone who can view it can export
-                                                                                       'can_run': (up == ti.owner),
+                                                                                       'can_share': user_can('share',up,ti),
+                                                                                       'can_export': user_can('export',up,ti),
+                                                                                       'can_run': user_can('run',up,ti),
                                                                                        'alert': alert },
-                                 context_instance=RequestContext(request))
+                                                                                       context_instance=RequestContext(request))
     return render_to_response('testtool/manager/display_test_instance.html',  { 'test_id': test_id,
-                                                                                   'test_instance_id': test_instance_id,
-                                                                                   'error': 'You do not have access to this test instance.'},
-                             context_instance=RequestContext(request))
+                                                                                'test_instance_id': test_instance_id,
+                                                                                'error': 'You do not have access to this test instance.'},
+                                                                                context_instance=RequestContext(request))
 
 
 @login_required
@@ -232,16 +273,15 @@ def display_test_instance(request, test_id, test_instance_id):
 def create_test_instance(request, test_id):
     t = get_object_or_404(Test, pk=test_id)
     up = request.user.get_profile()
-    if (up == t.owner) or (up in t.collaborators.all()):
+    if user_can('create',up,t):
         if request.method == 'POST':
             tif = CreateTestInstanceForm(request.POST)
             tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
             if tif.is_valid():
-                owner = UserProfile.objects.get(user=request.user)  # all testers have an associated user profile
                 # create new instance
                 new_ti = tif.save(commit=False)     # create new test instance from form, but don't save it yet
                 new_ti.test = t         # add in exluded fields
-                new_ti.owner = owner    # when an admin is logged in, they are not recognized as a user!!!!!!
+                new_ti.owner = up       # when an admin is logged in, they are not recognized as a user!!!!!!
                 new_ti.path = new_ti.path.replace("\\","/").rstrip("/")     # make sure path has only forward slashes and no trailing slashes
                 new_ti.save()           # save the new instance
                 tif.save_m2m()          # save the many-to-many data for the form
@@ -271,7 +311,7 @@ def create_test_instance(request, test_id):
 def start_test(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     up = request.user.get_profile()
-    if up == ti.owner:
+    if user_can('run',up,ti):
         return render_to_response('testtool/manager/start_test.html',context_instance=RequestContext(request))
     return render_to_response('testtool/manager/start_test.html',{ 'error': 'You must be the owner of this test instance in order to run it.' }, context_instance=RequestContext(request))
 
@@ -294,7 +334,7 @@ def export_data(request):
         tmp_list = []
         tmp_list_pk = []
         for ti in t_ran_ti:
-            if (up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()):
+            if user_can('export',up,ti):
                 tmp_list.append(ti)
                 tmp_list_pk.append(ti.pk)
         if len(tmp_list) > 0:
@@ -465,7 +505,7 @@ def share_test_submit(request):
             up = request.user.get_profile()
             if mode == 'share_test':
                 t = get_object_or_404(Test, pk=t_pk)
-                if up == t.owner:                                       # check that user owns test
+                if user_can('share',up,t):                              # check that user can share test
                     for id in share_with:                               # add collaborators to test
                         u = get_object_or_404(UserProfile, pk=int(id))
                         t.collaborators.add(u)
@@ -479,7 +519,7 @@ def share_test_submit(request):
                     return HttpResponse('please select a test instance')
                 else:
                     ti = get_object_or_404(TestInstance, pk=ti_pk, test__pk=t_pk)   # ensures that test instance belongs to test
-                    if (up == ti.owner) or (up == ti.test.owner):                   # check that user owns test instance or parent test
+                    if user_can('share',up,ti):                                     # check that user can share test instance
                         for id in share_with:                                       # add collaborators to test instance
                             u = get_object_or_404(UserProfile, pk=int(id))
                             ti.collaborators.add(u)
