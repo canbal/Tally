@@ -4,8 +4,6 @@ from testtool.manager.views import TestCreateView, TestUpdateView
 urlpatterns = patterns('testtool.manager.views',
 
     ### Create Test
-        # Allows user to input test details (name, title, etc.) and possibly add videos for a Test to create
-    url(r'^createtestold/$', 'create_test_old'), # old way of handling it
         
         # Allows user to create TestCases using a drag-and-drop tool
     url(r'^createtest/cases/$', 'create_test_cases'),
@@ -13,6 +11,11 @@ urlpatterns = patterns('testtool.manager.views',
         # Saves a Test and all associated Video, TestCase, and TestCaseItem objects to the database.  Redirects to /<test_id>/, maybe display a note that this Test was just successfully created.
     url(r'^createtest/save/$', 'save_test'),
     
+        # Adds video to a test
+    url(r'^(?P<test_pk>\d+)/addvideo$', 'add_video', name='add_video'),
+ 
+         # Deletes a video
+    url(r'^deletevideo/(?P<video_pk>\d+)/$', 'delete_video', name='delete_video'),
     
     ### Display Test and TestInstance
         # Lists all tests for which the user is an owner or collaborator

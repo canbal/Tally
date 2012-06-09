@@ -1,0 +1,28 @@
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block header %}
+    Create test page
+{% endblock header %}
+
+{% block content %}
+<form id="test_create_form" action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <span style="color:red;font-weight:bold;font-size:1.1em">
+    {{ form.non_field_errors }}
+    {% for field in form %}
+        {% if field.errors %}{{ field.label }}:{{ field.errors }}{% endif %}
+    {% endfor %}
+    </span>
+        
+    <div data-role="fieldcontain">
+        {% for field in form %}
+            <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field }}</p>
+        {% endfor %}
+    </div>
+    <input type="submit" id="create_button" value="Create">
+</form>
+
+
+{% endblock content %}
+
