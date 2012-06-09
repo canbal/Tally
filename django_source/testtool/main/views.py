@@ -8,6 +8,7 @@ from django.template import RequestContext
 from testtool.models import *
 from testtool.main.forms import *
 from testtool.decorators import group_required
+from testtool.test_modes.views import tally_continuous, tally_discrete, status_continuous, status_discrete
 import json
 
 
@@ -36,7 +37,7 @@ def testme(request):
 def index(request):
     try:
     # A user may not have an associated UserProfile - i.e. SuperUser
-        subject = UserProfile.objects.get(user=request.user)
+        subject = request.user.get_profile()
     except UserProfile.DoesNotExist:
         return HttpResponse('You are not registered as a subject or a tester in the system!')
     else:
@@ -52,153 +53,105 @@ def index(request):
 @login_required
 @group_required('Subjects')
 def enroll(request):
-    subject = UserProfile.objects.get(user=request.user)
+    subject = request.user.get_profile()
     latest_test_instances = TestInstance.objects.exclude(subjects=subject).order_by('-create_time')
     return render_to_response('testtool/main/enroll.html', {'latest_test_instances': latest_test_instances})
 
     
-#@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
+@csrf_exempt #remove later, add csrf_token (in cookie) and csrfmiddlewaretoken (within POST data) handling!
 def get_media(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    maxCount = ti.testcaseinstance_set.count()
-    errStr = json.dumps({'path':'error', 'videoList':[], 'testDone':True})
-    # check bounds of counter
-    if ti.counter<0:
-        return HttpResponse(errStr)
-    elif ti.counter > maxCount:
-        return HttpResponse(json.dumps({'path':'', 'videoList':[], 'testDone':True}))
-    # get the current test case
-    try:
-        tci_current = ti.testcaseinstance_set.get(play_order=max(1,ti.counter))     # should exist but check anyway
-    except(TestCaseInstance.DoesNotExist):
-        return HttpResponse(errStr)
-    else:
-        # if the current test is done, increment the counter and return the next video or a done signal
-        if tci_current.is_done:
-            ti.counter += 1
-            ti.save()
-            if ti.counter > maxCount:
-                return HttpResponse(json.dumps({'path':'', 'videoList':[], 'testDone':True}))
-            else:
-                try:
-                    tci_next = ti.testcaseinstance_set.get(play_order=ti.counter)
-                except(TestCaseInstance.DoesNotExist):
-                    return HttpResponse(errStr)
-                else:
-                    vidList = []
-                    for ii in range(0,tci_next.test_case.testcaseitem_set.count()):
-                        vidList.append(tci_next.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
-                    return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList, 'testDone':False}))
-        # if this is the first request of the test instance, return the first video and increment the counter
-        elif ti.counter==0:
-            ti.run_time = datetime.datetime.now()       # set the run_time of the test instance to now
-            ti.counter += 1
-            ti.save()
-            vidList = []
-            for ii in range(0,tci_current.test_case.testcaseitem_set.count()):
-                vidList.append(tci_current.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
-            return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList, 'testDone':False}))
-        # otherwise, the subjects haven't finished scoring- return a wait signal
+    if request.method == 'POST':
+        maxCount = ti.testcaseinstance_set.count()
+        errStr = json.dumps({'path':'error', 'videoList':[], 'testDone':True})
+        # get POST data from request
+        try:
+            status = request.POST['status']
+        except KeyError:
+            return HttpResponse('Invalid POST data.')
+        # check bounds of counter
+        if ti.counter<0:
+            return HttpResponse(errStr)
+        elif ti.counter > maxCount:
+            return HttpResponse(json.dumps({'path':'', 'videoList':[], 'testDone':True}))
+        # get the current test case
+        try:
+            tci_current = ti.testcaseinstance_set.get(play_order=max(1,ti.counter))     # should exist but check anyway
+        except TestCaseInstance.DoesNotExist:
+            return HttpResponse(errStr)
         else:
-            return HttpResponse(json.dumps({'path':'', 'videoList':[], 'testDone':False}))
+            if status == 'media_done':
+                tci_current.is_media_done = True
+                tci_current.save()
+            # if the current test is done, increment the counter and return the next video or a done signal
+            if tci_current.is_done:
+                ti.counter += 1
+                ti.save()
+                if ti.counter > maxCount:
+                    return HttpResponse(json.dumps({'path':'', 'videoList':[], 'testDone':True}))
+                else:
+                    try:
+                        tci_next = ti.testcaseinstance_set.get(play_order=ti.counter)
+                    except TestCaseInstance.DoesNotExist:
+                        return HttpResponse(errStr)
+                    else:
+                        vidList = []
+                        for ii in range(0,tci_next.test_case.testcaseitem_set.count()):
+                            vidList.append(tci_next.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
+                        return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList, 'testDone':False}))
+            # if this is the first request of the test instance, return the first video and increment the counter
+            elif ti.counter==0:
+                ti.run_time = datetime.datetime.now()       # set the run_time of the test instance to now
+                ti.counter += 1
+                ti.save()
+                vidList = []
+                for ii in range(0,tci_current.test_case.testcaseitem_set.count()):
+                    vidList.append(tci_current.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
+                return HttpResponse(json.dumps({'path':ti.path, 'videoList':vidList, 'testDone':False}))
+            # otherwise, the subjects haven't finished scoring- return a wait signal
+            else:
+                return HttpResponse(json.dumps({'path':'', 'videoList':[], 'testDone':False}))
+    else:
+        return HttpResponse('Only POST requests accepted')
             
             
 @login_required
 @group_required('Subjects')
-#@permission_required('testtool.main.add_score')
 def tally(request,test_instance_id):
     # get the test instance
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    subject = UserProfile.objects.get(user=request.user)
+    subject = request.user.get_profile()
     if not is_enrolled(subject, ti):
         return HttpResponseRedirect(reverse('testtool.registration.views.render_profile'))
-    
-    choices = [(5,'Imperceptible'), (4,'Perceptible, but not annoying'), (3,'Slightly annoying'), (2,'Annoying'), (1,'Very annoying')]
-    # check bounds of the counter (should handle these cases better)
-    try:
-        tci = ti.testcaseinstance_set.get(play_order=ti.counter)
-    except(TestCaseInstance.DoesNotExist):
-        return render_to_response('testtool/main/status.html', {'test_instance': ti})
-    header = 'Test '+str(ti.counter)+'/'+str(ti.testcaseinstance_set.count())
-    
-    # make sure this subject has not submitted a score for this test case already
-    try:
-        sc = subject.score_set.get(test_case_instance=tci)
-    except(Score.DoesNotExist):
-        if request.method == 'GET':
-            return render_to_response('testtool/main/detail.html',
-                                      {'test_instance': ti, 'header': header, 'choices': choices},
-                                      context_instance=RequestContext(request))
-        else:
-            # ensure that one of the choices was selected before submitting the form
-            try:
-                selection = request.POST['value']
-                current_count = int(request.POST['current_count'])
-            except KeyError:
-                return render_to_response('testtool/main/detail.html',
-                                          {'test_instance': ti, 'header': header, 'choices': choices,
-                                           'error_message': 'Please select a choice.'},
-                                          context_instance=RequestContext(request))
-            if current_count is ti.counter:
-                score = Score(test_case_instance=tci, subject=subject, value=selection)
-                score.save()
-                return render_to_response('testtool/main/status.html', {'test_instance': ti})
-            else:
-                return render_to_response('testtool/main/detail.html', 
-                                          {'test_instance': ti, 'header': header, 'choices': choices},
-                                          context_instance=RequestContext(request))
+    method_dict = dict(METHOD_CHOICES)
+    if ti.test.method in [x[0] for x in method_dict['Continuous']]:
+        return tally_continuous(request, ti, subject)
+    elif ti.test.method in [x[0] for x in method_dict['Discrete']]:
+        return tally_discrete(request, ti, subject)
     else:
-        return render_to_response('testtool/main/status.html',
-                                  {'test_instance': ti,
-                                   'error_message': 'You already selected a choice for this test!'})
+        raise Exception('Test mode must be "Continuous" or "Discrete"')
 
 
 @login_required
 @group_required('Subjects')
 def status(request, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    messages = {'0': 'Waiting for other participants. Test will begin shortly...',
-                '1': 'Choice is submitted. Waiting for other participants or video to finish...',
-                '2': 'Choices of all participants are recorded. Test will proceed shortly...',
-                '3': 'Thank you for your participation!',
-                '4': 'Get ready to vote.',
-                '5': 'Server error'}
-    max_counter = ti.testcaseinstance_set.count();
-    if ti.counter == 0:
-        status = 0 # 0: means test hasn't started yet
-        header = 'Welcome'
-    elif ti.counter > 0 and ti.counter <= max_counter:
-        header = 'Test '+str(ti.counter)+'/'+str(max_counter)
+    if request.is_ajax():
         try:
-            tci = ti.testcaseinstance_set.get(play_order=ti.counter)
-        except(TestCaseInstance.DoesNotExist):
-            status = 5
+            ti = TestInstance.objects.get(pk=test_instance_id)
+        except:
+            ti = []
+        max_counter = ti.testcaseinstance_set.count()
+        method_dict = dict(METHOD_CHOICES)
+        if ti.test.method in [x[0] for x in method_dict['Continuous']]:
+            return status_continuous(request, ti, max_counter)
+        elif ti.test.method in [x[0] for x in method_dict['Discrete']]:
+            return status_discrete(request, ti, max_counter)
         else:
-            # update status if current subject has not voted yet
-            subject = UserProfile.objects.get(user=request.user)
-            try:
-                sc = subject.score_set.get(test_case_instance=tci)
-            except(Score.DoesNotExist):
-                status = 4
-            else:
-                if tci.is_done:
-                    status = 2 # 2: means all subjects have voted for current test case
-                else:
-                    # update status if there exist any subjects who has not voted yet
-                    try:
-                        for subject in ti.subjects.all():
-                            sc = subject.score_set.get(test_case_instance=tci)
-                    except(Score.DoesNotExist):
-                        status = 1
-                    else:
-                        status = 2 # 2: means all subjects have voted for current test case
-                        tci.is_done = True
-                        tci.save()
+            raise Exception('Test mode must be "Continuous" or "Discrete"')
     else:
-        status = 3 # 3: means test has finished
-        header = 'Test Complete'
-    return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)], 'header':header}))
-
+        ti = get_object_or_404(TestInstance, pk=test_instance_id)
+        return render_to_response('testtool/main/status.html', {'test_instance': ti})
+    
     
 @login_required
 @group_required('Subjects')
@@ -206,7 +159,7 @@ def enroll_to_test_instance(request, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     try:
     # A user may not have an associated UserProfile - i.e. SuperUser
-        subject = UserProfile.objects.get(user=request.user)
+        subject = request.user.get_profile()
     except UserProfile.DoesNotExist:
         pass
     else:
@@ -240,8 +193,16 @@ def reset_test_instance(request, test_instance_id):
     tci = TestCaseInstance.objects.filter(test_instance=ti)
     for t in tci:
         t.is_done = False
+        t.is_media_done = False
         t.save()
-        scores = Score.objects.filter(test_case_instance=t)
+        if ti.test.method == 'SSCQE':
+            scores = ScoreSSCQE.objects.filter(test_case_instance=t)
+        elif ti.test.method == 'DSIS' or ti.test.method == 'CUSTOM':
+            scores = ScoreDSIS.objects.filter(test_case_instance=t)
+        elif ti.test.method == 'DSCQS':
+            scores = ScoreDSCQS.objects.filter(test_case_instance=t)
+        else:
+            raise Exception('Invalid test method.')
         for s in scores:
             s.delete()
     # return HttpResponse("Test Instance " + test_instance_id + " has been reset.")

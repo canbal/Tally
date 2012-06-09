@@ -10,11 +10,8 @@
         {% csrf_token %}
         <div data-role="fieldcontain">
             <fieldset data-role="controlgroup"> 
-                <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
-                {% for elem in choices %}
-                    <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
-                    <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
-                {% endfor %}
+                {% block voting_control %}
+                {% endblock voting_control %}
             </fieldset>
         </div>
         <span style="float:right">

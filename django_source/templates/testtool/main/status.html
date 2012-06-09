@@ -10,7 +10,7 @@
         function updateStatus() {
             $.getJSON("{% url testtool.main.views.status test_instance_id=test_instance.pk %}", function(data) {
                 if(data.status=="4") {
-                    window.location = "/{{ test_instance.pk }}/tally";
+                    window.location = "{% url testtool.main.views.tally test_instance_id=test_instance.pk %}";
                 } else {
                     $( "#header" ).empty().append(data.header);
                     $( "#message" ).empty().append(data.message);
@@ -32,4 +32,4 @@
         {% if error_message %}<p style="color:red">{{ error_message }}</p>{% endif %}
     </div>
     <p><div id="message"></div></p>
-{% endblock content %}  
+{% endblock content %}

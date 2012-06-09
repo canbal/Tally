@@ -40,7 +40,7 @@ try:
 except Group.DoesNotExist:
     subjects = Group(name='Subjects')
     subjects.save()
-    perm = Permission.objects.get(codename='add_score')
+    perm = Permission.objects.get(codename='add_scoredsis')
     subjects.permissions.add(perm)
 
 try:
@@ -60,12 +60,12 @@ except UserProfile.DoesNotExist:
 try:
     test = Test.objects.get(title='Example Test',description='An example test with single video test cases')
 except Test.DoesNotExist:
-    test = Test(title='Example Test',description='An example test with single video test cases',method='CU',owner=tester_profile)
+    test = Test(title='Example Test',description='An example test with single video test cases',method='CUSTOM',owner=tester_profile)
     test.save()
     
     
 videoList = ['skydiving_largeBlur_blurOne_30.mp4', 'skydiving_largeBlur_inPhase_30.mp4', 'skydiving_largeBlur_outOfPhase_60.mp4', 'skydiving_smallBlur_blurOne_60.mp4']
-videoPath = '/Users/canbal/Desktop/test'
+videoPath = 'd:/binocsupp/skydiving'
 for filename in videoList:
     try:
         video = Video.objects.get(test=test,filename=filename)

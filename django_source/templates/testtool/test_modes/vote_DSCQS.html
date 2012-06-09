@@ -1,0 +1,9 @@
+
+{% extends "testtool/test_modes/base_discrete.html" %}
+
+{% block voting_control %}
+    <label for="slider1">Rate the quality:</label>
+    <input type="range" name="value1" id="slider1" value="3" min="1" max="5" step=".04"/>
+    <label for="slider2">Rate the quality:</label>
+    <input type="range" name="value2" id="slider2" value="3" min="1" max="5" step=".04"/>
+{% endblock voting_control %}

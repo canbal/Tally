@@ -5,13 +5,15 @@
 #include <QNetworkAccessManager>
 #include <Phonon/VideoWidget>
 #include <Phonon/MediaObject>
+#include <QProcess>
+#include <json/json.h>
 
 
 namespace Ui {
-class MainWindow;
+    class MainWindow;
 }
 
-const int PING_INTERVAL = 3;     // seconds to wait before requesting next video from server
+const int PING_INTERVAL = 3;     // seconds to wait before requesting next set of videos from server
 
 class MainWindow : public QMainWindow
 {
@@ -22,25 +24,30 @@ public:
     ~MainWindow();
 
 signals:
-    void initComplete();
+    void initComplete(QString status);
 
 private slots:
-    void onVideoFinished();
-    void on_startTest_clicked();
-    void getMediaHTTP();
-    void on_webAddress_returnPressed();
-    void initTest();
-    void on_changeScreen_clicked();
     void authenticate(QNetworkReply* reply, QAuthenticator* auth);
+    void on_webAddress_returnPressed();
+    void on_changeScreen_clicked();
+    void on_startTest_clicked();
+    void initTest();
+    void sendStatusToServer(QString status);
+    void executeServerMediaCommand();
+    void onVideoFinished();
+    void onVideoFinishedWMP(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
     Ui::MainWindow *ui;
-    QString m_rootURL;
-    int m_testInstanceID;
-    QNetworkAccessManager *m_manager;
     Phonon::MediaObject *m_media;
     Phonon::VideoWidget *m_vidWidget;
-    QString readHTTPResponse();
+    QNetworkAccessManager *m_manager;
+    QString m_rootURL;
+    int m_testInstanceID;
+    QProcess *m_wmp;
+    int m_videoMode;
+    QString readServerResponse();
+    void playVideoList(std::string path, Json::Value videoList);
 };
 
 #endif // MAINWINDOW_H

@@ -3,17 +3,24 @@ from testtool.models.registration import UserProfile
 import datetime
 
 METHOD_CHOICES = (
-    ('DS','DSIS'),
-    ('SQ','SAMVIQ'),
-    ('CU','CUSTOM')
+    ('Continuous', (
+            ('SSCQE', 'SSCQE'),
+        )
+    ),
+    ('Discrete', (
+            ('DSIS', 'DSIS'),
+            ('DSCQS', 'DCSQS'),
+        )
+    ),
 )
+
 
 class Test(models.Model):
     owner         = models.ForeignKey(UserProfile, related_name='owner_tests')
     collaborators = models.ManyToManyField(UserProfile, related_name='collaborators_tests', null=True, blank=True)
     title         = models.CharField(max_length=200, unique=True)
     description   = models.CharField(max_length=400)
-    method        = models.CharField(max_length=2, choices=METHOD_CHOICES, default='DS')
+    method        = models.CharField(max_length=10, choices=METHOD_CHOICES, default='DSIS')
     create_time   = models.DateTimeField('Date created', auto_now_add=True)
     
     class Meta:
@@ -41,7 +48,7 @@ class TestInstance(models.Model):
     class Meta:
         app_label = 'testtool'
     def __unicode__(self):
-        return str(self.id) + ' : ' + self.owner.user.username + ' : ' + self.test.title
+        return '%d : %s : %s' % (self.pk, self.owner.user.username, self.test.title)
 
 
 class Video(models.Model):
@@ -64,7 +71,7 @@ class TestCase(models.Model):
     class Meta:
         app_label = 'testtool'
     def __unicode__(self):
-        return '%s : %d' % (str(self.test.title), self.pk)
+        return '%s : %d' % (self.test.title, self.pk)
     def getTest(self):
         return self.test
     
@@ -73,6 +80,7 @@ class TestCaseInstance(models.Model):
     test_instance = models.ForeignKey(TestInstance)
     test_case     = models.ForeignKey(TestCase)
     is_done       = models.BooleanField(default=0)
+    is_media_done = models.BooleanField(default=0)
     play_order    = models.PositiveIntegerField()
     
     class Meta:
@@ -93,14 +101,3 @@ class TestCaseItem(models.Model):
         unique_together = ('test_case', 'play_order')
     def __unicode__(self):
         return '%s : %d : %s' % (unicode(self.test_case), self.play_order, self.video)
-        
-        
-class Score(models.Model):
-    test_case_instance = models.ForeignKey(TestCaseInstance)
-    subject            = models.ForeignKey(UserProfile)
-    value              = models.IntegerField()
-    
-    class Meta:
-        app_label = 'testtool'
-    def __unicode__(self):
-        return '%s : %s : %d' % (str(self.test_case_instance), str(self.subject), self.value)

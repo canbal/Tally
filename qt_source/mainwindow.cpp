@@ -6,7 +6,6 @@
 #include <QDesktopWidget>
 #include <time.h>
 #include <sstream>
-#include <json/json.h>
 #include <QNetworkCookie>
 #include <QAuthenticator>
 
@@ -17,21 +16,25 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->startTest->setEnabled(false);
-    m_media = new Phonon::MediaObject();
-    m_vidWidget = new Phonon::VideoWidget();
-    Phonon::createPath(m_media, m_vidWidget);
-    m_vidWidget->setFullScreen(true);
-    m_vidWidget->show();
-    on_changeScreen_clicked();
-    connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
 
-
+    m_videoMode = 2;
+    if (m_videoMode==1) {
+        m_media = new Phonon::MediaObject();
+        m_vidWidget = new Phonon::VideoWidget();
+        Phonon::createPath(m_media, m_vidWidget);
+        m_vidWidget->setFullScreen(true);
+        m_vidWidget->show();
+        on_changeScreen_clicked();
+        connect(m_media,SIGNAL(finished()),this,SLOT(onVideoFinished()));
+    } else if (m_videoMode==2) {
+        ui->changeScreen->setEnabled(false);
+        m_wmp = new QProcess(this);
+        connect(m_wmp,SIGNAL(finished(int, QProcess::ExitStatus)),this,SLOT(onVideoFinishedWMP(int, QProcess::ExitStatus)));
+    }
     m_manager = new QNetworkAccessManager(this);
     //m_manager->setCookieJar(new QNetworkCookieJar(this));
     //connect(m_manager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
     //            SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
-
-
     m_rootURL = "";
     m_testInstanceID = 0;
 
@@ -40,8 +43,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    delete m_media;
-    delete m_vidWidget;
+    if (m_videoMode==1) {
+        delete m_media;
+        delete m_vidWidget;
+    } else if (m_videoMode==2) {
+        delete m_wmp;
+    }
     delete ui;
 }
 
@@ -51,38 +58,6 @@ void MainWindow::authenticate(QNetworkReply* reply, QAuthenticator* auth)
     QMessageBox::information(this, tr("SSTT"), "adfadfad");
     auth->setUser(QString("tester"));
     auth->setPassword(QString("1234"));
-}
-
-
-void MainWindow::on_startTest_clicked()
-{
-    ui->startTest->setEnabled(false);
-    ui->changeScreen->setEnabled(false);
-
-   // tried to POST to /login/ but get "connection closed" error- this is due to webpage being forbidden (HTTP 403).
-   // likely due to CSRF not being handled.  some web searching reveals that @csrf_exempt decorator may
-   // not actually remove CSRF handling.  when i tried this (@csrf_exempt), it still didn't work
-
-    //QNetworkRequest requestGET(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
-    //QNetworkReply *replyGET = m_manager->get(requestGET);
-    //connect(replyGET, SIGNAL(finished()), this, SLOT(initTest()));
-/*
-    //QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
-    QNetworkRequest request(QUrl(QString("%1/login/").arg(m_rootURL)));
-    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
-    QUrl params;
-    params.addQueryItem("username","tester");
-    params.addQueryItem("password","1234");
-    //params.addQueryItem("csrfmiddlewaretoken","2c9e7ed2454217f81016111fe42857b2");
-    //params.addQueryItem("next","");
-    const QByteArray data = params.encodedQuery();
-    QNetworkReply *reply = m_manager->post(request,data);
-    connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
-*/
-    QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
-    QNetworkReply *reply = m_manager->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
-    connect(this, SIGNAL(initComplete()), this, SLOT(onVideoFinished()));
 }
 
 
@@ -102,63 +77,42 @@ void MainWindow::on_webAddress_returnPressed()
 }
 
 
-void MainWindow::onVideoFinished()
+void MainWindow::on_changeScreen_clicked()
 {
-    // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
-    m_media->clear();   // so that video player does not pause on final frame
-    QNetworkRequest request(QUrl(QString("%1/%2/get_media/").arg(m_rootURL).arg(m_testInstanceID)));
-    QNetworkReply *reply = m_manager->get(request);
-    connect(reply, SIGNAL(finished()), this, SLOT(getMediaHTTP()));
+    if (m_videoMode==1) {
+        QDesktopWidget *desktop = QApplication::desktop();
+        int nScreens = desktop->screenCount();
+        if (nScreens > 0) {
+            int screen = (desktop->screenNumber(m_vidWidget->pos()) + 1) % nScreens;
+            QRect geom = desktop->screenGeometry(screen);
+            m_vidWidget->move(geom.topLeft());
+            m_vidWidget->showFullScreen();
+            ui->changeScreen->setText(QString("Screen %1").arg(screen));
+        }
+    }
 }
 
 
-void MainWindow::getMediaHTTP()
+void MainWindow::on_startTest_clicked()
 {
-    // read command from server
-    QString command = readHTTPResponse();
+    ui->startTest->setEnabled(false);
+    ui->changeScreen->setEnabled(false);
 
-    // interpret command
-    Json::Value root;
-    Json::Reader reader;
-    if (!reader.parse(command.toStdString().c_str(),root)) {
-        QMessageBox::information(this, tr("SSTT"), QString(reader.getFormatedErrorMessages().c_str()));
-    } else {
-        std::string path = std::string(root["path"].asCString());
-        Json::Value videoList = root["videoList"];
-        bool testDone = root["testDone"].asBool();
-        if (path=="error" && videoList.empty()) {
-            QMessageBox::information(this, tr("SSTT"), QString("error with server data"));
-        } else if (testDone) {
-            // end test
-            ui->status->setText(QString("Test complete.  Please exit program."));
-        } else if (path.empty() || videoList.empty()) {
-            // re-request data after timeout
-            clock_t endwait;
-            endwait = clock () + PING_INTERVAL * CLOCKS_PER_SEC;
-            while (clock() < endwait) {}
-            onVideoFinished();
-        } else {
-            // play video list
-            QString fullVid;
-            for (int ii=0; ii < videoList.size(); ii++) {
-                fullVid = QString("%1/%2").arg(path.c_str()).arg(videoList[ii].asCString());
-                ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
-                if (ii==0) {
-                    m_media->setCurrentSource(fullVid);
-                } else {
-                    m_media->enqueue(fullVid);
-                }
-            }
-            m_media->play();
-        }
-    }
+   // tried to POST to /login/ but get "connection closed" error- this is due to webpage being forbidden (HTTP 403).
+   // likely due to CSRF not being handled.  some web searching reveals that @csrf_exempt decorator may
+   // not actually remove CSRF handling.  when i tried this (@csrf_exempt), it still didn't work
+
+    QNetworkRequest request(QUrl(QString("%1/%2/reset/").arg(m_rootURL).arg(m_testInstanceID)));
+    QNetworkReply *reply = m_manager->get(request);
+    connect(reply, SIGNAL(finished()), this, SLOT(initTest()));
+    connect(this, SIGNAL(initComplete(QString)), this, SLOT(sendStatusToServer(QString)));
 }
 
 
 void MainWindow::initTest()
 {
     // read command from server
-    QString command = readHTTPResponse();
+    QString command = readServerResponse();
 
     // interpret command
     std::stringstream err;
@@ -181,7 +135,7 @@ void MainWindow::initTest()
         }
     }
     if (success) {
-        emit initComplete();
+        emit initComplete(QString("init"));
     } else {
         QMessageBox msgBox;
         msgBox.setIcon(QMessageBox::Critical);
@@ -192,7 +146,98 @@ void MainWindow::initTest()
 }
 
 
-QString MainWindow::readHTTPResponse()
+void MainWindow::sendStatusToServer(QString status)
+{
+    QNetworkRequest request(QUrl(QString("%1/%2/get_media/").arg(m_rootURL).arg(m_testInstanceID)));
+    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
+    QUrl params;
+    params.addQueryItem("status",status.toStdString().c_str());
+    const QByteArray data = params.encodedQuery();
+    QNetworkReply *reply = m_manager->post(request,data);
+    connect(reply, SIGNAL(finished()), this, SLOT(executeServerMediaCommand()));
+}
+
+
+void MainWindow::executeServerMediaCommand()
+{
+    // read command from server
+    QString command = readServerResponse();
+
+    // interpret command
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(command.toStdString().c_str(),root)) {
+        QMessageBox::information(this, tr("SSTT"), QString(reader.getFormatedErrorMessages().c_str()));
+    } else {
+        std::string path = std::string(root["path"].asCString());
+        Json::Value videoList = root["videoList"];
+        bool testDone = root["testDone"].asBool();
+        if (path=="error" && videoList.empty()) {
+            QMessageBox::information(this, tr("SSTT"), QString("error with server data"));
+        } else if (testDone) {
+            // end test
+            ui->status->setText(QString("Test complete.  Please exit program."));
+        } else if (path.empty() || videoList.empty()) {
+            // re-request data after timeout
+            clock_t endwait;
+            endwait = clock () + PING_INTERVAL * CLOCKS_PER_SEC;
+            while (clock() < endwait) {}
+            sendStatusToServer(QString("waiting"));
+        } else {
+            playVideoList(path, videoList);
+        }
+    }
+}
+
+
+void MainWindow::playVideoList(std::string path, Json::Value videoList)
+{
+    QString fullVid;
+    if (m_videoMode==1) {
+        for (int ii=0; ii < videoList.size(); ii++) {
+            fullVid = QString("%1/%2").arg(path.c_str()).arg(videoList[ii].asCString());
+            ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
+            if (ii==0) {
+                m_media->setCurrentSource(fullVid);
+            } else {
+                m_media->enqueue(fullVid);
+            }
+        }
+        m_media->play();
+    } else if (m_videoMode==2) {
+        QStringList args;
+        for (int ii=0; ii < videoList.size(); ii++) {
+            fullVid = QString("%1/%2").arg(path.c_str()).arg(videoList[ii].asCString());
+            ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
+            args << fullVid;
+        }
+        args << "/fullscreen" << "/play" << "/close";
+        m_wmp->start("c:/Program Files (x86)/Windows Media Player/wmplayer.exe", args);
+    } else {
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.setText("Invalid video mode");
+        msgBox.exec();
+    }
+}
+
+
+void MainWindow::onVideoFinished()
+{
+    // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
+    m_media->clear();   // so that video player does not pause on final frame
+    sendStatusToServer(QString("media_done"));
+}
+
+
+void MainWindow::onVideoFinishedWMP(int exitCode, QProcess::ExitStatus exitStatus)
+{
+    ui->status->setText(QString("Video is finished.  exitCode = %1, exitStatus = %2").arg(exitCode).arg(exitStatus));
+    sendStatusToServer(QString("media_done"));
+}
+
+
+QString MainWindow::readServerResponse()
 {
     QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
     QString command;
@@ -224,18 +269,4 @@ QString MainWindow::readHTTPResponse()
 
     reply->deleteLater();
     return(command);
-}
-
-
-void MainWindow::on_changeScreen_clicked()
-{
-    QDesktopWidget *desktop = QApplication::desktop();
-    int nScreens = desktop->screenCount();
-    if (nScreens > 0) {
-        int screen = (desktop->screenNumber(m_vidWidget->pos()) + 1) % nScreens;
-        QRect geom = desktop->screenGeometry(screen);
-        m_vidWidget->move(geom.topLeft());
-        m_vidWidget->showFullScreen();
-        ui->changeScreen->setText(QString("Screen %1").arg(screen));
-    }
 }

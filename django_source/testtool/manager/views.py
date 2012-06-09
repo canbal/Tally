@@ -23,8 +23,7 @@ def user_can(action,up,obj):
     elif isinstance(obj,TestInstance):
         return test_instance_permission(action,up,obj)
     else:
-        pass
-        # raise error
+        raise Exception('user_can: Must pass Test or TestInstance object.')
     
 
 def test_permission(action,up,t):
@@ -38,8 +37,7 @@ def test_permission(action,up,t):
     elif action is 'create':
         return ((up == t.owner) or (up in t.collaborators.all()))       # refers to creating test instances from the test
     else:
-        pass
-        # raise error  
+        raise Exception('test_permission: invalid action.')
     
     
 def test_instance_permission(action,up,ti):
@@ -50,8 +48,7 @@ def test_instance_permission(action,up,ti):
     elif action is 'run':
         return (up == ti.owner)
     else:
-        pass
-        # raise error        
+        raise Exception('test_instance_permission: invalid action.')
 
         
 class TestCreateView(CreateView):
