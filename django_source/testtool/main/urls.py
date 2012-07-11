@@ -11,4 +11,6 @@ urlpatterns = patterns('testtool.main.views',
     url(r'^(?P<test_instance_id>\d+)/status/$', 'status'),
     url(r'^(?P<test_instance_id>\d+)/reset/$', 'reset_test_instance'),
     url(r'^(?P<test_instance_id>\d+)/enroll/$', 'enroll_to_test_instance'),
+    
+    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score'),
 )

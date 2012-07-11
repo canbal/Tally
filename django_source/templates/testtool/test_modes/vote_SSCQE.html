@@ -11,9 +11,9 @@
                     window.location = "{% url testtool.main.views.status test_instance_id=test_instance.pk %}";
                 } else if (data.status=="3") {
                     window.location = "{% url testtool.main.views.tally test_instance_id=test_instance.pk %}";
-                } else {
-                    $( "#message" ).empty().append(data.message);
-                }
+                } //else {
+                //    $( "#message" ).empty().append(data.message);
+                //}
             }, "json");
         }
         $("#SSCQE").on("pageinit",transmitScore());

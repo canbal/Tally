@@ -13,54 +13,94 @@ from testtool.shortcuts import has_user_profile
 from forms import TestCreateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
 import random, csv, json, os
 
+
 class JSONResponse(HttpResponse):
     """JSON response class."""
     def __init__(self,data='',json_opts={},mimetype="application/json",*args,**kwargs):
         content = json.dumps(data,**json_opts)
         super(JSONResponse,self).__init__(content,mimetype,*args,**kwargs)
+        
     
 def is_file_supported(filename):
     ext = os.path.splitext(filename)[1]
-    if (ext=='.avi' or ext=='.mp4' or ext=='.m4v' or ext=='.wmv' or 
-        ext=='.flv' or ext=='.mpg' or ext=='.mov'):
-        return True
-    else:
-        return False
+    supported_ext = ['.avi', '.mp4', 'm4v', '.wmv', '.flv', '.mpg', '.mov']
+    return ext in supported_ext
 
     
 def user_can(action,up,obj):
+    perm = user_permission(up,obj)
+    return perm['status'] in perm['policy'][action]
+    
+    
+def user_status(up,obj):
+    perm = user_permission(up,obj)
+    return perm['status']
+    
+
+def user_permission(up,obj):
     if isinstance(obj,Test):
-        return test_permission(action,up,obj)
+        return user_permission_test(up,obj)
     elif isinstance(obj,TestInstance):
-        return test_instance_permission(action,up,obj)
+        return user_permission_test_instance(up,obj)
     else:
-        raise Exception('user_can: Must pass Test or TestInstance object.')
+        raise Exception('user_permission: Must pass Test or TestInstance object.')    
+    
+    
+def user_permission_test(up,t):
+    status = ['Owner', 'Collaborator', 'Owner (Test Instance)', 'Collaborator (Test Instance)', 'None']
+    if up == t.owner:
+        idx = 0
+    elif up in t.collaborators.all():
+        idx = 1
+    elif (len(up.owner_testinstances.filter(test=t)) > 0):
+        idx = 2
+    elif (len(up.collaborators_testinstances.filter(test=t)) > 0):
+        idx = 3
+    else:
+        idx = 4
+    policy = { 'view':   status[0:4],
+               'export': status[0:2],
+               'share':  status[0:1],
+               'create': status[0:2] }  # refers to creating test instances from the test
+    return { 'status': status[idx], 'policy': policy }
+
+
+def user_permission_test_instance(up,ti):
+    status = ['Owner', 'Collaborator', 'Owner (Test)', 'Collaborator (Test)', 'None']
+    if up == ti.owner:
+        idx = 0
+    elif up in ti.collaborators.all():
+        idx = 1
+    elif up == ti.test.owner:
+        idx = 2
+    elif up in ti.test.collaborators.all():
+        idx = 3
+    else:
+        idx = 4
+    policy = { 'view':   status[0:4],
+               'export': status[0:4],
+               'share':  status[0:3:2],
+               'run':    status[0:1] }
+    return { 'status': status[idx], 'policy': policy }
     
 
-def test_permission(action,up,t):
-    if action is 'view':
-        return True
-        # test owner, collaborator, or any owner/collaborator of any child test instances
-    elif action is 'export':
-        return ((up == t.owner) or (up in t.collaborators.all()))
-    elif action is 'share':
-        return (up == t.owner)
-    elif action is 'create':
-        return ((up == t.owner) or (up in t.collaborators.all()))       # refers to creating test instances from the test
+def test_instance_status(ti):
+    if ti.subjects.count()==0:
+        return 'Invalid - no subjects'
+    counter = ti.counter
+    max_count = ti.testcaseinstance_set.count()
+    if max_count == 0:
+        return 'Invalid - no test cases'
+    run_time = ti.run_time
+    if run_time is None and counter==0:
+        return 'Ready to run'
+    elif run_time is not None and counter > max_count:
+        return 'Complete'
+    elif run_time is not None and counter > 0 and counter < max_count:
+        return 'Incomplete'
     else:
-        raise Exception('test_permission: invalid action.')
-    
-    
-def test_instance_permission(action,up,ti):
-    if action is 'view' or 'export':
-        return ((up == ti.owner) or (up in ti.collaborators.all()) or (up == ti.test.owner) or (up in ti.test.collaborators.all()))
-    elif action is 'share':
-        return ((up == ti.owner) or (up == ti.test.owner))
-    elif action is 'run':
-        return (up == ti.owner)
-    else:
-        raise Exception('test_instance_permission: invalid action.')
-
+        return 'Error'
+        
         
 class TestCreateView(CreateView):
     model = Test
@@ -84,6 +124,7 @@ class TestCreateView(CreateView):
         self.object.owner = self.request.user.get_profile()
         self.object.save()
         return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))
+    
     
 class TestUpdateView(UpdateView):
     model = Test
@@ -113,6 +154,7 @@ class TestUpdateView(UpdateView):
         context['test_pk'] = self.object.pk
         return context
 
+        
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
@@ -131,7 +173,7 @@ def add_video(request, test_pk):
         except Test.DoesNotExist:
             status = 1;
         else:
-            if test_permission('create',request.user.get_profile(),t):
+            if user_can('create',request.user.get_profile(),t):
                 try:
                     filename =  request.POST['filename']
                 except KeyError:
@@ -157,6 +199,7 @@ def add_video(request, test_pk):
     else:
         return HttpResponseBadRequest('GET is not supported')
 
+        
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
@@ -176,7 +219,7 @@ def delete_video(request, video_pk):
         except Video.DoesNotExist:
             status = 1;
         else:
-            if test_permission('create',request.user.get_profile(),t):
+            if user_can('create',request.user.get_profile(),t):
                 f.delete()
                 status = 0;
             else:
@@ -187,6 +230,7 @@ def delete_video(request, video_pk):
         return response
     else:
         return HttpResponseBadRequest('GET is not supported')
+    
     
 @login_required
 @group_required('Testers')
@@ -205,35 +249,66 @@ def save_test(request):
 @user_passes_test(has_user_profile)
 def list_tests(request):
     up = request.user.get_profile()
-    t_o = up.owner_tests.values_list('pk',flat=True)
-    t_c = up.collaborators_tests.values_list('pk',flat=True)
-    ti_c = up.collaborators_testinstances.values_list('test__pk',flat=True)
-    test_list = list(set(list(t_o) + list(t_c) + list(ti_c)))
-    tests = Test.objects.filter(pk__in=test_list)
-    return render_to_response('testtool/manager/list_tests.html', { 'tests': tests }, context_instance=RequestContext(request))
+    tests = Test.objects.all()
+    t_data = []
+    for t in tests:
+        status = user_status(up,t)
+        if status != 'None':
+            t_data.append([t.title, status, t.create_time, t.pk])
+    if len(t_data)==0:
+        args = { 'error': 'You do not own or have access to any tests.' }
+    else:
+        args = { 't_data': t_data }
+    return render_to_response('testtool/manager/list_tests.html', args, context_instance=RequestContext(request))
 
-  
+
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def list_test_instances(request,test_pk):
+    up = request.user.get_profile()
+    t = get_object_or_404(Test, pk=test_pk)
+    ti_set = TestInstance.objects.filter(test=t)
+    ti_data = []
+    for ti in ti_set:
+        status = user_status(up,ti)
+        if status != 'None':
+            ti_data.append([ti.pk, status, test_instance_status(ti), ti.subjects.count()])
+    if len(ti_data)==0:
+        args = { 'header': 'Test Instances', 'error': 'You do not have access to any instances of this test.', 'test_id': t.pk }
+    else:
+        args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk }
+    return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
+    
+    
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def display_test(request, test_id):
     t = get_object_or_404(Test, pk=test_id)
     up = request.user.get_profile()
-    if (up == t.owner) or (up in t.collaborators.all()):
+    if user_can('view',up,t):
         tf = TestDisplayForm(instance=t)
-        return render_to_response('testtool/manager/display_test.html', {'title': t.title,
-                                                                            'tf': tf,
-                                                                            'create_time_name': t._meta.get_field('create_time').verbose_name,
-                                                                            'create_time': t.create_time,
-                                                                            'test_id': test_id,
-                                                                            'videos': Video.objects.filter(test=t),
-                                                                            'can_share': (up == t.owner) or (up == t.test.owner),
-                                                                            'can_export': True},  # anyone who can view it can export
-                                  context_instance=RequestContext(request))
+        tc_data = []
+        tc_set = TestCase.objects.filter(test=t)
+        for tc in tc_set:
+            tci = tc.testcaseitem_set.order_by('play_order')
+            tc_data.append(tci.values_list('video__filename',flat=True))
+        args = { 'header': 'Test %d: %s' % (t.pk, t.title),
+                 'tf': tf,
+                 'create_time_name': t._meta.get_field('create_time').verbose_name,
+                 'create_time': t.create_time,
+                 'test_id': test_id,
+                 'videos': Video.objects.filter(test=t),
+                 'tc_data': tc_data,
+                 'can_share': user_can('share',up,t),
+                 'can_export': user_can('export',up,t) }
     else:
-        return HttpResponse('must be owner or collaborator of this test instance or associated test')
-
-
+        args = { 'header': 'Test %d' % (t.pk),
+                 'error': 'You do not have access to this test.' }
+    return render_to_response('testtool/manager/display_test.html', args, context_instance=RequestContext(request))
+        
+        
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
@@ -247,21 +322,29 @@ def display_test_instance(request, test_id, test_instance_id):
                 alert = request.GET['alert']
             except KeyError:
                 alert = ''
-        return render_to_response('testtool/manager/display_test_instance.html',  { 'tif': tif,
-                                                                                       'create_time_name': ti._meta.get_field('create_time').verbose_name,
-                                                                                       'create_time': ti.create_time,
-                                                                                       'test_id': test_id,
-                                                                                       'test_instance_id': test_instance_id,
-                                                                                       'already_run': ti.run_time is not None,
-                                                                                       'can_share': user_can('share',up,ti),
-                                                                                       'can_export': user_can('export',up,ti),
-                                                                                       'can_run': user_can('run',up,ti),
-                                                                                       'alert': alert },
-                                                                                       context_instance=RequestContext(request))
-    return render_to_response('testtool/manager/display_test_instance.html',  { 'test_id': test_id,
-                                                                                'test_instance_id': test_instance_id,
-                                                                                'error': 'You do not have access to this test instance.'},
-                                                                                context_instance=RequestContext(request))
+        tci_set = ti.testcaseinstance_set.order_by('pk')
+        tc_set = ti.test.testcase_set.order_by('pk')
+        rand = []
+        for tc in tc_set:
+            rand.append(tci_set.filter(test_case=tc).values_list('play_order',flat=True))
+        args = { 'header': 'Test Instance %d of Test %d: %s' % (ti.pk, ti.test.pk, ti.test.title),
+                 'tif': tif,
+                 'create_time_name': ti._meta.get_field('create_time').verbose_name,
+                 'create_time': ti.create_time,
+                 'test_id': test_id,
+                 'test_instance_id': test_instance_id,
+                 'rand': rand,
+                 'already_run': ti.run_time is not None,
+                 'can_share': user_can('share',up,ti),
+                 'can_export': user_can('export',up,ti),
+                 'can_run': user_can('run',up,ti),
+                 'alert': alert }
+    else:
+        args = { 'header': 'Test Instance %d of Test %d' % (ti.pk, ti.test.pk),
+                 'test_id': test_id,
+                 'test_instance_id': test_instance_id,
+                 'error': 'You do not have access to this test instance.' }
+    return render_to_response('testtool/manager/display_test_instance.html', args, context_instance=RequestContext(request))
 
 
 @login_required
@@ -284,22 +367,33 @@ def create_test_instance(request, test_id):
                 tif.save_m2m()          # save the many-to-many data for the form
                 # create new test case instances
                 tc_all = t.testcase_set.all()
-                repeat = tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
-                rand_order = range(1,sum(repeat)+1)    # play order starts from 1
-                random.shuffle(rand_order)
-                idx = 0
-                for ii in range(0,tc_all.count()):
-                    for jj in range(0,repeat[ii]):
-                        tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[ii], play_order=rand_order[idx])
-                        idx += 1
-                        tci.save()
+                if t.pk==1:
+                    total_ti = TestInstance.objects.filter(test=t).count()
+                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[0], play_order=1)
+                    tci.save()
+                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[1], play_order=2)
+                    tci.save()
+                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[2], play_order=3+(total_ti%2))
+                    tci.save()
+                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[3], play_order=3+((total_ti+1)%2))
+                    tci.save()
+                else:
+                    repeat = tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
+                    rand_order = range(1,sum(repeat)+1)    # play order starts from 1
+                    random.shuffle(rand_order)
+                    idx = 0
+                    for ii in range(0,tc_all.count()):
+                        for jj in range(0,repeat[ii]):
+                            tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[ii], play_order=rand_order[idx])
+                            idx += 1
+                            tci.save()
                 # redirect to test instance display page
                 return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
         else:
-            tif = CreateTestInstanceForm()
+            tif = CreateTestInstanceForm(initial={'schedule_time':datetime.datetime.now(), 'path': 'f:/fatigue', 'location':'VPL'})
             tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
-        return render_to_response('testtool/manager/create_test_instance.html', { 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
-    return render_to_response('testtool/manager/create_test_instance.html', { 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
+        return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance of Test %d: %s' % (t.pk, t.title), 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
+    return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance', 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
 
 
 @login_required
@@ -372,15 +466,35 @@ def export_data(request):
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def save_data(request):
-    # eventually this request will have test_id/test_instance_id data along with it.
-    # check for owner/collaborator status
     if request.method == 'POST':
-        response = HttpResponse(mimetype='text/csv')
-        response['Content-Disposition'] = 'attachment; filename=test_data.csv'
-        writer = csv.writer(response)
-        writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
-        writer.writerow(['Second row', 'A', 'B', 'C', '"Testing"', "Here's a quote"])
-        return response
+        try:
+            t_pk = int(request.POST['test_select'])
+            ti_pk = int(request.POST['test_instance_select'])
+        except KeyError:
+            return HttpResponse('please select a choice')
+        else:
+            up = request.user.get_profile()
+            ti = get_object_or_404(TestInstance, pk=ti_pk)
+            if user_can('export',up,ti):                            # check that user can export test
+                response = HttpResponse(mimetype='text/csv')
+                response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.csv' % (ti.test.title, ti_pk)
+                writer = csv.writer(response)
+                if ti.subjects.count() == 1 and ti.test.method == 'SSCQE':
+                    subject = ti.subjects.all()[0];
+                    writer.writerow([subject.user.username, subject.user.first_name, subject.user.last_name, subject.birth_date, subject.sex])
+                    for tc in ti.test.testcase_set.all():
+                        tci = tc.testcaseinstance_set.filter(test_instance=ti).all()[0]     # ignore repeats
+                        scores = tci.scoresscqe_set.filter(subject=subject).order_by('pk')
+                        ts = []
+                        val = []
+                        for s in scores:
+                            ts.append(s.timestamp)
+                            val.append(s.value)
+                        writer.writerow(ts)
+                        writer.writerow(val)
+                return response    
+            else:
+                return HttpResponse('you cannot export this test instance')
     return HttpResponseRedirect(reverse('testtool.manager.views.export_data'))
     
     

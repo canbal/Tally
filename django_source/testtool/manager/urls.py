@@ -20,6 +20,7 @@ urlpatterns = patterns('testtool.manager.views',
     ### Display Test and TestInstance
         # Lists all tests for which the user is an owner or collaborator
     url(r'^tests/$', 'list_tests'),
+    url(r'^(?P<test_pk>\d+)/testinstances$', 'list_test_instances'),
         
         # Displays data for an existing test
     url(r'^(?P<test_id>\d+)/$', 'display_test'),

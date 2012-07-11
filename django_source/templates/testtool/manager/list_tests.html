@@ -11,32 +11,36 @@
     Tests
 {% endblock header %}
 
-{% block content %} 
-    {% if tests|length == 0 %}
-        You do not own or have access to any tests.  Create one <a href="{% url testtool.manager.views.create_test %}">here</a>.
+{% block content %}
+    {% if error %}
+        {{ error }}{% comment %} Create one <a href="{% url testtool.manager.views.create_test %}">here</a>. {% endcomment %}
     {% else %}
         <table class="table">
             <thead>
                 <tr>
+                    <th>Actions</th>
                     <th>Title</th>
-                    <th>Your Status</th>
+                    <th>My Status</th>
                     <th>Create Time</th>
                 </tr>
             </thead>
             <tbody>
-                {% for t in tests %}
-                    <tr class="row-click" onclick="document.location.href = '{% url testtool.manager.views.display_test test_id=t.pk %}'">
-                        <td>{{ t.title }}</td>
+                {% for t in t_data %}
+                    <tr>
                         <td>
-                            {% if t.owner == request.user.userprofile %}
-                                Owner
-                            {% elif request.user.userprofile in t.collaborator.all %}
-                                Collaborator
-                            {% else %}
-                                Collaborator (Test Instance)
-                            {% endif %}
+                            <div class="btn-group">
+                                <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
+                                    <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a href="{% url testtool.manager.views.list_test_instances test_pk=t.3 %}">View test instances</a></li>
+                                    <li><a href="{% url testtool.manager.views.create_test_instance test_id=t.3 %}">Create new test instance</a></li>
+                                </ul>
+                            </div>
                         </td>
-                        <td>{{ t.create_time }}</td>
+                        <td class="row-click" onclick="document.location.href='{% url testtool.manager.views.display_test test_id=t.3 %}'">{{ t.0 }}</td>
+                        <td class="row-click" onclick="document.location.href='{% url testtool.manager.views.display_test test_id=t.3 %}'">{{ t.1 }}</td>
+                        <td class="row-click" onclick="document.location.href='{% url testtool.manager.views.display_test test_id=t.3 %}'">{{ t.2 }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -1,31 +1,88 @@
 
 {% extends "testtool/manager/base_manager.html" %}
 
+{% block head %}
+    <style>
+        .form-container form {
+            display: inline;
+        }
+    </style>
+{% endblock head %}
+
 {% block header %}
-    Test {{ test_id }} : {{ title }}
+    {{ header }}
 {% endblock header %}
 
 {% block content %}
-    <div data-role="fieldcontain">
-        <p><label for="id_create_time">{{ create_time_name }}: </label> {{ create_time }}</p>
-        {% for field in tf %}
-            <p><label for="id_{{ field.html_name }}">{{ field.label }}: </label>{{ field.value }}</p>
-        {% endfor %}
-        <p>
-            Videos:
-            <ul>
-            {% for video in videos %}
-                <li>{{ video.filename }}</li>
+    {% if error %}
+        {{ error }}
+    {% else %}
+        <div class="form-horizontal">
+            <div class="control-group">
+                <label class="control-label" for="id_create_time">{{ create_time_name }}</label>
+                <div class="controls"><span class="uneditable-input">{{ create_time }}</span></div>
+            </div>
+            {% for field in tf %}
+                <div class="control-group">
+                    <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                    <div class="controls"><span class="uneditable-input">{{ field.value }}</span></div>
+                </div>
             {% endfor %}
-            </ul>
-        </p>
-    </div>
-    {% if can_share %}
-        <form id="form" action="{% url testtool.manager.views.share_test %}" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="test_id" value="{{ test_id }}" />
-            <input type="submit" name="share_test" value="Share" />
-        </form>
+            <div class="control-group">
+                <label class="control-label" for="id_videos">Videos</label>
+                <div class="controls">
+                    {% for vid in videos %}
+                        <span class="uneditable-input">{{ vid.filename }}</span><br/>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="id_test_cases">Test Cases</label>
+                <div class="controls">
+                    <div class="accordion span5" id="id_test_cases">
+                        {% for tc in tc_data %}
+                            <div class="accordion-group">
+                                <div class="accordion-heading">
+                                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">
+                                        Test Case #{{ forloop.counter }}
+                                    </a>
+                                </div>
+                                <div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
+                                    <div class="accordion-inner">
+                                        {% for vid in tc %}
+                                            {{ forloop.counter }}. {{ vid }}<br/>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="id_test_instances">Test Instances</label>
+                <div class="controls">
+                    <span class="uneditable-input"><a href="{% url testtool.manager.views.list_test_instances test_pk=test_id %}">View test instances</a></span>
+                </div>
+            </div>
+            <div class="form-actions form-container">
+                <a class="btn" href="{% url testtool.manager.views.list_tests %}">View Test List</a>
+                {% if can_share %}
+                    <form action="{% url testtool.manager.views.share_test %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="test_id" value="{{ test_id }}" />
+                        <input type="submit" class="btn btn-info" value="Share" />
+                    </form>
+                {% endif %}
+                {% if can_export %}
+                    <form action="{% url testtool.manager.views.export_data %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="test_id" value="{{ test_id }}" />
+                        <input type="submit" class="btn btn-primary" value="Export Data" />
+                    </form>
+                {% endif %}
+            </div>
+        </div>
     {% endif %}
 {% endblock content %}
 

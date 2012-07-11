@@ -1,0 +1,40 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1"> 
+        <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <style type="text/css">
+            body {
+                background-color: #808080;
+            }
+            #sliderImg {
+                text-align: center;
+            }
+            .score_div {
+                font-size: 25em;
+                text-align: center;
+            }
+        </style>
+        <script type="text/javascript">
+            function updateScore() {
+                $.getJSON("{% url testtool.main.views.mirror_score test_instance_id=test_instance %}", function(data) {
+                    $( "#score" ).empty().append(data.score);
+                });
+            }
+            $("#mirror").on("pageinit",updateScore());
+            $("#mirror").on("pageinit",setInterval("updateScore()", 500));
+        </script>
+    </head>
+    
+    <body>
+        <div id="sliderImg">
+            <img src="{% static 'slider.png' %}" alt="slider" />
+        </div>
+        <div id="mirror" data-role="page">
+            <div class="score_div" id="score"></div>
+        </div>
+    </body>
+    
+</html>

@@ -8,11 +8,18 @@ class TestCreateForm(ModelForm):
     class Meta:
         model = Test
         exclude = ('owner','create_time')
-            
+        widgets = {
+            'description': Textarea(),
+        }
+        
+        
 class TestDisplayForm(ModelForm):
     class Meta:
         model = Test
         exclude = ('title',)
+        widgets = {
+            'description': Textarea(),
+        }
 
 
 class CreateTestInstanceForm(ModelForm):

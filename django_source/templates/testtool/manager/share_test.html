@@ -46,7 +46,7 @@
                         {% for ti_list in t_list %}
                             if (jj=={{ forloop.counter0 }}) {
                                 {% for u in ti_list %}
-                                    form.tester_select.options[{{ forloop.counter0 }}] = new Option('{{ u.username }} ({{ u.first_name }} {{ u.last_name }})','{{ u.userprofile.pk }}');
+                                    form.tester_select.options[{{ forloop.counter0 }}] = new Option('{{ u.first_name }} {{ u.last_name }} ({{ u.username }})','{{ u.userprofile.pk }}');
                                 {% endfor %}
                             }
                         {% endfor %}
@@ -118,7 +118,7 @@
                             {% for ti_list in t_list %}
                                 {% if forloop.counter0 == ti_valid_index_default %}
                                     {% for u in ti_list %}
-                                        <option value="{{ u.userprofile.pk }}"{% if forloop.counter0 == ti_valid_index_default %}selected{% endif %}>{{ u.username }} ({{ u.first_name }} {{ u.last_name }})</option>
+                                        <option value="{{ u.userprofile.pk }}"{% if forloop.counter0 == ti_valid_index_default %}selected{% endif %}>{{ u.first_name }} {{ u.last_name }} ({{ u.username }})</option>
                                     {% endfor %}
                                 {% endif %}
                             {% endfor %}

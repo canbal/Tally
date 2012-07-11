@@ -9,7 +9,7 @@
 {% endblock head %}
 
 {% block header %}
-    Test Instance {{ test_instance_id }} of Test {{ test_id }}
+    {{ header }}
 {% endblock header %}
 
 {% block content %}
@@ -38,27 +38,35 @@
                     <div class="controls"><span class="uneditable-input">{{ field.value }}</span></div>
                 </div>
             {% endfor %}
-        </div>
-        <div class="form-actions form-container">
-            <a class="btn" href="{% url testtool.manager.views.display_test test_id=test_id %}">Parent Test</a>
-            {% if can_share %}
-                <form action="{% url testtool.manager.views.share_test %}" method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="test_id" value="{{ test_id }}" />
-                    <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
-                    <input type="submit" class="btn btn-info" value="Share" />
-                </form>
-            {% endif %}
-            {% if already_run and can_export %}
-                <form action="{% url testtool.manager.views.export_data %}" method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="test_id" value="{{ test_id }}" />
-                    <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
-                    <input type="submit" class="btn btn-primary" value="Export Data" />
-                </form>
-            {% elif can_run %}
-                <a class="btn btn-success" href="{% url testtool.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
-            {% endif %}
+            <div class="control-group">
+                <label class="control-label" for="id_rand">Play order</label>
+                <div class="controls"><span class="uneditable-input">
+                    {% for tc in rand %}
+                        ({% for el in tc %}{{ el }}{% if forloop.counter < tc|length %}, {% endif %}{% endfor %}){% if forloop.counter < rand|length %}, {% endif %}
+                    {% endfor %}
+                </span></div>
+            </div>
+            <div class="form-actions form-container">
+                <a class="btn" href="{% url testtool.manager.views.display_test test_id=test_id %}">Parent Test</a>
+                {% if can_share %}
+                    <form action="{% url testtool.manager.views.share_test %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="test_id" value="{{ test_id }}" />
+                        <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
+                        <input type="submit" class="btn btn-info" value="Share" />
+                    </form>
+                {% endif %}
+                {% if already_run and can_export %}
+                    <form action="{% url testtool.manager.views.export_data %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="test_id" value="{{ test_id }}" />
+                        <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
+                        <input type="submit" class="btn btn-primary" value="Export Data" />
+                    </form>
+                {% elif can_run %}
+                    <a class="btn btn-success" href="{% url testtool.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
+                {% endif %}
+            </div>
         </div>
     {% endif %}
 {% endblock content %}

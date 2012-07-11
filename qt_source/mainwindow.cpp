@@ -37,7 +37,8 @@ MainWindow::MainWindow(QWidget *parent) :
     //            SLOT(authenticate(QNetworkReply*,QAuthenticator*)));
     m_rootURL = "";
     m_testInstanceID = 0;
-
+    m_testCaseDone = false;
+    ui->nextVideo->setEnabled(false);
 }
 
 
@@ -182,7 +183,12 @@ void MainWindow::executeServerMediaCommand()
             clock_t endwait;
             endwait = clock () + PING_INTERVAL * CLOCKS_PER_SEC;
             while (clock() < endwait) {}
-            sendStatusToServer(QString("waiting"));
+            if (m_testCaseDone) {
+                sendStatusToServer(QString("test_case_done"));
+                m_testCaseDone = false;
+            } else {
+                sendStatusToServer(QString("waiting"));
+            }
         } else {
             playVideoList(path, videoList);
         }
@@ -227,6 +233,7 @@ void MainWindow::onVideoFinished()
     // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
     m_media->clear();   // so that video player does not pause on final frame
     sendStatusToServer(QString("media_done"));
+    ui->nextVideo->setEnabled(true);
 }
 
 
@@ -234,6 +241,7 @@ void MainWindow::onVideoFinishedWMP(int exitCode, QProcess::ExitStatus exitStatu
 {
     ui->status->setText(QString("Video is finished.  exitCode = %1, exitStatus = %2").arg(exitCode).arg(exitStatus));
     sendStatusToServer(QString("media_done"));
+    ui->nextVideo->setEnabled(true);
 }
 
 
@@ -269,4 +277,10 @@ QString MainWindow::readServerResponse()
 
     reply->deleteLater();
     return(command);
+}
+
+void MainWindow::on_nextVideo_clicked()
+{
+    ui->nextVideo->setEnabled(false);
+    m_testCaseDone = true;
 }

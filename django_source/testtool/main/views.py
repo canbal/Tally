@@ -83,6 +83,10 @@ def get_media(request, test_instance_id):
             if status == 'media_done':
                 tci_current.is_media_done = True
                 tci_current.save()
+            if status == 'test_case_done':
+                tci_current.is_media_done = True
+                tci_current.is_done = True
+                tci_current.save()
             # if the current test is done, increment the counter and return the next video or a done signal
             if tci_current.is_done:
                 ti.counter += 1
@@ -153,6 +157,33 @@ def status(request, test_instance_id):
         return render_to_response('testtool/main/status.html', {'test_instance': ti})
     
     
+    
+    
+@login_required
+@group_required('Testers')
+def mirror_score(request, test_instance_id):
+    if request.is_ajax():
+        try:
+            ti = TestInstance.objects.get(pk=test_instance_id)
+        except:
+            return HttpResponse(json.dumps({'score':'E1'}))
+        if ti.subjects.count() == 1:
+            up = ti.subjects.all()[0];
+            try:
+                score = ScoreSSCQE.objects.filter(subject=up).latest('pk')
+                return HttpResponse(json.dumps({'score':str(score.value)}))
+            except:
+                return HttpResponse(json.dumps({'score':'0'}))
+        else:
+            return HttpResponse(json.dumps({'score':'E2'}))
+    else:
+        ti = get_object_or_404(TestInstance, pk=test_instance_id)
+        return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
+        
+        
+        
+        
+    
 @login_required
 @group_required('Subjects')
 def enroll_to_test_instance(request, test_instance_id):
@@ -188,23 +219,23 @@ def add_test_case_item(request, test_instance_id):
 def reset_test_instance(request, test_instance_id):
     # reset test instance
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    ti.counter = 0
-    ti.save()
-    tci = TestCaseInstance.objects.filter(test_instance=ti)
-    for t in tci:
-        t.is_done = False
-        t.is_media_done = False
-        t.save()
-        if ti.test.method == 'SSCQE':
-            scores = ScoreSSCQE.objects.filter(test_case_instance=t)
-        elif ti.test.method == 'DSIS' or ti.test.method == 'CUSTOM':
-            scores = ScoreDSIS.objects.filter(test_case_instance=t)
-        elif ti.test.method == 'DSCQS':
-            scores = ScoreDSCQS.objects.filter(test_case_instance=t)
-        else:
-            raise Exception('Invalid test method.')
-        for s in scores:
-            s.delete()
+    # ti.counter = 0
+    # ti.save()
+    # tci = TestCaseInstance.objects.filter(test_instance=ti)
+    # for t in tci:
+        # t.is_done = False
+        # t.is_media_done = False
+        # t.save()
+        # if ti.test.method == 'SSCQE':
+            # scores = ScoreSSCQE.objects.filter(test_case_instance=t)
+        # elif ti.test.method == 'DSIS' or ti.test.method == 'CUSTOM':
+            # scores = ScoreDSIS.objects.filter(test_case_instance=t)
+        # elif ti.test.method == 'DSCQS':
+            # scores = ScoreDSCQS.objects.filter(test_case_instance=t)
+        # else:
+            # raise Exception('Invalid test method.')
+        # for s in scores:
+            # s.delete()
     # return HttpResponse("Test Instance " + test_instance_id + " has been reset.")
     # send list of all videos so desktop app can verify that they exist
     vid = Video.objects.filter(test=ti.test)

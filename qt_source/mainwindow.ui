@@ -10,6 +10,12 @@
     <height>656</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -111,12 +117,23 @@
       </property>
      </widget>
     </item>
+    <item row="2" column="0">
+     <widget class="QPushButton" name="nextVideo">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Next Video</string>
+      </property>
+     </widget>
+    </item>
    </layout>
-   <zorder>gridLayoutWidget</zorder>
    <zorder>changeScreen</zorder>
    <zorder>startTest</zorder>
-   <zorder>changeScreen</zorder>
-   <zorder>startTest</zorder>
+   <zorder>nextVideo</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
  </widget>

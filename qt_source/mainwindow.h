@@ -37,6 +37,8 @@ private slots:
     void onVideoFinished();
     void onVideoFinishedWMP(int exitCode, QProcess::ExitStatus exitStatus);
 
+    void on_nextVideo_clicked();
+
 private:
     Ui::MainWindow *ui;
     Phonon::MediaObject *m_media;
@@ -48,6 +50,7 @@ private:
     int m_videoMode;
     QString readServerResponse();
     void playVideoList(std::string path, Json::Value videoList);
+    bool m_testCaseDone;
 };
 
 #endif // MAINWINDOW_H
