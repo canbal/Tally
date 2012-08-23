@@ -65,6 +65,7 @@ private:
     QString m_pathToCLMP;
     QStringList m_argsCLMP;
         // functions
+    void closeEvent(QCloseEvent *event);
     QNetworkReply *postToServer(std::string path, std::string status="");
     void interpretServerCommand(std::string mode);
     QString readServerResponse();

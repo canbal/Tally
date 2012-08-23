@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QtGui>
 #include <QFile>
 #include <QNetworkReply>
 #include <QMessageBox>
@@ -72,6 +73,15 @@ MainWindow::~MainWindow()
 /******************************************************************
  ********************       UI FUNCTIONS       ********************
  ******************************************************************/
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    event->ignore();
+    if (QMessageBox::question(this,"","Are you sure you want to exit?",QMessageBox::Yes | QMessageBox::No,QMessageBox::No) == QMessageBox::Yes) {
+        event->accept();
+    }
+}
+
 
 void MainWindow::on_webAddress_returnPressed()
 {
