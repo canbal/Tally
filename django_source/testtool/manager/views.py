@@ -4,14 +4,19 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.template import RequestContext
 from django.core.urlresolvers import reverse, reverse_lazy
+from django.core.exceptions import ObjectDoesNotExist
 from django.views.generic import CreateView, UpdateView
 from django.utils.decorators import method_decorator
 from django.conf import settings
+from django.db.models import Q
 from testtool.models import *
 from testtool.decorators import group_required
 from testtool.shortcuts import has_user_profile
 from forms import TestCreateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
-import random, csv, json, os
+from cStringIO import StringIO
+from zipfile import ZipFile
+from scipy import io
+import string, random, csv, json, os, zipfile
 
 
 class JSONResponse(HttpResponse):
@@ -100,6 +105,10 @@ def test_instance_status(ti):
         return 'Incomplete'
     else:
         return 'Error'
+        
+
+def is_test_instance_active(ti):
+    return test_instance_status(ti) in ['Ready to run', 'Incomplete']
         
         
 class TestCreateView(CreateView):
@@ -275,7 +284,11 @@ def list_test_instances(request,test_pk):
         if status != 'None':
             ti_data.append([ti.pk, status, test_instance_status(ti), ti.subjects.count()])
     if len(ti_data)==0:
-        args = { 'header': 'Test Instances', 'error': 'You do not have access to any instances of this test.', 'test_id': t.pk }
+        if user_status(up,t) in ['Owner', 'Collaborator']:
+            errMsg = 'No instances of this test have been created yet.'
+        else:
+            errMsg = 'No instances of this test have been created yet to which you have access.'
+        args = { 'header': 'Test Instances', 'error': errMsg, 'test_id': t.pk }
     else:
         args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk }
     return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
@@ -333,11 +346,12 @@ def display_test_instance(request, test_id, test_instance_id):
                  'create_time': ti.create_time,
                  'test_id': test_id,
                  'test_instance_id': test_instance_id,
+                 'status': test_instance_status(ti),
                  'rand': rand,
                  'already_run': ti.run_time is not None,
                  'can_share': user_can('share',up,ti),
                  'can_export': user_can('export',up,ti),
-                 'can_run': user_can('run',up,ti),
+                 'can_run': is_test_instance_active(ti) and user_can('run',up,ti),
                  'alert': alert }
     else:
         args = { 'header': 'Test Instance %d of Test %d' % (ti.pk, ti.test.pk),
@@ -363,6 +377,7 @@ def create_test_instance(request, test_id):
                 new_ti.test = t         # add in exluded fields
                 new_ti.owner = up       # when an admin is logged in, they are not recognized as a user!!!!!!
                 new_ti.path = new_ti.path.replace("\\","/").rstrip("/")     # make sure path has only forward slashes and no trailing slashes
+                new_ti.key = ''.join([random.choice(string.ascii_letters+string.digits) for x in range(20)])
                 new_ti.save()           # save the new instance
                 tif.save_m2m()          # save the many-to-many data for the form
                 # create new test case instances
@@ -393,26 +408,44 @@ def create_test_instance(request, test_id):
             tif = CreateTestInstanceForm(initial={'schedule_time':datetime.datetime.now(), 'path': 'f:/fatigue', 'location':'VPL'})
             tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
         return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance of Test %d: %s' % (t.pk, t.title), 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
-    return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance', 'error': 'You must be an owner or collaborator of this test in order to create a test instance.'}, context_instance=RequestContext(request))
+    return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance', 'error': 'You do not have permission to create a test instance of this test.'}, context_instance=RequestContext(request))
 
 
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def start_test(request, test_id, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    up = request.user.get_profile()
-    if user_can('run',up,ti):
-        return render_to_response('testtool/manager/start_test.html',context_instance=RequestContext(request))
-    return render_to_response('testtool/manager/start_test.html',{ 'error': 'You must be the owner of this test instance in order to run it.' }, context_instance=RequestContext(request))
-
+    # when this page is hit, it places the test instance key in the URL for the desktop app to extract (by redirecting to itself with the key as a GET parameter).  If the key is already present, it checks if the key matches the database and then renders the page.  Otherwise, it shows an error message.
+    key_name = 'key'
+    if request.method == 'GET':
+        ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)
+        up = request.user.get_profile()
+        if user_can('run',up,ti):
+            if is_test_instance_active(ti):
+                try:
+                    key = request.GET[key_name]
+                except KeyError:
+                    return HttpResponseRedirect(reverse('testtool.manager.views.start_test', args=(test_id, test_instance_id))+'?%s=%s'%(key_name,ti.key))
+                else:
+                    if key == ti.key:
+                        return render_to_response('testtool/manager/start_test.html', context_instance=RequestContext(request))
+                    else:
+                        msg = 'Invalid key.'
+            elif test_instance_status(ti) == 'Complete':
+                msg = 'This test instance has already been run.'
+            else:
+                msg = 'This test instance is invalid and cannot be run.'
+        else:
+            msg = 'You do not have permission to run this test instance.'
+        return render_to_response('testtool/manager/start_test.html',{ 'error': msg }, context_instance=RequestContext(request))
+    return HttpResponseRedirect(reverse('testtool.manager.views.start_test', args=(test_id)))
+    
     
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def export_data(request):
-    test_instance_ran = TestInstance.objects.exclude(run_time=None)                 # all test instances that have been run
-    test_id_ran = test_instance_ran.values_list('test__pk',flat=True).distinct()    # pk's of all tests that have test instances that have been run
+    test_id_ran = TestInstance.objects.exclude(run_time=None).values_list('test__pk',flat=True).distinct()    # pk's of all tests that have test instances that have been run
     up = request.user.get_profile()
     # of these, find the ones of which the user is an owner or collaborator
     t_valid = []
@@ -421,7 +454,7 @@ def export_data(request):
     ti_valid_id = []
     for id in test_id_ran:                              # for each run test, find its run instances
         t_ran = Test.objects.get(pk=id)
-        t_ran_ti = test_instance_ran.filter(test=t_ran)
+        t_ran_ti = t_ran.testinstance_set.exclude(run_time=None)
         tmp_list = []
         tmp_list_pk = []
         for ti in t_ran_ti:
@@ -466,68 +499,213 @@ def export_data(request):
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def save_data(request):
+    #
+    # doesn't do any checking for existence of objects (i.e. try-catch)!!!
+    # 
     if request.method == 'POST':
         try:
             t_pk = int(request.POST['test_select'])
             ti_pk = int(request.POST['test_instance_select'])
+            format_list = request.POST.getlist('format')
         except KeyError:
-            return HttpResponse('please select a choice')
+            return HttpResponse('Please select a choice')
         else:
             up = request.user.get_profile()
             ti = get_object_or_404(TestInstance, pk=ti_pk)
-            if user_can('export',up,ti):                            # check that user can export test
-                response = HttpResponse(mimetype='text/csv')
-                response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.csv' % (ti.test.title, ti_pk)
-                writer = csv.writer(response)
-                if ti.subjects.count() == 1 and ti.test.method == 'SSCQE':
-                    subject = ti.subjects.all()[0];
-                    writer.writerow([subject.user.username, subject.user.first_name, subject.user.last_name, subject.birth_date, subject.sex])
-                    for tc in ti.test.testcase_set.all():
-                        tci = tc.testcaseinstance_set.filter(test_instance=ti).all()[0]     # ignore repeats
-                        scores = tci.scoresscqe_set.filter(subject=subject).order_by('pk')
-                        ts = []
-                        val = []
-                        for s in scores:
-                            ts.append(s.timestamp)
-                            val.append(s.value)
-                        writer.writerow(ts)
-                        writer.writerow(val)
-                return response    
+            if user_can('export',up,ti):        # check that user can export test instances
+                if len(format_list) == 0:
+                    response = HttpResponse('Please select a data format')
+                else:
+                    raw_data = get_raw_data(ti)
+                    if len(format_list) == 1:
+                        data = get_formatted_data(raw_data, format_list[0])
+                        response = HttpResponse(content_type=data['type'])
+                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.%s' % (ti.test.title, ti_pk, data['ext'])
+                        response.write(data['buffer'].getvalue())
+                        data['buffer'].close()
+                    else:
+                        zip_buffer = StringIO()
+                        zip = zipfile.ZipFile(zip_buffer,'a',zipfile.ZIP_DEFLATED)
+                        for format in format_list:
+                            data = get_formatted_data(raw_data, format)
+                            zip.writestr('%s_instance_%d.%s' % (ti.test.title, ti_pk, data['ext']), data['buffer'].getvalue())
+                            data['buffer'].close()
+                        for file in zip.filelist:       # fix for Linux zip files read in Windows (http://bitkickers.blogspot.com/2010/07/django-zip-files-create-dynamic-in.html)
+                            file.create_system = 0
+                        zip.close()
+                        response = HttpResponse(content_type='application/zip')
+                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.zip' % (ti.test.title, ti_pk)
+                        response.write(zip_buffer.getvalue())
+                        zip_buffer.close()
+                return response
             else:
-                return HttpResponse('you cannot export this test instance')
+                return HttpResponse('You do not have permission to export this test instance.')
     return HttpResponseRedirect(reverse('testtool.manager.views.export_data'))
+
+
+def get_raw_data(ti):
+    # this should eventually extract the data out of the test instance so that the database only needs to be accessed once for returning a variety of formats
+    return ti
     
+    
+def get_formatted_data(raw_data, format):
+    buffer = StringIO()
+    if format == 'report':
+        data = format_as_report(raw_data,buffer)
+        type = 'application/pdf'
+        ext = 'pdf'
+    elif format == 'csv':
+        data = format_as_csv(raw_data,buffer)
+        type = 'text/csv'
+        ext = 'csv'
+    elif format == 'matlab':
+        data = format_as_matlab(raw_data,buffer)
+        type = 'application/octet-stream'
+        ext = 'mat'
+    elif format == 'python':
+        data = format_as_python(raw_data,buffer)
+        type = 'text/plain'
+        ext = 'py'
+    return { 'buffer': data, 'type': type, 'ext': ext }
+    
+    
+def format_as_report(raw_data, buffer):
+    #http://www.djangobook.com/en/beta/chapter11/
+    return buffer
+    
+    
+def format_as_csv(ti, buffer):
+    # setup
+    writer = csv.writer(buffer)
+    method = ti.test.method
+    # write header
+    writer.writerow(['Test', ti.test.title])
+    writer.writerow(['Method', ti.test.method])
+    writer.writerow(['Test Notes', ti.test.description])
+    writer.writerow(['Test Instance ID', ti.pk])
+    writer.writerow(['Run Time', ti.run_time])
+    writer.writerow(['Test Instance Notes', ti.description])
+    writer.writerow(['Location', ti.location])
+    writer.writerow('')
+    # write method-specific data
+    if method == 'SSCQE':
+        all_subjects = ti.subjects.all()
+        all_test_cases = ti.test.testcase_set.all()
+        for subject in all_subjects:
+            writer.writerow(['User Name',  subject.user.username])
+            writer.writerow(['First Name', subject.user.first_name])
+            writer.writerow(['Last Name',  subject.user.last_name])
+            writer.writerow(['Birth Date', subject.birth_date])
+            writer.writerow(['Gender',     subject.sex])
+            writer.writerow('')
+            for ii,tc in enumerate(all_test_cases):
+                all_tci = tc.testcaseinstance_set.filter(test_instance=ti).all()
+                for tci in all_tci:
+                    scores = tci.scoresscqe_set.filter(subject=subject).order_by('pk')
+                    ts = scores.values_list('timestamp',flat=True)
+                    val = scores.values_list('value',flat=True)
+                    writer.writerow(['Test Case', ii+1])
+                    writer.writerow(['Play Order', tci.play_order])
+                    writer.writerow(['Timestamp'] + list(ts))
+                    writer.writerow(['Score'] + list(val))
+                    writer.writerow('')
+            writer.writerow('')
+            writer.writerow('')
+    elif method == 'DSIS':
+        subject_data = ti.subjects.order_by('pk').values_list
+        user_names = subject_data('user__username',flat=True)
+        writer.writerow(['User Name',  ''] + list(user_names))
+        writer.writerow(['First Name', ''] + list(subject_data('user__first_name',flat=True)))
+        writer.writerow(['Last Name',  ''] + list(subject_data('user__last_name',flat=True)))
+        writer.writerow(['Birth Date', ''] + list(subject_data('birth_date',flat=True)))
+        writer.writerow(['Gender',     ''] + list(subject_data('sex',flat=True)))
+        writer.writerow('')
+        writer.writerow(['Test Case', 'Play Order'] + ['Score: ' + u for u in user_names])
+        all_test_cases = ti.test.testcase_set.all()
+        for ii,tc in enumerate(all_test_cases):
+            all_tci = tc.testcaseinstance_set.filter(test_instance=ti).all()
+            for jj,tci in enumerate(all_tci):
+                subj_scores = []
+                for pk in subject_data('pk',flat=True):     # have to loop through subjects in case of empty scores
+                    try:
+                        obj = ScoreDSIS.objects.get(test_case_instance=tci,subject__pk=pk)
+                        val = obj.value
+                    except ScoreDSIS.DoesNotExist:
+                        val = ''
+                    subj_scores.append(val)
+                writer.writerow([str(ii+1), tci.play_order] + subj_scores)
+    return buffer
+    
+    
+def format_as_matlab(raw_data, buffer):
+    data = process_mat_py_data(raw_data)
+    io.savemat(buffer,{ 'data': data }, oned_as='column')
+    return buffer
+
+    
+def format_as_python(raw_data, buffer):
+    data = process_mat_py_data(raw_data)
+    buffer.write('data = %s\n' % str(data))
+    return buffer
+
+    
+def process_mat_py_data(ti):
+    subject_data = []
+    all_subjects = ti.subjects.all()
+    all_test_cases = ti.test.testcase_set.all()
+    method = ti.test.method
+    for subject in all_subjects:
+        subj = { 'username':   subject.user.username,
+                 'first_name': subject.user.first_name,
+                 'last_name':  subject.user.last_name,
+                 'dob':        str(subject.birth_date),
+                 'gender':     subject.sex }
+        test_cases = []
+        for ii,tc in enumerate(all_test_cases):
+            all_tci = tc.testcaseinstance_set.filter(test_instance=ti).order_by('pk').all()
+            instances = []
+            for tci in all_tci:     # convert to floats for Matlab
+                try:
+                    if method == 'SSCQE':
+                        subj_score = tci.scoresscqe_set.filter(subject=subject).order_by('pk')
+                        ts = subj_score.values_list('timestamp',flat=True)
+                        val = subj_score.values_list('value',flat=True)
+                        score = { 'timestamp': [str(t) for t in list(ts)], 'value': [float(v) for v in list(val)] }
+                    elif method == 'DSIS':
+                        subj_score = tci.scoredsis_set.get(subject=subject)
+                        score = { 'value': float(subj_score.value) }
+                    elif method == 'DSCQS':
+                        subj_score = tci.scoredscqs_set.get(subject=subject)
+                        score = { 'value1': float(subj_score.value1), 'value2': float(subj_score.value2) }
+                    else:
+                        raise Exception('get_raw_data: invalid test method.')
+                except ObjectDoesNotExist:
+                    score = []
+                instances.append({ 'test_case': ii+1,
+                                   'play_order': tci.play_order,
+                                   'score': score })
+            test_cases.append(instances)
+        subj['test_cases'] = test_cases
+        subject_data.append(subj)
+    return subject_data
+
     
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def share_test(request):
-    # test owners can share tests and and child test instances of tests they own
-    # test instance owners can share their test instances
     up = request.user.get_profile()
-    
-    # tests user owns and their test instances
-    t_own = Test.objects.filter(owner=up)               # tests user owns
-    t_own_ti = []                                       # pk's of TestInstances of Tests that user owns
-    for t in t_own:
-        t_own_ti.extend(t.testinstance_set.values_list('pk',flat=True))
-    
-    # test instances user owns and their tests
-    ti_own = TestInstance.objects.filter(owner=up)                  # test instances user owns
-    ti_own_t = ti_own.values_list('test__pk',flat=True).distinct()   # pk's of Tests of TestInstances that user owns
-    
-    # combine them into unique lists
-    t_ti_share = list(set(list(t_own.values_list('pk',flat=True)) + list(ti_own_t)))    # pk's of Tests that have TestInstances that can be shared
-    ti_share = list(set(t_own_ti + list(ti_own.values_list('pk',flat=True))))     # pk's of TestInstances that can be shared
+    t_own = Test.objects.filter(owner=up)
+    t_share = list(set(list(t_own.values_list('pk',flat=True)) + list(TestInstance.objects.filter(owner=up).values_list('test__pk',flat=True))))
     
     # group test instances by test
     t_valid = []
     ti_valid = []
     t_valid_id = []
     ti_valid_id = []
-    for id in t_ti_share:
+    for id in t_share:      # all Tests that can be shared or have TestInstances that can be shared
         t = Test.objects.get(pk=id)
-        tmp = TestInstance.objects.filter(test=t).filter(pk__in=ti_share)
+        tmp = t.testinstance_set.filter(Q(test__owner=up) | Q(owner=up)).distinct()
         tmp_id = tmp.values_list('pk',flat=True)
         if tmp.count() > 0:
             t_valid.append(t)
@@ -539,20 +717,12 @@ def share_test(request):
     all_testers = Group.objects.get(name='Testers').user_set.all()
     share_test_with = []        # users with whom tests can be shared (nested list, each list corresponds to test in t_own)
     for t in t_own:
-        sw1 = []
-        for u in all_testers:
-            if (u.userprofile != t.owner) and (u.userprofile not in t.collaborators.all()):
-                sw1.append(u)
-        share_test_with.append(sw1)
+        share_test_with.append(list(all_testers.exclude(userprofile=t.owner).exclude(userprofile__in=t.collaborators.all())))
     share_test_instance_with = []    # users with whom test instances can be shared (double-nested list, i.e. [[[u1,u2,u3],[u1,u4]], [[u2,u3],[u3,u4]]]
     for ti_list in ti_valid:
         sw1 = []
         for ti in ti_list:
-            sw2 = []
-            for u in all_testers:
-                if (u.userprofile != ti.owner) and (u.userprofile not in ti.collaborators.all()) and (u.userprofile != ti.test.owner) and (u.userprofile not in ti.test.collaborators.all()):
-                    sw2.append(u)
-            sw1.append(sw2)
+            sw1.append(list(all_testers.exclude(userprofile=ti.owner).exclude(userprofile__in=ti.collaborators.all()).exclude(userprofile=ti.test.owner).exclude(userprofile__in=ti.test.collaborators.all())))
         share_test_instance_with.append(sw1)
 
     # set defaults
@@ -585,9 +755,9 @@ def share_test(request):
                         ti_valid_index_default = ti_valid_id[t_idx].index(test_instance_id)
                         t_valid_index_default = t_idx
                     else:
-                        return render_to_response('testtool/manager/share_test.html', 'You do not have access to this test instance data.', context_instance=RequestContext(request))
+                        return render_to_response('testtool/manager/share_test.html', 'You do not have permission to share this test instance.', context_instance=RequestContext(request))
                 else:
-                    return render_to_response('testtool/manager/share_test.html', 'You do not have access to this test data.', context_instance=RequestContext(request))
+                    return render_to_response('testtool/manager/share_test.html', 'You do not have permission to share this test.', context_instance=RequestContext(request))
     data = {'t_own': t_own,
             't_valid': t_valid,
             'ti_valid': ti_valid,
@@ -622,7 +792,7 @@ def share_test_submit(request):
                         t.collaborators.add(u)
                     return HttpResponseRedirect(reverse('testtool.manager.views.display_test', args=(t.pk,)))
                 else:
-                    return HttpResponse('you cannot share this test')
+                    return HttpResponse('You do not have permission to share this test.')
             elif mode == 'share_test_instance':
                 try:
                     ti_pk = int(request.POST['test_instance_select'])
@@ -636,7 +806,7 @@ def share_test_submit(request):
                             ti.collaborators.add(u)
                         return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
                     else:
-                        return HttpResponse('you cannot share this test instance')
+                        return HttpResponse('You do not have permission to share this test instance.')
             else:
                 return HttpResponse('mode must be ''share_test'' or ''share_test_instance''')
     else:

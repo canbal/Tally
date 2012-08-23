@@ -29,6 +29,10 @@
         {% endif %}
         <div class="form-horizontal">
             <div class="control-group">
+                <label class="control-label" for="id_status">Status</label>
+                <div class="controls"><span class="uneditable-input">{{ status }}</span></div>
+            </div>
+            <div class="control-group">
                 <label class="control-label" for="id_create_time">{{ create_time_name }}</label>
                 <div class="controls"><span class="uneditable-input">{{ create_time }}</span></div>
             </div>
@@ -63,7 +67,8 @@
                         <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
                         <input type="submit" class="btn btn-primary" value="Export Data" />
                     </form>
-                {% elif can_run %}
+                {% endif %}
+                {% if can_run %}
                     <a class="btn btn-success" href="{% url testtool.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
                 {% endif %}
             </div>

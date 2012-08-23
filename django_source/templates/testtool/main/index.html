@@ -1,7 +1,7 @@
 {% extends "testtool/main/base_subject.html" %}
 
 {% block header %}
-    {% if latest_test_instances %}
+    {% if ti_list %}
         Enrolled Subjective Tests
     {% else %}
         No subjective tests are available.
@@ -11,12 +11,10 @@
 {% block content %}
     <div data-role="fieldcontain">
         <fieldset data-role="controlgroup"> 
-            <ul data-role="listview" data-theme="g">
-                {% for test_instance in latest_test_instances %}
-                    <li><a href="{% url testtool.main.views.tally test_instance_id=test_instance.pk %}" data-ajax="false">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
-                {% endfor %}
-            </ul>
+            {% for ti in ti_list %}
+                <li><a href="{% url testtool.main.views.tally test_instance_id=ti.pk %}" data-role="button" data-ajax="false">Begin test {{ ti.id }}</a></li>
+            {% endfor %}
         </fieldset>
     </div>
-    <a href="{% url testtool.main.views.enroll %}" data-role="button">Enroll in other subjective tests</a> 
+    <!-- <a href="{% url testtool.main.views.enroll %}" data-role="button">Enroll in other subjective tests</a> -->
 {% endblock content %}

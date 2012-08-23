@@ -27,7 +27,7 @@ class CreateTestInstanceForm(ModelForm):
     subjects = ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
     class Meta:
         model = TestInstance
-        exclude = ('test', 'owner', 'collaborator', 'run_time', 'counter')
+        exclude = ('test', 'owner', 'collaborator', 'run_time', 'counter', 'key')
         widgets = {
             'description': Textarea(),
         }
@@ -36,7 +36,7 @@ class CreateTestInstanceForm(ModelForm):
 class DisplayTestInstanceForm(ModelForm):
     class Meta:
         model = TestInstance
-        exclude = ('counter')
+        exclude = ('counter', 'key')
         widgets = {
             'description': Textarea(),
         }

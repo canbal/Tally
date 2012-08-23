@@ -44,6 +44,7 @@ class TestInstance(models.Model):
     description    = models.CharField(max_length=400)
     location       = models.CharField(max_length=200)
     counter        = models.IntegerField(default=0)
+    key            = models.CharField(max_length=20)
     
     class Meta:
         app_label = 'testtool'
