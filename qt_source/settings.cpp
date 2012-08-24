@@ -19,18 +19,21 @@ Settings::~Settings()
 }
 
 
+// makes the phonon options tab active when its radio button is selected
 void Settings::on_radioPhonon_clicked()
 {
     toggleTabs(ui->tabMediaPlayerOptions->indexOf(ui->tabPhonon));
 }
 
 
+// makes the command-line media plyer options tab active when its radio button is selected
 void Settings::on_radioCLMP_clicked()
 {
     toggleTabs(ui->tabMediaPlayerOptions->indexOf(ui->tabCLMP));
 }
 
 
+// makes the specified options tab active and deactivates the rest
 void Settings::toggleTabs(int tabIdx)
 {
     for (int ii=0; ii<ui->tabMediaPlayerOptions->count(); ii++) {
@@ -41,24 +44,28 @@ void Settings::toggleTabs(int tabIdx)
 }
 
 
+// signals that the user wishes to change the screen of the Phonon media player
 void Settings::on_phononChangeScreen_clicked()
 {
     emit change_screen();
 }
 
 
+// exits the settings dialog, no changes are saved
 void Settings::on_settingsCancel_clicked()
 {
     this->hide();
 }
 
 
+// saves the settings and exits the dialog
 void Settings::on_settingsOK_clicked()
 {
     on_settingsApply_clicked(true);
 }
 
 
+// saves the settings without exiting
 void Settings::on_settingsApply_clicked(bool exit)
 {
     QString fileCLMP = ui->pathCLMP->text();
@@ -76,13 +83,14 @@ void Settings::on_settingsApply_clicked(bool exit)
 }
 
 
+// initializes the dialog with the specified defaults
 void Settings::setDefaults(QString defaultWebAddress, int defaultVideoMode, QString defaultPathCLMP, QString defaultArgStringCLMP)
 {
     if (defaultVideoMode == 2) {
         ui->radioCLMP->setChecked(true);
         ui->radioPhonon->setChecked(false);
         on_radioCLMP_clicked();
-    } else {        // default is Phonon video player
+    } else {        // if invalid video mode is passed in, defaults to Phonon video player
         ui->radioPhonon->setChecked(true);
         ui->radioCLMP->setChecked(false);
         on_radioPhonon_clicked();
@@ -94,6 +102,7 @@ void Settings::setDefaults(QString defaultWebAddress, int defaultVideoMode, QStr
 }
 
 
+// copies the choices in the settings dialog to their public variables so they can be updated outside of this class.
 void Settings::makeSettingsPublic()
 {
     if (ui->radioPhonon->isChecked()) {

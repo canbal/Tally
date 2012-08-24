@@ -30,8 +30,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize network manager and web page
     m_manager = new QNetworkAccessManager(this);
-    ui->webAddress->setText(m_defaultWebAddress);
-    on_webAddress_returnPressed();
+    ui->addressBar->setText(m_defaultWebAddress);
+    on_addressBar_returnPressed();
     connect(ui->webView,SIGNAL(urlChanged(const QUrl&)),this,SLOT(onURLChanged(const QUrl&)));
 
     // initialize internal values
@@ -74,6 +74,7 @@ MainWindow::~MainWindow()
  ********************       UI FUNCTIONS       ********************
  ******************************************************************/
 
+// pops up a confirmation dialog when the exit button is pressed
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     event->ignore();
@@ -83,18 +84,21 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 
 
-void MainWindow::on_webAddress_returnPressed()
+// navigates to the URL in the address bar when the return key is pressed
+void MainWindow::on_addressBar_returnPressed()
 {
-    ui->webView->setUrl(ui->webAddress->text());
+    ui->webView->setUrl(ui->addressBar->text());
 }
 
 
+// updates the address bar text to the appropriate URL while navigating with the browser
 void MainWindow::onURLChanged(const QUrl &url)
 {
-    ui->webAddress->setText(QString(url.toString()));
+    ui->addressBar->setText(QString(url.toString()));
 }
 
 
+// when the 'next video' button is pressed, it sets the 'done' flag for the present test case
 void MainWindow::on_nextVideo_clicked()
 {
     ui->nextVideo->setEnabled(false);
@@ -102,6 +106,8 @@ void MainWindow::on_nextVideo_clicked()
 }
 
 
+// when the 'start test' button is pressed, it checks for the media player and the validity of the URL.
+// if everything is valid, it will communicate with the server and begin the test.
 void MainWindow::on_startTest_clicked()
 {
     // tried to POST to /login/ but get "connection closed" error- this is due to webpage being forbidden (HTTP 403).
@@ -109,47 +115,38 @@ void MainWindow::on_startTest_clicked()
     // not actually remove CSRF handling.  when i tried this (@csrf_exempt), it still didn't work
 
     bool success = true;
-    std::stringstream errMsg;
     ui->startTest->setEnabled(false);
     ui->settings->setEnabled(false);
-    if (m_videoMode==2) {
+    // check media player
+    if (m_videoMode!=1 && m_videoMode!=2) {
+        success = false;
+        msgBoxError("Invalid media player.  Please choose a media player from the settings menu.", "");
+    } else if (m_videoMode==2) {
         if (!QFile(m_pathToCLMP).exists()) {
             success = false;
             msgBoxError("Cannot find video player", QString("File '%1' does not exist.").arg(m_pathToCLMP).toStdString());
         }
     }
-    if (success) {      // check for valid URL: rootURL/tests/test_pk/instances/test_instance_pk/start/?key={random 20-character code}
-        QUrl addr = QUrl(ui->webView->url().toString(QUrl::StripTrailingSlash));
-        m_rootURL = QString("http://%1").arg(addr.authority());
-        QStringList urlParts = addr.path().remove(0,1).split("/");
-        if (urlParts.length() == 5) {
-            bool testIDSuccess = false;
-            bool testInstanceIDSuccess = false;
-            int testID = urlParts.at(1).toInt(&testIDSuccess);
-            int testInstanceID = urlParts.at(3).toInt(&testInstanceIDSuccess);
-            if ((urlParts.at(0) == "tests") && (urlParts.at(2) == "instances") && (urlParts.at(4) == "start") && testIDSuccess && testInstanceIDSuccess) {
-                // check for valid key parameter
-                QList<QPair<QString, QString> > urlQueryItems = addr.queryItems();
-                if (urlQueryItems.size() == 1) {
-                    if (urlQueryItems.at(0).first == "key") {
-                        m_testID = testID;
-                        m_testInstanceID = testInstanceID;
-                        m_key = urlQueryItems.at(0).second;
-                    } else {
-                        success = false;
-                        errMsg << "URL argument must be 'key'" << std::endl;
-                    }
-                } else {
-                    success = false;
-                    errMsg << "URL must contain exactly one argument" << std::endl;
-                }
+    // check for valid URL
+    std::stringstream errMsg;
+    if (success) {
+        QUrl currentUrl = QUrl(ui->webView->url().toString(QUrl::StripTrailingSlash));
+        m_rootURL = QString("http://%1").arg(currentUrl.authority());
+        QRegExp urlPattern("/tests/(\\d+)/instances/(\\d+)/start");
+        if (urlPattern.exactMatch(currentUrl.path())) {
+            // check for valid key parameter
+            QList<QPair<QString, QString> > urlQueryItems = currentUrl.queryItems();
+            if ((urlQueryItems.size() == 1) && (urlQueryItems.at(0).first == "key")) {
+                m_testID = urlPattern.cap(1).toInt();
+                m_testInstanceID = urlPattern.cap(2).toInt();
+                m_key = urlQueryItems.at(0).second;
             } else {
                 success = false;
-                errMsg << "Incorrect URL" << std::endl;
+                errMsg << "Could not extract key." << std::endl;
             }
         } else {
             success = false;
-            errMsg << "Incorrect URL" << std::endl;
+            errMsg << "Incorrect URL." << std::endl;
         }
         if (success) {
             QNetworkReply *reply = postToServer("init");
@@ -161,11 +158,11 @@ void MainWindow::on_startTest_clicked()
 }
 
 
-
 /******************************************************************
  *****************       SETTINGS FUNCTIONS       *****************
  ******************************************************************/
 
+// launches the settings dialog
 void MainWindow::on_settings_clicked()
 {
     m_settings->setDefaults(m_defaultWebAddress,m_videoMode,m_pathToCLMP,m_argsCLMP.join(" "));
@@ -173,6 +170,7 @@ void MainWindow::on_settings_clicked()
 }
 
 
+// updates the settings that the user just selected.  settings validation is done in the Settings class.
 void MainWindow::copySettings()
 {
     m_defaultWebAddress = m_settings->m_defaultWebAddress;
@@ -185,6 +183,7 @@ void MainWindow::copySettings()
 }
 
 
+// if the phonon media player is selected, this function switches the screen on which it appears.
 void MainWindow::changeScreen()
 {
     if (m_videoMode==1 && m_videoWidget != NULL) {
@@ -205,6 +204,7 @@ void MainWindow::changeScreen()
  ***********       SERVER COMMUNICATION FUNCTIONS       ***********
  ******************************************************************/
 
+// posts a message to the specified URL along with the test instance key and a status message if desired.
 QNetworkReply *MainWindow::postToServer(std::string path, std::string status)
 {
     QNetworkRequest request(QUrl(QString("%1/%2/%3/").arg(m_rootURL).arg(m_testInstanceID).arg(path.c_str())));
@@ -219,18 +219,21 @@ QNetworkReply *MainWindow::postToServer(std::string path, std::string status)
 }
 
 
+// interprets and acts on server response from the init URL
 void MainWindow::initTest()
 {
     interpretServerCommand("init");
 }
 
 
+// interprets and acts on server response from the get_media URL
 void MainWindow::executeServerMediaCommand()
 {
     interpretServerCommand("get_media");
 }
 
 
+// decodes a JSON response from the server
 void MainWindow::interpretServerCommand(std::string mode)
 {
     // read command from server
@@ -238,24 +241,33 @@ void MainWindow::interpretServerCommand(std::string mode)
 
     // interpret command
     bool success = true;
+    QStringList keys = (QStringList() << "status" << "msg" << "path" << "mediaList" << "counter");
     std::stringstream errMsg;
     Json::Value root;
     Json::Reader reader;
     if (!reader.parse(command.toStdString().c_str(),root)) {
         success = false;
         errMsg << reader.getFormatedErrorMessages() << std::endl;
-    } else if (root.size()==4 && root.isMember("status") && root.isMember("msg") && root.isMember("path") && root.isMember("videoList")) {
-        if (mode == "init") {
-            processCommand_init(root, &success, &errMsg);
-        } else if (mode == "get_media") {
-            processCommand_get_media(root, &success, &errMsg);
+    } else {
+        bool keysValid = root.size()==(unsigned)keys.size();
+        int ii = 0;
+        while (keysValid && ii<keys.size()) {
+            keysValid = root.isMember(keys.at(ii).toStdString()) ;
+            ii++;
+        }
+        if (keysValid) {
+            if (mode == "init") {
+                processCommand_init(root, &success, &errMsg);
+            } else if (mode == "get_media") {
+                processCommand_get_media(root, &success, &errMsg);
+            } else {
+                success = false;
+                errMsg << "Invalid server command mode." << std::endl;
+            }
         } else {
             success = false;
-            errMsg << "Invalid server command mode." << std::endl;
+            errMsg << "Invalid message from server." << std::endl;
         }
-    } else {
-        success = false;
-        errMsg << "Invalid message from server." << std::endl;
     }
     if (success) {
         if (mode == "init") {
@@ -267,6 +279,7 @@ void MainWindow::interpretServerCommand(std::string mode)
 }
 
 
+// reads a response from the server
 QString MainWindow::readServerResponse()
 {
     QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
@@ -282,18 +295,19 @@ QString MainWindow::readServerResponse()
 }
 
 
+// interprets the JSON string from the init response
 void MainWindow::processCommand_init(Json::Value root, bool *success, std::stringstream *errMsg)
 {
     std::string status = std::string(root["status"].asCString());
     if (status=="valid") {
         std::string path = std::string(root["path"].asCString());
-        Json::Value videoList = root["videoList"];
-        QString fullVid;
-        for (unsigned int ii=0; ii < videoList.size(); ii++) {
-            fullVid = QString("%1/%2").arg(path.c_str()).arg(videoList[ii].asCString());
-            if (!QFile(fullVid).exists()) {
+        Json::Value mediaList = root["mediaList"];
+        QString fullMedia;
+        for (unsigned int ii=0; ii < mediaList.size(); ii++) {
+            fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].asCString());
+            if (!QFile(fullMedia).exists()) {
                 *success = false;
-                *errMsg << "Missing file: " << fullVid.toStdString() << std::endl;
+                *errMsg << "Missing file: " << fullMedia.toStdString() << std::endl;
             }
         }
     } else {
@@ -304,6 +318,7 @@ void MainWindow::processCommand_init(Json::Value root, bool *success, std::strin
 }
 
 
+// interprets the JSON string from the get_media response
 void MainWindow::processCommand_get_media(Json::Value root, bool *success, std::stringstream *errMsg)
 {
     std::string status = std::string(root["status"].asCString());
@@ -321,10 +336,10 @@ void MainWindow::processCommand_get_media(Json::Value root, bool *success, std::
         } else {
             sendStatusToServer("waiting");
         }
-    } else if (status=="start" || status=="run") {
+    } else if (status=="run") {
         std::string path = std::string(root["path"].asCString());
-        Json::Value videoList = root["videoList"];
-        playVideoList(path, videoList);
+        Json::Value mediaList = root["mediaList"];
+        playMediaList(path, mediaList);
     } else {
         *success = false;
         std::string errStr = (status=="error") ? std::string(root["msg"].asCString()) : std::string("Unknown status from server.");
@@ -333,6 +348,7 @@ void MainWindow::processCommand_get_media(Json::Value root, bool *success, std::
 }
 
 
+// posts to the get_media URL and then interprets the response
 void MainWindow::sendStatusToServer(std::string status)
 {
     QNetworkReply *reply = postToServer("get_media", status);
@@ -345,6 +361,7 @@ void MainWindow::sendStatusToServer(std::string status)
  ***************       MEDIA PLAYER FUNCTIONS       ***************
  ******************************************************************/
 
+// instantiates a media player based on the selected mode and cleans up the previous media player
 void MainWindow::setupMediaPlayer()
 {
     if (m_CLMP != NULL) {
@@ -376,33 +393,36 @@ void MainWindow::setupMediaPlayer()
         connect(m_CLMP,SIGNAL(finished(int, QProcess::ExitStatus)),this,SLOT(onVideoFinished(int, QProcess::ExitStatus)));
         connect(m_CLMP,SIGNAL(error(QProcess::ProcessError)),this,SLOT(handleCLMPError(QProcess::ProcessError)));
     } else {
-        msgBoxError("Invalid video mode", "");
+        msgBoxError("Invalid media player.  Please choose a media player from the settings menu.");
     }
 }
 
 
-void MainWindow::playVideoList(std::string path, Json::Value videoList)
+// plays the videos within a test case
+void MainWindow::playMediaList(std::string path, Json::Value mediaList)
 {
-    QString fullVid;
-    QStringList mediaList;
-    for (unsigned int ii=0; ii < videoList.size(); ii++) {
-        fullVid = QString("%1/%2").arg(path.c_str()).arg(videoList[ii].asCString());
-        ui->status->setText(QString("Playing %1").arg(fullVid.toStdString().c_str()));
-        mediaList << fullVid;
+    QString fullMedia;
+    QStringList fullMediaList;
+    for (unsigned int ii=0; ii < mediaList.size(); ii++) {
+        fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].asCString());
+        ui->status->setText(QString("Playing %1").arg(fullMedia.toStdString().c_str()));
+        fullMediaList << fullMedia;
     }
     if (m_videoMode==1) {
-        for (int ii=0; ii < mediaList.size(); ii++) {
-            m_phonon->enqueue(mediaList.at(ii));
+        for (int ii=0; ii < fullMediaList.size(); ii++) {
+            m_phonon->enqueue(fullMediaList.at(ii));
         }
         m_phonon->play();
     } else if (m_videoMode==2) {
-        m_CLMP->start(m_pathToCLMP, mediaList + m_argsCLMP);
+        m_CLMP->start(m_pathToCLMP, fullMediaList + m_argsCLMP);
     } else {
-        msgBoxError("Invalid video mode", "");
+        msgBoxError("Invalid media player.  Please choose a media player from the settings menu.");
     }
 }
 
 
+// wrapper for the finished() signal from the Phonon player that re-emits the signal with arguments.
+// this way, a common slot (onVideoFinished) can be used regardless of the media player.
 void MainWindow::onPhononFinished()
 {
     // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
@@ -410,6 +430,7 @@ void MainWindow::onPhononFinished()
 }
 
 
+// tells the server that the videos in the present test case are done playing
 void MainWindow::onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
     if (m_videoMode == 1) {
@@ -421,6 +442,7 @@ void MainWindow::onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 
+// pops up an error message if there is a problem with the command-line media player
 void MainWindow::handleCLMPError(QProcess::ProcessError error)
 {
     msgBoxError("Error with video player",QString("Error code = %1").arg(error).toStdString());
@@ -432,6 +454,7 @@ void MainWindow::handleCLMPError(QProcess::ProcessError error)
  ******************       HELPER FUNCTIONS       ******************
  ******************************************************************/
 
+// pops up an error message and resets the test (makes the start and settings buttons active)
 void MainWindow::msgBoxError(std::string text, std::string details)
 {
     QMessageBox msgBox(QMessageBox::Critical,"",text.c_str());

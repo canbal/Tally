@@ -29,7 +29,7 @@ signals:
 
 private slots:
         // related to UI
-    void on_webAddress_returnPressed();
+    void on_addressBar_returnPressed();
     void onURLChanged(const QUrl &url);
     void on_nextVideo_clicked();
     void on_startTest_clicked();
@@ -73,8 +73,8 @@ private:
     void processCommand_get_media(Json::Value root, bool *success, std::stringstream *errMsg);
     void sendStatusToServer(std::string status);
     void setupMediaPlayer();
-    void playVideoList(std::string path, Json::Value videoList);
-    void msgBoxError(std::string text, std::string details);
+    void playMediaList(std::string path, Json::Value mediaList);
+    void msgBoxError(std::string text, std::string details="");
 };
 
 #endif // MAINWINDOW_H

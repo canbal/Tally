@@ -101,6 +101,7 @@ def mirror_score(request, test_instance_id):
         return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
             
             
+            
 ########################################################################################################
 ################################         DESKTOP APP FUNCTIONS          ################################
 ########################################################################################################
@@ -121,17 +122,17 @@ def init_test_instance(request, test_instance_id):
                 if is_test_instance_active(ti):            
                     if key == ti.key:
                         vid = Video.objects.filter(test=ti.test)
-                        vidList = []
+                        mediaList = []
                         for v in vid:
-                            vidList.append(v.filename)
-                        return HttpResponse(json.dumps({'status': 'valid', 'msg': '', 'path':ti.path, 'videoList':vidList}))
+                            mediaList.append(v.filename)
+                        return init_signal(ti,'valid','',mediaList)
                     else:
                         errMsg = 'Invalid key.'
                 else:
                     errMsg = 'This test instance is not active.'
     else:
         errMsg = 'Only POST requests accepted.'
-    return HttpResponse(json.dumps({'status': 'error', 'msg': 'init_test_instance: ' + errMsg, 'path': '', 'videoList': []}))
+    return init_signal(ti,'error',errMsg)
 
 
 @csrf_exempt
@@ -140,12 +141,12 @@ def get_media(request, test_instance_id):
         try:
             key = request.POST['key']
         except KeyError:
-            return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Must include key parameter.', 'path': '', 'videoList':[]}))
+            return media_signal(ti,'error','Must include key parameter.')
         else:
             try:
                 ti = TestInstance.objects.get(pk=test_instance_id)
             except TestInstance.DoesNotExist:
-                return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Test instance does not exist.', 'path': '', 'videoList':[]}))
+                return media_signal(ti,'error','Test instance does not exist.')
             if is_test_instance_active(ti):            
                 if key == ti.key:
                     maxCount = ti.testcaseinstance_set.count()
@@ -153,17 +154,17 @@ def get_media(request, test_instance_id):
                     try:
                         status = request.POST['status']
                     except KeyError:
-                        return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Must send status.', 'path': '', 'videoList':[]}))
+                        return media_signal(ti,'error','Must send status.')
                     # check bounds of counter
                     if ti.counter<0:
-                        return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Error with test instance: counter < 0.', 'path': '', 'videoList':[]}))
+                        return media_signal(ti,'error','Error with test instance: counter < 0.')
                     elif ti.counter > maxCount:
-                        return HttpResponse(json.dumps({'status': 'done', 'msg': '', 'path': '', 'videoList':[]}))
+                        return media_signal(ti,'done')
                     # get the current test case
                     try:
                         tci_current = ti.testcaseinstance_set.get(play_order=max(1,ti.counter))
                     except TestCaseInstance.DoesNotExist:
-                        return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Could not find test case instance.', 'path': '', 'videoList':[]}))
+                        return media_signal(ti,'error','Could not find test case instance.')
                     else:
                         if status == 'media_done':
                             tci_current.is_media_done = True
@@ -176,36 +177,60 @@ def get_media(request, test_instance_id):
                             ti.counter += 1
                             ti.save()
                             if ti.counter > maxCount:
-                                return HttpResponse(json.dumps({'status': 'done', 'msg': '', 'path': '', 'videoList':[]}))
+                                return media_signal(ti,'done')
                             else:
                                 try:
                                     tci_next = ti.testcaseinstance_set.get(play_order=ti.counter)
                                 except TestCaseInstance.DoesNotExist:
-                                    return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Could not find test case instance.', 'path': '', 'videoList':[]}))
+                                    return media_signal(ti,'error','Could not find test case instance.')
                                 else:
-                                    vidList = []
+                                    mediaList = []
                                     for ii in range(0,tci_next.test_case.testcaseitem_set.count()):
-                                        vidList.append(tci_next.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
-                                    return HttpResponse(json.dumps({'status': 'run', 'msg': '', 'path':ti.path, 'videoList':vidList}))
+                                        mediaList.append(tci_next.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
+                                    return media_signal(ti,'run','',mediaList)
                         elif ti.counter==0:     # if this is the first request of the test instance, return the first video and increment the counter
                             ti.run_time = datetime.datetime.now()       # set the run_time of the test instance to now
                             ti.counter += 1
                             ti.save()
-                            vidList = []
+                            mediaList = []
                             for ii in range(0,tci_current.test_case.testcaseitem_set.count()):
-                                vidList.append(tci_current.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
-                            return HttpResponse(json.dumps({'status': 'start', 'msg': '', 'path':ti.path, 'videoList':vidList}))
+                                mediaList.append(tci_current.test_case.testcaseitem_set.get(play_order=ii).video.filename)   # assumes play_order starts from 0
+                            return media_signal(ti,'run','',mediaList)
                         # otherwise, the subjects haven't finished scoring- return a wait signal
                         else:
-                            return HttpResponse(json.dumps({'status': 'wait', 'msg': '', 'path': '', 'videoList': []}))
+                            return media_signal(ti,'wait')
                 else:
-                    return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Invalid key.', 'path': '', 'videoList':[]}))
+                    return media_signal(ti,'error','Invalid key.')
             else:
-                return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: This test instance is not active.', 'path': '', 'videoList':[]}))
+                return media_signal(ti,'error','This test instance is not active.')
     else:
-        return HttpResponse(json.dumps({'status': 'error', 'msg': 'get_media: Only POST requests accepted.', 'path': '', 'videoList':[]}))
+        return media_signal(ti,'error','Only POST requests accepted.')
         
+    
+def init_signal(ti,status,msg='',mediaList=[]):
+    return desktop_signal(ti,status,'init_test_instance',msg,mediaList,[['error'],['valid']])
+    
         
+def media_signal(ti,status,msg='',mediaList=[]):
+    return desktop_signal(ti,status,'get_media',msg,mediaList,[['error','wait','done'],['run']])
+    
+    
+def desktop_signal(ti,status,handle,msg,mediaList,validKeys):
+    if len(msg) == 0:
+        msg_text = ''
+    else:
+        msg_text = '%s: %s' % (handle,msg)
+    if status in validKeys[0]:
+        path = ''
+        list = []
+    elif status in validKeys[1]:
+        path = ti.path
+        list = mediaList
+    else:
+        raise Exception('desktop_signal: invalid status.') 
+    return HttpResponse(json.dumps({'status': status, 'msg': msg_text, 'path': path, 'mediaList': mediaList, 'counter': ti.counter}))
+        
+
 ########################################################################################################
 ################################            UNUSED FUNCTIONS            ################################
 ########################################################################################################
