@@ -74,7 +74,6 @@ def tally_continuous(request,ti,subject):
     except TestCaseInstance.DoesNotExist:
         return render_to_response('testtool/main/status.html', {'test_instance': ti})
     header = 'Test %d/%d' % (ti.counter, ti.testcaseinstance_set.count())
-    
     if request.method == 'POST':
         messages = {'0': 'Error: Could not read score',
                     '1': 'Redirecting to status page...',
@@ -85,15 +84,16 @@ def tally_continuous(request,ti,subject):
             current_count = int(request.POST['current_count'])
         except KeyError:
             status = 0
-        if current_count == ti.counter:
-            if tci.is_media_done:
-                status = 1
-            else:
-                status = 2
-                score = create_score_object(ti.test.method,selection,tci,subject)
-                return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)]+str(score.pk), 'header':header}))
         else:
-            status = 3
+            if current_count == ti.counter:
+                if tci.is_media_done:
+                    status = 1
+                else:
+                    status = 2
+                    score = create_score_object(ti.test.method,selection,tci,subject)
+                    return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)]+str(score.pk), 'header':header}))
+            else:
+                status = 3
         return HttpResponse(json.dumps({'status':status, 'message':messages[str(status)], 'header':header}))
     else:
         return render_to_response(get_template(ti.test.method),

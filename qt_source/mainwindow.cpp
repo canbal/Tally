@@ -120,7 +120,7 @@ void MainWindow::on_startTest_clicked()
     // check media player
     if (m_videoMode!=1 && m_videoMode!=2) {
         success = false;
-        msgBoxError("Invalid media player.  Please choose a media player from the settings menu.", "");
+        msgBoxError("Invalid media player.  Please choose a media player from the settings menu.");
     } else if (m_videoMode==2) {
         if (!QFile(m_pathToCLMP).exists()) {
             success = false;
@@ -132,7 +132,7 @@ void MainWindow::on_startTest_clicked()
     if (success) {
         QUrl currentUrl = QUrl(ui->webView->url().toString(QUrl::StripTrailingSlash));
         m_rootURL = QString("http://%1").arg(currentUrl.authority());
-        QRegExp urlPattern("/tests/(\\d+)/instances/(\\d+)/start");
+        QRegExp urlPattern("^/tests/(\\d+)/instances/(\\d+)/start$");
         if (urlPattern.exactMatch(currentUrl.path())) {
             // check for valid key parameter
             QList<QPair<QString, QString> > urlQueryItems = currentUrl.queryItems();
