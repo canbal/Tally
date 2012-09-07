@@ -16,14 +16,13 @@ import json
 ########################################################################################################
 ################################            SUBJECT FUNCTIONS           ################################
 ########################################################################################################
-def is_enrolled(subject, ti):
-    return subject in ti.subjects.all()
-        
-
 @login_required
 def index(request):
-    try:
-    # A user may not have an associated UserProfile - i.e. SuperUser
+    """
+    View:     Renders homepage for subjects when they log in.
+    Template: `testtool/main/index.html`
+    """
+    try:            # user may not have an associated UserProfile - i.e. SuperUser
         subject = request.user.get_profile()
     except UserProfile.DoesNotExist:
         return HttpResponse('You are not registered as a subject or a tester in the system!')
@@ -37,15 +36,14 @@ def index(request):
                 ti_list.append(ti)
         return render_to_response('testtool/main/index.html', {'ti_list': ti_list})
     return HttpResponse('You are not registered as a subject or a tester in the system!')
-            
-            
+    
+    
 @login_required
 @group_required('Subjects')
 def tally(request,test_instance_id):
-    # get the test instance
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     subject = request.user.get_profile()
-    if not is_enrolled(subject, ti):
+    if subject not in ti.subjects.all():
         return HttpResponseRedirect(reverse('testtool.registration.views.render_profile'))
     if ti.test.method in method_list('Continuous'):
         return tally_continuous(request, ti, subject)
@@ -71,26 +69,6 @@ def status(request, test_instance_id):
         raise Exception('Test mode must be "Continuous" or "Discrete"')
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     return render_to_response('testtool/main/status.html', {'test_instance': ti})
-    
-    
-@login_required
-@group_required('Testers')
-def mirror_score(request, test_instance_id):
-    if request.is_ajax():
-        try:
-            ti = TestInstance.objects.get(pk=test_instance_id)
-        except:
-            return HttpResponse(json.dumps({'score':'E1'}))
-        if ti.subjects.count() == 1:
-            up = ti.subjects.all()[0];
-            try:
-                score = ScoreSSCQE.objects.filter(subject=up).latest('pk')
-                return HttpResponse(json.dumps({'score':str(score.value)}))
-            except:
-                return HttpResponse(json.dumps({'score':'0'}))
-        return HttpResponse(json.dumps({'score':'E2'}))
-    ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
             
             
 def method_list(mode):
@@ -159,8 +137,7 @@ def get_media(request, test_instance_id):
         
 
 def validate_request_and_ti(request,ti_pk):
-    # check that request is a POST method and contains key parameter
-    # check that test instance exists, is active, and that POST key is correct
+    # check that request is a POST and contains 'key' parameter; check that test instance exists, is active, and POST key is correct
     success = False
     ti = 0
     msg = ''

@@ -66,7 +66,9 @@ def user_permission_test(up,t):
     policy = { 'view':   status[0:4],
                'export': status[0:2],
                'share':  status[0:1],
-               'create': status[0:2] }  # refers to creating test instances from the test
+               'create': status[0:2],  # refers to creating test instances from the test
+               'edit':   status[0:1],
+               'delete': status[0:1] }
     return { 'status': status[idx], 'policy': policy }
 
 
@@ -85,7 +87,9 @@ def user_permission_test_instance(up,ti):
     policy = { 'view':   status[0:4],
                'export': status[0:4],
                'share':  status[0:3:2],
-               'run':    status[0:1] }
+               'run':    status[0:1],
+               'edit':   status[0:1],
+               'delete': status[0:1] }
     return { 'status': status[idx], 'policy': policy }
     
 
@@ -361,6 +365,26 @@ def display_test_instance(request, test_id, test_instance_id):
     return render_to_response('testtool/manager/display_test_instance.html', args, context_instance=RequestContext(request))
 
 
+@login_required
+@group_required('Testers')
+def mirror_score(request, test_instance_id):
+    if request.is_ajax():
+        try:
+            ti = TestInstance.objects.get(pk=test_instance_id)
+        except:
+            return HttpResponse(json.dumps({'score':'E1'}))
+        if ti.subjects.count() == 1:
+            up = ti.subjects.all()[0];
+            try:
+                score = ScoreSSCQE.objects.filter(subject=up).latest('pk')
+                return HttpResponse(json.dumps({'score':str(score.value)}))
+            except:
+                return HttpResponse(json.dumps({'score':'0'}))
+        return HttpResponse(json.dumps({'score':'E2'}))
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
+    
+    
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)

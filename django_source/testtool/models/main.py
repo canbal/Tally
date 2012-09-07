@@ -19,7 +19,7 @@ class Test(models.Model):
     owner         = models.ForeignKey(UserProfile, related_name='owner_tests')
     collaborators = models.ManyToManyField(UserProfile, related_name='collaborators_tests', null=True, blank=True)
     title         = models.CharField(max_length=200, unique=True)
-    description   = models.CharField(max_length=400)
+    description   = models.TextField(blank=True)
     method        = models.CharField(max_length=10, choices=METHOD_CHOICES, default='DSIS')
     create_time   = models.DateTimeField('Date created', auto_now_add=True)
     
@@ -27,9 +27,6 @@ class Test(models.Model):
         app_label = 'testtool'
     def __unicode__(self):
         return self.title
-    def was_created_today(self):
-        return self.create_time == datetime.date.today()
-        was_created_today.short_description = 'Created today?'
     
     
 class TestInstance(models.Model):
@@ -41,7 +38,7 @@ class TestInstance(models.Model):
     schedule_time  = models.DateTimeField('Date scheduled', null=True)
     run_time       = models.DateTimeField('Date run', null=True)
     path           = models.CharField(max_length=200)
-    description    = models.CharField(max_length=400)
+    description    = models.TextField(blank=True)
     location       = models.CharField(max_length=200)
     counter        = models.IntegerField(default=0)
     key            = models.CharField(max_length=20)
@@ -56,8 +53,8 @@ class Video(models.Model):
     test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)
     file        = models.FileField(upload_to='videos/%Y/%m/%d', null=True, blank=True)
-    description = models.CharField(max_length=400, null=True, blank=True)
-
+    description = models.TextField(blank=True)
+    
     class Meta:
         app_label = 'testtool'
         unique_together = ('test','filename')
@@ -73,8 +70,6 @@ class TestCase(models.Model):
         app_label = 'testtool'
     def __unicode__(self):
         return '%s : %d' % (self.test.title, self.pk)
-    def getTest(self):
-        return self.test
     
 
 class TestCaseInstance(models.Model):

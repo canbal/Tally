@@ -6,7 +6,6 @@ urlpatterns = patterns('testtool.main.views',
     url(r'^$','index'),
     url(r'^(?P<test_instance_id>\d+)/tally/$', 'tally'),
     url(r'^(?P<test_instance_id>\d+)/status/$', 'status'),
-    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score'),
     
     # Desktop App URLs
     url(r'^(?P<test_instance_id>\d+)/init/$', 'init_test_instance'),
