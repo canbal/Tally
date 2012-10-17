@@ -101,8 +101,8 @@ void MainWindow::onURLChanged(const QUrl &url)
 // when the 'next video' button is pressed, it sets the 'done' flag for the present test case
 void MainWindow::on_nextVideo_clicked()
 {
-    ui->nextVideo->setEnabled(false);
-    m_testCaseDone = true;
+    //ui->nextVideo->setEnabled(false);
+    //m_testCaseDone = true;
 }
 
 
@@ -438,7 +438,7 @@ void MainWindow::onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus)
     }
     ui->status->setText(QString("Video is finished.  exitCode = %1, exitStatus = %2").arg(exitCode).arg(exitStatus));
     sendStatusToServer("media_done");
-    ui->nextVideo->setEnabled(true);
+    //ui->nextVideo->setEnabled(true);
 }
 
 

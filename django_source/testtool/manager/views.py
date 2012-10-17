@@ -105,7 +105,7 @@ def test_instance_status(ti):
         return 'Ready to run'
     elif run_time is not None and counter > max_count:
         return 'Complete'
-    elif run_time is not None and counter > 0 and counter < max_count:
+    elif run_time is not None and counter > 0 and counter <= max_count:
         return 'Incomplete'
     else:
         return 'Error'
