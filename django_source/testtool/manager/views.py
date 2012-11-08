@@ -12,7 +12,7 @@ from django.db.models import Q
 from testtool.models import *
 from testtool.decorators import group_required
 from testtool.shortcuts import has_user_profile
-from forms import TestCreateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
+from forms import TestCreateForm, TestUpdateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
 from cStringIO import StringIO
 from zipfile import ZipFile
 from scipy import io
@@ -141,7 +141,7 @@ class TestCreateView(CreateView):
     
 class TestUpdateView(UpdateView):
     model = Test
-    form_class = TestCreateForm
+    form_class = TestUpdateForm
     template_name = 'testtool/manager/update_test.html'
                 
     @method_decorator(login_required)
@@ -165,6 +165,7 @@ class TestUpdateView(UpdateView):
         context = super(TestUpdateView, self).get_context_data(**kwargs)
         context['files'] = Video.objects.filter(test=self.object)
         context['test_pk'] = self.object.pk
+        context['header'] = 'Test %d' % (self.object.pk)
         return context
 
         
@@ -196,8 +197,7 @@ def add_video(request, test_pk):
                         try:
                             f = Video.objects.get(test=t, filename=filename)
                         except Video.DoesNotExist:
-                            f = Video(test=t, filename=filename)
-                            f.save()
+                            f = Video.objects.create(test=t, filename=filename)
                             status = 0;
                         else:
                             status = 3;

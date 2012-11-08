@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User, Group, Permission
 from testtool.models import *
-import datetime
+import datetime, random
 
 try:
     testers = Group.objects.get(name='Testers')
@@ -60,26 +60,43 @@ except UserProfile.DoesNotExist:
 try:
     test = Test.objects.get(title='Example Test',description='An example test with single video test cases')
 except Test.DoesNotExist:
-    test = Test(title='Example Test',description='An example test with single video test cases',method='CUSTOM',owner=tester_profile)
+    test = Test(title='Example Test',description='An example test with single video test cases',method='DSIS',owner=tester_profile)
     test.save()
     
-    
-videoList = ['skydiving_largeBlur_blurOne_30.mp4', 'skydiving_largeBlur_inPhase_30.mp4', 'skydiving_largeBlur_outOfPhase_60.mp4', 'skydiving_smallBlur_blurOne_60.mp4']
+videoList  = [('skydiving_largeBlur_blurOne_30.mp4',    'skydiving_largeBlur_inPhase_30.mp4'),
+              ('skydiving_largeBlur_outOfPhase_60.mp4', 'skydiving_smallBlur_blurOne_60.mp4')]
 videoPath = 'd:/binocsupp/skydiving'
-for filename in videoList:
-    try:
-        video = Video.objects.get(test=test,filename=filename)
-    except Video.DoesNotExist:
-        video = Video(test=test,filename=filename,description=filename)
-        video.save()
-    
-    try:
-        test_case_item = TestCaseItem.objects.get(test_case__test=test,video=video)
-    except TestCaseItem.DoesNotExist:
-        test_case = TestCase(test=test)
-        test_case.save()
-        test_case_item = TestCaseItem(test_case=test_case,video=video,play_order=0)
-        test_case_item.save()        
+for files in videoList:
+    # initiate an empty test case for each tuple
+    test_case = TestCase.objects.create(test=test)
+
+    # generate play order
+    for ii in range(0,2): # repeat each video twice
+        rand_order = range(0,len(files)) # TODO: check consistency start value of play_order (TestCaseItem and TestCase)
+        random.shuffle(rand_order)
+
+        # get or create reference video
+        filename = files[0]
+        try:
+            video = Video.objects.get(test=test,filename=filename)
+        except Video.DoesNotExist:
+            video = Video.objects.create(test=test,filename=filename,description=filename)
+
+        # add to the test case
+        play_order = rand_order[0] + ii*len(files)
+        TestCaseItem.objects.create(test_case=test_case,video=video,play_order=play_order,is_reference=True)
+
+        for idv in range(1,len(files)):
+            # first video is reference, get or create the video to be tested
+            filename = files[idv]
+            try:
+                video = Video.objects.get(test=test,filename=filename)
+            except Video.DoesNotExist:
+                video = Video.objects.create(test=test,filename=filename,description=filename)
+
+            # add to the test case
+            play_order = rand_order[idv] + ii*len(files)
+            TestCaseItem.objects.create(test_case=test_case,video=video,play_order=play_order,is_reference=True)
         
 test_instance = test.testinstance_set.create(owner=tester_profile,
                                              path=videoPath,
