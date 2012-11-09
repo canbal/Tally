@@ -164,8 +164,17 @@ class TestUpdateView(UpdateView):
     def get_context_data(self, **kwargs):
         context = super(TestUpdateView, self).get_context_data(**kwargs)
         context['files'] = Video.objects.filter(test=self.object)
+
+        tc_data = []
+        tc_set = TestCase.objects.filter(test=self.object)
+        for tc in tc_set:
+            tci = tc.testcaseitem_set.order_by('play_order')
+            item = [tc,tci.values_list('video__filename',flat=True)]
+            tc_data.append(item)
+        print tc_data
+        context['tc_data'] = tc_data
         context['test_pk'] = self.object.pk
-        context['header'] = 'Test %d' % (self.object.pk)
+        context['header']  = 'Test %d' % (self.object.pk)
         return context
 
         
@@ -233,6 +242,10 @@ def delete_video(request, video_pk):
             status = 1;
         else:
             if user_can('create',request.user.get_profile(),t):
+                # delete associated test cases first
+                for tc in TestCase.objects.filter(videos=f):
+                    tc.delete()
+                # finally delete the video
                 f.delete()
                 status = 0;
             else:
@@ -247,15 +260,41 @@ def delete_video(request, video_pk):
     
 @login_required
 @group_required('Testers')
-def create_test_cases(request):
-    return render_to_response('testtool/manager/create_test_cases.html',context_instance=RequestContext(request))
+@user_passes_test(has_user_profile)
+def add_test_case(request, test_pk):
+    return render_to_response('testtool/manager/create_test.html',context_instance=RequestContext(request))
     
     
 @login_required
 @group_required('Testers')
-def save_test(request):
-    return render_to_response('testtool/manager/save_test.html',context_instance=RequestContext(request))
-
+@user_passes_test(has_user_profile)
+def delete_test_case(request, test_case_pk):
+    if request.method == 'POST':
+        messages = {'0': 'Done', '1': 'Test case does not exist', '5': 'Permission failed'}
+        
+        #checking for json data type
+        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
+            mimetype = 'application/json'
+        else:
+            mimetype = 'text/plain'
+            
+        try:
+            tc = TestCase.objects.get(pk=test_case_pk)
+            t = tc.test
+        except TestCase.DoesNotExist:
+            status = 1;
+        else:
+            if user_can('create',request.user.get_profile(),t):
+                tc.delete()
+                status = 0;
+            else:
+                status = 5;
+            
+        data = {'status':status,'message':messages[str(status)]}
+        response = JSONResponse(data, {}, mimetype)
+        return response
+    else:
+        return HttpResponseBadRequest('GET is not supported')
 
 @login_required
 @group_required('Testers')
@@ -323,6 +362,7 @@ def display_test(request, test_id):
     else:
         args = { 'header': 'Test %d' % (t.pk),
                  'error': 'You do not have access to this test.' }
+    print tc_data
     return render_to_response('testtool/manager/display_test.html', args, context_instance=RequestContext(request))
         
         
