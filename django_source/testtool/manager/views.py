@@ -12,7 +12,7 @@ from django.db.models import Q
 from testtool.models import *
 from testtool.decorators import group_required
 from testtool.shortcuts import has_user_profile
-from forms import TestCreateForm, TestUpdateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
+from forms import TestCreateForm, TestUpdateForm, TestCaseCreateForm, TestDisplayForm, CreateTestInstanceForm, DisplayTestInstanceForm
 from cStringIO import StringIO
 from zipfile import ZipFile
 from scipy import io
@@ -126,7 +126,7 @@ class TestCreateView(CreateView):
     @method_decorator(user_passes_test(has_user_profile))
     def dispatch(self, *args, **kwargs):
         return super(TestCreateView, self).dispatch(*args, **kwargs)
-    
+  
     def get_form(self, form_class):
         form = super(TestCreateView, self).get_form(form_class)
         form.fields['collaborators'].queryset = form.fields['collaborators'].queryset.exclude(user=self.request.user)
@@ -138,7 +138,6 @@ class TestCreateView(CreateView):
         self.object.save()
         return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))
     
-    
 class TestUpdateView(UpdateView):
     model = Test
     form_class = TestUpdateForm
@@ -149,7 +148,7 @@ class TestUpdateView(UpdateView):
     @method_decorator(user_passes_test(has_user_profile))
     def dispatch(self, *args, **kwargs):
         return super(TestUpdateView, self).dispatch(*args, **kwargs)
-    
+  
     def get_form(self, form_class):
         form = super(TestUpdateView, self).get_form(form_class)
         form.fields['collaborators'].queryset = form.fields['collaborators'].queryset.exclude(user=self.request.user)
@@ -159,22 +158,25 @@ class TestUpdateView(UpdateView):
         self.object = form.save(commit=False)
         self.object.owner = self.request.user.get_profile()
         self.object.save()
-        return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))    
+        return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))
     
     def get_context_data(self, **kwargs):
         context = super(TestUpdateView, self).get_context_data(**kwargs)
-        context['files'] = Video.objects.filter(test=self.object)
+        if user_can('edit',self.request.user.get_profile(),self.object):
+            context['files'] = Video.objects.filter(test=self.object)
 
-        tc_data = []
-        tc_set = TestCase.objects.filter(test=self.object)
-        for tc in tc_set:
-            tci = tc.testcaseitem_set.order_by('play_order')
-            item = [tc,tci.values_list('video__filename',flat=True)]
-            tc_data.append(item)
-        print tc_data
-        context['tc_data'] = tc_data
-        context['test_pk'] = self.object.pk
-        context['header']  = 'Test %d' % (self.object.pk)
+            tc_data = []
+            tc_set = TestCase.objects.filter(test=self.object)
+            for tc in tc_set:
+                tci = tc.testcaseitem_set.order_by('play_order')
+                item = [tc,tci.values_list('video__filename','is_reference')]
+                tc_data.append(item)
+            context['tc_data'] = tc_data
+            context['test_pk'] = self.object.pk
+            context['header']  = 'Test %d' % (self.object.pk)
+        else:
+            context['error']   = 'You do not have access to this test.'
+            context['header']  = 'Test %d' % (self.object.pk)
         return context
 
         
@@ -241,7 +243,7 @@ def delete_video(request, video_pk):
         except Video.DoesNotExist:
             status = 1;
         else:
-            if user_can('create',request.user.get_profile(),t):
+            if user_can('edit',request.user.get_profile(),t):
                 # delete associated test cases first
                 for tc in TestCase.objects.filter(videos=f):
                     tc.delete()
@@ -257,12 +259,58 @@ def delete_video(request, video_pk):
     else:
         return HttpResponseBadRequest('GET is not supported')
     
-    
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def add_test_case(request, test_pk):
-    return render_to_response('testtool/manager/create_test.html',context_instance=RequestContext(request))
+    t = get_object_or_404(Test, pk=test_pk)
+    up = request.user.get_profile()
+    if user_can('create',up,t):
+        if t.method == 'DSIS' or t.method == 'DSCQS':
+            form = add_test_case_DSIS_DSCQS(request, t, up)
+            if form == None:
+                return HttpResponseRedirect(reverse('update_test', args=(test_pk,)))
+            else:
+                args = { 'header': 'Add new test case to Test %d' % (t.pk),
+                         'form'  : form }
+        else:
+            args = { 'header': 'Add new test case to Test %d' % (t.pk),
+                     'error' : 'Test mode creation for %s is not supported.' % (t.method) }
+    else:
+        args = { 'header': 'Add new test case to Test %d' % (t.pk),
+                 'error' : 'You do not have access to this test.' }
+    return render_to_response('testtool/test_modes/create_test_case_DSIS_DSCQS.html', args, context_instance=RequestContext(request))
+
+def add_test_case_DSIS_DSCQS(request, test, user_profile):
+    if request.method == 'POST':
+        form = TestCaseCreateForm(request.POST)
+        if form.is_valid():
+            tc = TestCase.objects.create(test=test)
+            data = form.cleaned_data
+            f1 = data['filename1']
+            f2 = data['filename2']
+            # generate play order
+            for ii in range(0,2): # repeat each video twice
+                rand_order = range(0,2) # TODO: check consistency of start value of play_order (TestCaseItem and TestCase)
+                random.shuffle(rand_order)
+                if test.method == 'DSIS':
+                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2,is_reference=True)
+                else:
+                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2)
+                TestCaseItem.objects.create(test_case=tc,video=f2,play_order=rand_order[1]+ii*2)
+            return None
+    else:
+        form = TestCaseCreateForm()
+        form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
+        form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
+        
+    if test.method == 'DSIS':
+        form.fields['filename1'].label = 'Reference video'
+        form.fields['filename2'].label = 'Test video'
+    elif test.method == 'DSCQS':
+        form.fields['filename1'].label = 'First video'
+        form.fields['filename2'].label = 'Second video'
+    return form
     
     
 @login_required
@@ -284,7 +332,7 @@ def delete_test_case(request, test_case_pk):
         except TestCase.DoesNotExist:
             status = 1;
         else:
-            if user_can('create',request.user.get_profile(),t):
+            if user_can('edit',request.user.get_profile(),t):
                 tc.delete()
                 status = 0;
             else:
@@ -362,7 +410,6 @@ def display_test(request, test_id):
     else:
         args = { 'header': 'Test %d' % (t.pk),
                  'error': 'You do not have access to this test.' }
-    print tc_data
     return render_to_response('testtool/manager/display_test.html', args, context_instance=RequestContext(request))
         
         

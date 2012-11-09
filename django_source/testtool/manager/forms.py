@@ -18,7 +18,11 @@ class TestUpdateForm(forms.ModelForm):
     # to ensure that the readonly value won't be overridden by a POST
     def clean_method(self):
         return self.instance.method
-        
+    
+class TestCaseCreateForm(forms.Form):
+    filename1 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
+    filename2 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
+
 class TestDisplayForm(forms.ModelForm):
     class Meta:
         model = Test

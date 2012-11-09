@@ -1,6 +1,7 @@
 {% extends "testtool/manager/base_manager.html" %}
 
 {% block head %}
+{% if not error %}
 <script type="text/javascript">
     function postDeleteFile(url, file_pk) {
         $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}"}, function(data) {
@@ -54,6 +55,7 @@
         $("#file_select").on('change',handleFileSelect);
     });
 </script>
+{% endif %}
 {% endblock head %}
 
 {% block header %}
@@ -61,6 +63,9 @@
 {% endblock header %}
 
 {% block content %}
+{% if error %}
+    {{ error }}
+{% else %}
 <div class="span3">
 <form id="test_update_form" action="" method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -99,7 +104,7 @@
                 <div class="accordion-heading">
             		<table>
             			<tr>
-    					<td align="left"  width="90%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</td></a>
+    					<td align="left"  width="90%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
 						<td align="right" width="10%"><button class="btn btn-mini btn-danger" id="btn_del_tc_{{ tc.0.pk }}"><i class="icon-remove"></i></button></td>
 					</tr>
 					</table>
@@ -107,12 +112,17 @@
                 <div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
                     <div class="accordion-inner">
                         {% for vid in tc.1 %}
-                            {{ forloop.counter }}. {{ vid }}<br/>
+                            {{ forloop.counter }}. {{ vid.0 }}{% if vid.1 %}<span style="color:red"> [ref]</span>{% endif %}<br/>
                         {% endfor %}
                     </div>
                 </div>
             </div>
             {% endfor %}
+            <div class="accordion-group">
+                <div class="accordion-heading">
+                    <a class="accordion-toggle" href={% url add_test_case test_pk %}>Add new test case</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -133,4 +143,5 @@ $("#btn_del_tc_{{ tc.0.pk }}").click(function() { postDeleteTestCase("{% url del
 {% endfor %}
 </script>
 <script type="text/javascript" id="btn_add_scripts"></script>
+{% endif %}
 {% endblock content %}

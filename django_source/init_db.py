@@ -60,7 +60,7 @@ except UserProfile.DoesNotExist:
     subject_profile = UserProfile(birth_date='2000-01-01',sex='M',user=subject)
     subject_profile.save()
 
-# create a sample test
+# create a sample DSIS test
 try:
     test = Test.objects.get(pk=1,title='Example Test',description='An example test with single video test cases')
 except Test.DoesNotExist:
@@ -80,7 +80,7 @@ for files in videoList:
 
     # generate play order
     for ii in range(0,2): # repeat each video twice
-        rand_order = range(0,len(files)) # TODO: check consistency start value of play_order (TestCaseItem and TestCase)
+        rand_order = range(0,len(files)) # TODO: check consistency of start value of play_order (TestCaseItem and TestCase)
         random.shuffle(rand_order)
 
         # get or create reference video
@@ -104,7 +104,7 @@ for files in videoList:
 
             # add to the test case
             play_order = rand_order[idv] + ii*len(files)
-            TestCaseItem.objects.create(test_case=test_case,video=video,play_order=play_order,is_reference=True)
+            TestCaseItem.objects.create(test_case=test_case,video=video,play_order=play_order)
 
 # delete all existing test instances that belong to the sample test
 for ti in TestInstance.objects.all():
