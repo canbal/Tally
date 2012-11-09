@@ -4,10 +4,10 @@ from testtool.manager.views import TestCreateView, TestUpdateView
 urlpatterns = patterns('testtool.manager.views',
 
     ### Create Test
-    url(r'^tests/create/cases/$', 'create_test_cases'),
-    url(r'^tests/create/save/$', 'save_test'),
-    url(r'^tests/(?P<test_pk>\d+)/addvideo$', 'add_video', name='add_video'),
-    url(r'^deletevideo/(?P<video_pk>\d+)/$', 'delete_video', name='delete_video'),
+    url(r'^tests/(?P<test_pk>\d+)/addvideo/$',      'add_video',        name='add_video'),
+    url(r'^deletevideo/(?P<video_pk>\d+)/$',        'delete_video',     name='delete_video'),
+    url(r'^tests/(?P<test_pk>\d+)/addtestcase/$',   'add_test_case',    name='add_test_case'),
+    url(r'^deletetestcase/(?P<test_case_pk>\d+)/$', 'delete_test_case', name='delete_test_case'),
     
     ### Display Test and TestInstance
     url(r'^tests/$', 'list_tests'),
@@ -35,6 +35,6 @@ urlpatterns = patterns('testtool.manager.views',
 )
 
 urlpatterns += patterns('',
-    url(r'^tests/create/$',         TestCreateView.as_view(), name='create_test'),
+    url(r'^tests/create/$',             TestCreateView.as_view(), name='create_test'),
     url(r'^tests/(?P<pk>\d+)/update/$', TestUpdateView.as_view(), name='update_test'),
 )

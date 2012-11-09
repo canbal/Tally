@@ -1,12 +1,13 @@
 {% extends "testtool/manager/base_manager.html" %}
 
 {% block head %}
+{% if not error %}
 <script type="text/javascript">
     function postDeleteFile(url, file_pk) {
         $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}"}, function(data) {
             if (data.status=="0") {
-                $("#row_del_"+file_pk).fadeOut(300, function() {
-                    $("#row_del_"+file_pk).hide();
+                $("#row_del_file_"+file_pk).fadeOut(300, function() {
+                    $("#row_del_file_"+file_pk).hide();
                 });
             } else {
                 alert("Error: "+data.message);
@@ -16,12 +17,23 @@
     function postAddFile(url, file_pk, str) {
         $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}", filename: str}, function(data) {
             if (data.status=="0") {
-                $("#btn_add_"+file_pk).hide();
+                $("#btn_add_file_"+file_pk).hide();
             } else {
                 alert("Error: "+data.message);
-                $("#row_add_"+file_pk).fadeOut(300, function() {
-                    $("#row_add_"+file_pk).hide();
+                $("#row_add_file_"+file_pk).fadeOut(300, function() {
+                    $("#row_add_file_"+file_pk).hide();
                 });
+            }
+        },"json");
+    }
+    function postDeleteTestCase(url, tc_pk) {
+        $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}"}, function(data) {
+            if (data.status=="0") {
+                $("#row_del_tc_"+tc_pk).fadeOut(300, function() {
+                    $("#row_del_tc_"+tc_pk).hide();
+                });
+            } else {
+                alert("Error: "+data.message);
             }
         },"json");
     }
@@ -31,9 +43,9 @@
         var form = [];
         var   js = [];
         for (var i = 0, f; f = files[i]; i++) {
-            show.push('<tr id="row_add_',i,'"><td>', escape(f.name), '</td>',
-                      '<td><button class="btn btn-mini btn-success" id="btn_add_',i,'"><i class="icon-upload"></i></button></td></tr>');
-            js.push('$("#btn_add_',i,'").click(function() { postAddFile("{% url add_video test_pk %}",',i,',"',escape(f.name),'") });\n');
+            show.push('<tr id="row_add_file_',i,'"><td align="left"  width="90%">', escape(f.name), '</td>',
+                      '<td align="right" width="10%"><button class="btn btn-mini btn-success" id="btn_add_file_',i,'"><i class="icon-upload"></i></button></td></tr>');
+            js.push('$("#btn_add_file_',i,'").click(function() { postAddFile("{% url add_video test_pk %}",',i,',"',escape(f.name),'") });\n');
         }
         $("#files_show").append(show.join(''));
         $("#btn_add_scripts").append(js.join(''));
@@ -43,13 +55,17 @@
         $("#file_select").on('change',handleFileSelect);
     });
 </script>
+{% endif %}
 {% endblock head %}
 
 {% block header %}
-    Create test page
+    {{ header }}
 {% endblock header %}
 
 {% block content %}
+{% if error %}
+    {{ error }}
+{% else %}
 <div class="span3">
 <form id="test_update_form" action="" method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -67,27 +83,65 @@
     {% endfor %}
     </div>
 </form>
-<table class="table table-striped table-condensed" id="files_show">
-    <caption style="text-align:left">Files:</caption>
-    {% for file in files %}
-    <tr id="row_del_{{ file.pk }}">
-        <td>{{ file.filename }}</td>
-        <td><button class="btn btn-mini btn-danger" id="btn_del_{{ file.pk }}"><i class="icon-remove"></i></button></td>
-    </tr>
-    {% endfor %}
-</table>
-<input type="file" id="file_select" name="file_select" multiple="">
-<p><input type="button" id="upload_button" value="Update"></p>
+<div class="control-group">
+	<table class="table table-striped table-condensed" id="files_show">
+    	<caption style="text-align:left">Files:</caption>
+    	{% for file in files %}
+    	<tr id="row_del_file_{{ file.pk }}">
+        	<td align="left"  width="90%">{{ file.filename }}</td>
+        	<td align="right" width="10%"><button class="btn btn-mini btn-danger" id="btn_del_file_{{ file.pk }}"><i class="icon-remove"></i></button></td>
+    	</tr>
+    	{% endfor %}
+	</table>
+	<input type="file" id="file_select" name="file_select" multiple="">
+</div>
+<div class="control-group">
+    <label class="control-label" for="id_test_cases">Test Cases:</label>
+    <div class="controls">
+        <div class="accordion" id="id_test_cases">
+            {% for tc in tc_data %}
+            <div class="accordion-group" id="row_del_tc_{{ tc.0.pk }}">
+                <div class="accordion-heading">
+            		<table>
+            			<tr>
+    					<td align="left"  width="90%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
+						<td align="right" width="10%"><button class="btn btn-mini btn-danger" id="btn_del_tc_{{ tc.0.pk }}"><i class="icon-remove"></i></button></td>
+					</tr>
+					</table>
+                </div>
+                <div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
+                    <div class="accordion-inner">
+                        {% for vid in tc.1 %}
+                            {{ forloop.counter }}. {{ vid.0 }}{% if vid.1 %}<span style="color:red"> [ref]</span>{% endif %}<br/>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="accordion-group">
+                <div class="accordion-heading">
+                    <a class="accordion-toggle" href={% url add_test_case test_pk %}>Add new test case</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<p><input type="button" id="save_button" value="Save"></p>
 </div>
 
 <script type="text/javascript">
-$("#upload_button").click(function() { $("#test_update_form").submit(); });
+$("#save_button").click(function() { $("#test_update_form").submit(); });
 </script>
 <script type="text/javascript">
 {% for file in files %}
-$("#btn_del_{{ file.pk }}").click(function() { postDeleteFile("{% url delete_video file.pk %}", {{ file.pk }}); });
+$("#btn_del_file_{{ file.pk }}").click(function() { postDeleteFile("{% url delete_video file.pk %}", {{ file.pk }}); });
+{% endfor %}
+</script>
+<script type="text/javascript">
+{% for tc in tc_data %}
+$("#btn_del_tc_{{ tc.0.pk }}").click(function() { postDeleteTestCase("{% url delete_test_case tc.0.pk %}", {{ tc.0.pk }}); });
 {% endfor %}
 </script>
 <script type="text/javascript" id="btn_add_scripts"></script>
+{% endif %}
 {% endblock content %}
-
