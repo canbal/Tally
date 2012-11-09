@@ -29,6 +29,7 @@ urlpatterns = patterns('testtool.manager.views',
     
     ### Misc
     url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score'),
+    url(r'^logbook/$', 'log_book'),
     url(r'^about/$', 'about'),
     url(r'^help/$', 'help'),
 )

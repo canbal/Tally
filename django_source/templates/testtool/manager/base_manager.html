@@ -92,11 +92,12 @@
                     <div class="well sidebar-nav">
                         <ul class="nav nav-list">
                             <li class="nav-header">Tests</li>
-                            <li class="{% active request 'testtool.manager.views.list_tests' %}"><a href="{% url testtool.manager.views.list_tests %}"><i class="icon-book"></i> My Tests</a></li>
+                            <li class="{% active request 'testtool.manager.views.list_tests' %}"><a href="{% url testtool.manager.views.list_tests %}"><i class="icon-list"></i> My Tests</a></li>
                             <li class="{% active request 'create_test' %}"><a href="{% url create_test %}"><i class="icon-file"></i> Create New Test</a></li>
                             <li class="nav-header">Tools</li>
                             <li class="{% active request 'testtool.manager.views.share_test' %}"><a href="{% url testtool.manager.views.share_test %}"><i class="icon-share"></i> Share</a></li>
                             <li class="{% active request 'testtool.manager.views.export_data' %}"><a href="{% url testtool.manager.views.export_data %}"><i class="icon-briefcase"></i> Export</a></li>
+                            <li class="{% active request 'testtool.manager.views.log_book' %}"><a href="{% url testtool.manager.views.log_book %}"><i class="icon-book"></i> Log Book</a></li>
                         </ul>
                     </div><!--/.well -->
                 </div><!--/span-->

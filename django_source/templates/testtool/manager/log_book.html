@@ -2,14 +2,14 @@
 {% extends "testtool/manager/base_log.html" %}
 
 {% block header %}
-    Home
+    Log Book
 {% endblock header %}
 
 {% block table_heading %}
-    New notifications
+    All events in your recorded history
 {% endblock table_heading %}
 
 {% block no_log %}
-    There are no new notifications.  Check the <a href="{% url testtool.manager.views.log_book %}">Log Book</a> for all your recorded activity.
+    There is no recorded activity.
 {% endblock no_log %}
 

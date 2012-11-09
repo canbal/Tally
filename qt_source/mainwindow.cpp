@@ -19,10 +19,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->status->setText("Log into the website and navigate to the start page of the test instance you wish to run.");
 
     // initialize settings dialog
-    m_defaultWebAddress = QString("http://137.110.118.234/");
-    m_videoMode = 2;
-    m_pathToCLMP = "c:/Program Files (x86)/Windows Media Player/wmplayer.exe";
-    m_argsCLMP = QString("/fullscreen /play /close").split(" ");
+    m_savedPrefs = new QSettings("UCSD","Tally");
+    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://137.110.118.234/").toString();
+    m_videoMode = m_savedPrefs->value("videoMode",2).toInt();
+    m_pathToCLMP = m_savedPrefs->value("pathToCLMP","c:/Program Files (x86)/Windows Media Player/wmplayer.exe").toString();
+    m_argsCLMP = m_savedPrefs->value("argStringCLMP","/fullscreen /play /close").toString().split(" ");
     m_settings = new Settings::Settings();
     m_settings->setWindowModality(Qt::ApplicationModal);    // disables other windows while this one is open
     m_settings->setDefaults(m_defaultWebAddress,m_videoMode,m_pathToCLMP,m_argsCLMP.join(" "));
@@ -79,6 +80,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     event->ignore();
     if (QMessageBox::question(this,"","Are you sure you want to exit?",QMessageBox::Yes | QMessageBox::No,QMessageBox::No) == QMessageBox::Yes) {
+        m_savedPrefs->setValue("defaultWebAddress",m_settings->m_defaultWebAddress);
+        m_savedPrefs->setValue("videoMode",m_settings->m_videoMode);
+        m_savedPrefs->setValue("pathToCLMP",m_settings->m_pathToCLMP);
+        m_savedPrefs->setValue("argStringCLMP",m_settings->m_argStringCLMP);
         event->accept();
     }
 }

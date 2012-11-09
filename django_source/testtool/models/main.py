@@ -14,6 +14,21 @@ METHOD_CHOICES = (
     ),
 )
 
+ACTION_CHOICES = (
+    ('joined', 'joined'),
+    ('created', 'created'),
+    ('edited', 'edited'),
+    ('ran', 'ran'),
+    ('shared', 'shared'),
+    ('unshared', 'unshared'),
+    ('deleted', 'deleted'),
+)
+
+OBJECT_CHOICES = (
+    ('Tally', 'Tally'),
+    ('Test', 'Test'),
+    ('Test Instance', 'Test Instance'),
+)
 
 class Test(models.Model):
     owner         = models.ForeignKey(UserProfile, related_name='owner_tests')
@@ -75,8 +90,8 @@ class TestCase(models.Model):
 class TestCaseInstance(models.Model):
     test_instance = models.ForeignKey(TestInstance)
     test_case     = models.ForeignKey(TestCase)
-    is_done       = models.BooleanField(default=0)
-    is_media_done = models.BooleanField(default=0)
+    is_done       = models.BooleanField(default=False)
+    is_media_done = models.BooleanField(default=False)
     play_order    = models.PositiveIntegerField()
     
     class Meta:
@@ -90,10 +105,26 @@ class TestCaseItem(models.Model):
     test_case    = models.ForeignKey(TestCase)
     video        = models.ForeignKey(Video)
     play_order   = models.PositiveIntegerField()
-    is_reference = models.BooleanField(default=0)
+    is_reference = models.BooleanField(default=False)
     
     class Meta:
         app_label = 'testtool'
         unique_together = ('test_case', 'play_order')
     def __unicode__(self):
         return '%s : %d : %s' % (unicode(self.test_case), self.play_order, self.video)
+
+        
+class LogEntry(models.Model):
+    actor     = models.ForeignKey(UserProfile, related_name='actor_logentries')
+    action    = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    object    = models.CharField(max_length=20, choices=OBJECT_CHOICES)
+    tags      = models.ManyToManyField(UserProfile, related_name='tags_logentries', null=True, blank=True)
+    message   = models.TextField()
+    viewed    = models.ManyToManyField(UserProfile, related_name='viewed_logentries', null=True, blank=True)
+    timestamp = models.DateTimeField(null=True)
+    
+    class Meta:
+        app_label = 'testtool'
+        verbose_name_plural = 'Log entries'
+    def __unicode__(self):
+        return '%s : %s' % (unicode(self.actor.user.username), self.action)

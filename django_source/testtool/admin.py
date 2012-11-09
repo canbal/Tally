@@ -19,6 +19,9 @@ class TestCaseItemAdmin(admin.ModelAdmin):
 
 class TestCaseInstanceAdmin(admin.ModelAdmin):
     list_display = ('test_instance', 'play_order')
+    
+class LogEntryAdmin(admin.ModelAdmin):
+    list_display = ('actor', 'message', 'timestamp')
 
     
 admin.site.register(Test, TestAdmin)
@@ -28,5 +31,6 @@ admin.site.register(UserProfile)
 admin.site.register(TestCase)
 admin.site.register(TestCaseItem, TestCaseItemAdmin)
 admin.site.register(TestCaseInstance, TestCaseInstanceAdmin)
+admin.site.register(LogEntry, LogEntryAdmin)
 admin.site.register(ScoreDSIS)
 admin.site.register(ScoreSSCQE)

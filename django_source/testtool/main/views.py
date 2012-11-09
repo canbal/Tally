@@ -9,6 +9,7 @@ from testtool.models import *
 from testtool.main.forms import *
 from testtool.decorators import group_required
 from testtool.test_modes.views import tally_continuous, tally_discrete, status_continuous, status_discrete
+from testtool.manager.views import get_log
 from testtool.manager.views import is_test_instance_active
 import json
 
@@ -27,7 +28,8 @@ def index(request):
     except UserProfile.DoesNotExist:
         return HttpResponse('You are not registered as a subject or a tester in the system!')
     if request.user.groups.filter(name='Testers'):
-        return render_to_response('testtool/manager/home.html', context_instance=RequestContext(request))
+        log = get_log(request,'new')
+        return render_to_response('testtool/manager/home.html', {'log':log}, context_instance=RequestContext(request))
     if request.user.groups.filter(name='Subjects'):
         latest_test_instances = TestInstance.objects.filter(subjects=subject)
         ti_list = []#latest_test_instances
@@ -132,6 +134,7 @@ def get_media(request, test_instance_id):
         ti.run_time = datetime.datetime.now()       # set the run_time of the test instance to now
         ti.counter += 1
         ti.save()
+        create_log_entry([],'created',ti,[])
         return media_signal(ti,'run','',getMediaList(tci_current))
     return media_signal(ti,'wait')      # otherwise, the subjects haven't finished scoring- return a wait signal
         

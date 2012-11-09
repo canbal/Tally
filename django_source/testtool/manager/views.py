@@ -48,7 +48,7 @@ def user_permission(up,obj):
     elif isinstance(obj,TestInstance):
         return user_permission_test_instance(up,obj)
     else:
-        raise Exception('user_permission: Must pass Test or TestInstance object.')    
+        raise Exception('user_permission: Must pass Test or TestInstance object.')
     
     
 def user_permission_test(up,t):
@@ -114,6 +114,103 @@ def test_instance_status(ti):
 def is_test_instance_active(ti):
     return test_instance_status(ti) in ['Ready to run', 'Incomplete']
         
+        
+def create_log_entry(actor,action,obj,tags_arg=[]):
+    ts = datetime.datetime.now()
+    if action=='joined':
+        os = {'object':'Tally', 'message':'%s joined Tally.' % (actor.user.username)}
+        tags = []       # notify no one
+    elif action=='edited':
+        os = get_object_message(actor,action,obj,'')
+        tags = list(obj.collaborators.all()) + [obj.owner]      # notify Test or TestInstance owner/collaborators
+    elif action=='ran':
+        if not isinstance(obj,TestInstance):
+            raise Exception('create_log_entry: Object must be a TestInstance.')
+        actor = obj.owner         # owner runs TestInstance
+        os = get_object_message(actor,action,obj,'')
+        tags = list(obj.test.collaborators.all()) + list(obj.collaborators.all()) + [obj.test.owner, obj.owner]     # notify Test and TestInstance owner/collaborators
+    elif action=='created':
+        os = get_object_message(actor,action,obj,'')
+        ts = obj.create_time                    # make log timestamp match object timestamp
+        tags = [obj.owner]                      # notify Test or TestInstance owner
+        if os['object']=='Test Instance':       # if TestInstance, additionally notify Test owner/collaborators
+            tags = tags + list(obj.test.collaborators.all()) + [obj.test.owner]
+    elif action=='deleted':
+        os = get_object_message(actor,action,obj,' and all related objects')
+        tags = list(obj.collaborators.all()) + [obj.owner]      # notify Test or TestInstance owner/collaborators
+        if os['object']=='Test Instance':                       # if TestInstance, additionally notify Test owner/collaborators
+            tags = tags + list(obj.test.collaborators.all()) + [obj.test.owner]
+    elif action=='shared':
+        share_list = get_collaborator_string(tags_arg)
+        os = get_object_message(actor,action,obj,' with %s' % (share_list))
+        tags = list(obj.collaborators.all()) + [obj.owner]      # notify Test or TestInstance owner/collaborators
+    elif action=='unshared':
+        os = get_object_message(actor,' is no longer collaborating on',obj,'')
+        tags = list(obj.collaborators.all()) + [obj.owner]      # notify Test or TestInstance owner/collaborators
+    else:
+        raise Exception('create_log_entry: Invalid action.')
+    tags.extend(tags_arg)       # make sure collaborators are tagged (in case log entry is created before collaborators are added)
+    tags = list(set(tags))      # make sure tags are unique
+    if actor in tags:           # make sure actor is not double-tagged
+        tags.remove(actor)
+    le = LogEntry(actor=actor, action=action, object=os['object'], message=os['message'], timestamp=ts)
+    le.save()
+    le.tags.add(*tags)
+
+    
+def get_object_message(actor,action,obj,words):
+    if isinstance(obj,Test):
+        object = 'Test'
+        message = '%s %s Test:%s%s' % (actor.user.username, action, obj.title, words)
+    elif isinstance(obj,TestInstance):
+        object = 'Test Instance'
+        message = '%s %s Test Instance %d of Test:%s%s' % (actor.user.username, action, obj.pk, obj.test.title, words)
+    else:
+        raise Exception('get_object_message: Object must be Test or TestInstance.')
+    return {'object':object, 'message':message}
+    
+
+def get_collaborator_string(collaborators):
+    C = len(collaborators)
+    if C==0:
+        raise Exception('get_collaborator_string: No collaborators specified.')
+    elif C==1:
+        collab_str = collaborators[0].user.username
+    elif C==2:
+        collab_str = '%s and %s' % (collaborators[0].user.username, collaborators[1].user.username)
+    else:
+        collab_str_list = []
+        for ii,up in enumerate(collaborators):
+            if ii==C-1:
+                collab_str_list.append('and %s' % (up.user.username))
+            else:
+                collab_str_list.append('%s, ' % (up.user.username))
+        collab_str = ''.join(collab_str_list)
+    return collab_str
+
+
+def get_log(request,mode):
+    up = request.user.get_profile()    
+    entries_all = LogEntry.objects.filter(Q(actor=up) | Q(tags=up)).order_by('-timestamp')
+    entries_new = entries_all.exclude(viewed=up)
+    if mode=='all':
+        entry_set = entries_all
+    elif mode=='new':
+        entry_set = entries_new
+    else:
+        raise Exception('get_log: Mode must be ''all'' or ''new''.')
+    icon_map = {'joined': 'icon-user',
+                'created': 'icon-file',
+                'edited': 'icon-edit',
+                'ran': 'icon-pencil',
+                'shared': 'icon-share',
+                'unshared': 'icon-remove',
+                'deleted': 'icon-trash'}
+    log = [(e, up in e.viewed.all(), icon_map[e.action]) for e in entry_set]  # pass in old 'viewed' parameter to highlight new entries
+    for e in entries_new:   # mark all entries as viewed
+        e.viewed.add(up)
+    return log
+    
         
 class TestCreateView(CreateView):
     model = Test
@@ -394,7 +491,7 @@ def create_test_instance(request, test_id):
     if user_can('create',up,t):
         if request.method == 'POST':
             tif = CreateTestInstanceForm(request.POST)
-            tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
+            tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)   # HAVE TO EXCLUDE TEST COLLABORATORS TOO!!
             if tif.is_valid():
                 # create new instance
                 new_ti = tif.save(commit=False)     # create new test instance from form, but don't save it yet
@@ -404,6 +501,9 @@ def create_test_instance(request, test_id):
                 new_ti.key = ''.join([random.choice(string.ascii_letters+string.digits) for x in range(20)])
                 new_ti.save()           # save the new instance
                 tif.save_m2m()          # save the many-to-many data for the form
+                create_log_entry(up,'created',new_ti)
+                if new_ti.collaborators.count() > 0:
+                    create_log_entry(up,'shared',new_ti,new_ti.collaborators.all())
                 # create new test case instances
                 tc_all = t.testcase_set.all()
                 if t.pk==1:
@@ -811,9 +911,12 @@ def share_test_submit(request):
             if mode == 'share_test':
                 t = get_object_or_404(Test, pk=t_pk)
                 if user_can('share',up,t):                              # check that user can share test
+                    share_list = []
                     for id in share_with:                               # add collaborators to test
                         u = get_object_or_404(UserProfile, pk=int(id))
-                        t.collaborators.add(u)
+                        share_list.append(u)
+                    t.collaborators.add(*share_list)
+                    create_log_entry(up,'shared',t,share_list)
                     return HttpResponseRedirect(reverse('testtool.manager.views.display_test', args=(t.pk,)))
                 else:
                     return HttpResponse('You do not have permission to share this test.')
@@ -825,9 +928,12 @@ def share_test_submit(request):
                 else:
                     ti = get_object_or_404(TestInstance, pk=ti_pk, test__pk=t_pk)   # ensures that test instance belongs to test
                     if user_can('share',up,ti):                                     # check that user can share test instance
+                        share_list = []
                         for id in share_with:                                       # add collaborators to test instance
                             u = get_object_or_404(UserProfile, pk=int(id))
-                            ti.collaborators.add(u)
+                            share_list.append(u)
+                        ti.collaborators.add(*share_list)
+                        create_log_entry(up,'shared',ti,share_list)
                         return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
                     else:
                         return HttpResponse('You do not have permission to share this test instance.')
@@ -836,7 +942,14 @@ def share_test_submit(request):
     else:
         return HttpResponseRedirect(reverse('testtool.manager.views.share_test'))
 
+
+@login_required
+@group_required('Testers')
+def log_book(request):
+    log = get_log(request,'all')
+    return render_to_response('testtool/manager/log_book.html', { 'log':log }, context_instance=RequestContext(request))
     
+
 @login_required
 @group_required('Testers')
 def about(request):

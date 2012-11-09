@@ -6,6 +6,7 @@
 #include <Phonon/VideoWidget>
 #include <Phonon/MediaObject>
 #include <QProcess>
+#include <QSettings>
 #include <json/json.h>
 #include "settings.h"
 
@@ -60,6 +61,7 @@ private:
     QString m_key;
     bool m_testCaseDone;
         // settings
+    QSettings *m_savedPrefs;
     int m_videoMode;
     QString m_defaultWebAddress;
     QString m_pathToCLMP;

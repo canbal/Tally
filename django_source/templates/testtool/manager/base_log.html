@@ -1,0 +1,27 @@
+
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block content %}
+    {% if log %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{% block table_heading %}{% endblock table_heading %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in log %}
+                    <tr>
+                        <td><i class="{{ entry.2 }}"></i>{% if not entry.1 %}<b>{% endif %} {{ entry.0.message }}{% if not entry.1 %}</b>{% endif %}</td>
+                        <td>{% if not entry.1 %}<b>{% endif %}{{ entry.0.timestamp }}{% if not entry.1 %}</b>{% endif %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        {% block no_log %}
+        {% endblock no_log %}
+    {% endif %}
+{% endblock content %}
+
