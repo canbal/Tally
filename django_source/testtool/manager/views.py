@@ -429,7 +429,7 @@ def add_test_case(request, test_pk):
     else:
         args = { 'header': 'Add new test case to Test %d' % (t.pk),
                  'error' : 'You do not have access to this test.' }
-    return render_to_response('testtool/test_modes/create_test_case_DSIS_DSCQS.html', args, context_instance=RequestContext(request))
+    return render_to_response('testtool/manager/create_test_case_DSIS_DSCQS.html', args, context_instance=RequestContext(request))
 
 def add_test_case_DSIS_DSCQS(request, test, user_profile):
     if request.method == 'POST':
@@ -451,8 +451,9 @@ def add_test_case_DSIS_DSCQS(request, test, user_profile):
             return None
     else:
         form = TestCaseCreateForm()
-        form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
-        form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
+
+    form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
+    form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
         
     if test.method == 'DSIS':
         form.fields['filename1'].label = 'Reference video'
