@@ -150,12 +150,13 @@ def create_log_entry(actor,action,obj,tags_arg=[]):
     else:
         raise Exception('create_log_entry: Invalid action.')
     tags.extend(tags_arg)       # make sure collaborators are tagged (in case log entry is created before collaborators are added)
+    tags.append(actor)          # make sure actor is tagged
     tags = list(set(tags))      # make sure tags are unique
-    if actor in tags:           # make sure actor is not double-tagged
-        tags.remove(actor)
     le = LogEntry(actor=actor, action=action, object=os['object'], message=os['message'], timestamp=ts)
     le.save()
-    le.tags.add(*tags)
+    for t in tags:
+        tg = LogTag(log_entry=le, user=t)
+        tg.save()
 
     
 def get_object_message(actor,action,obj,words):
@@ -191,8 +192,8 @@ def get_collaborator_string(collaborators):
 
 def get_log(request,mode):
     up = request.user.get_profile()    
-    entries_all = LogEntry.objects.filter(Q(actor=up) | Q(tags=up)).order_by('-timestamp')
-    entries_new = entries_all.exclude(viewed=up)
+    entries_all = LogEntry.objects.filter(logtag__user=up).order_by('-timestamp')
+    entries_new = entries_all.filter(logtag__user=up,logtag__viewed=False)
     if mode=='all':
         entry_set = entries_all
     elif mode=='new':
@@ -206,9 +207,8 @@ def get_log(request,mode):
                 'shared': 'icon-share',
                 'unshared': 'icon-remove',
                 'deleted': 'icon-trash'}
-    log = [(e, up in e.viewed.all(), icon_map[e.action]) for e in entry_set]  # pass in old 'viewed' parameter to highlight new entries
-    for e in entries_new:   # mark all entries as viewed
-        e.viewed.add(up)
+    log = [(e, e.logtag_set.get(user=up).viewed, icon_map[e.action]) for e in entry_set]  # pass in old 'viewed' parameter to highlight new entries
+    LogTag.objects.filter(user=up).update(viewed=True)                            # mark all entries as viewed
     return log
     
         
@@ -216,7 +216,7 @@ class TestCreateView(CreateView):
     model = Test
     form_class = TestCreateForm
     template_name = 'testtool/manager/create_test.html'
-    success_url = reverse_lazy('update_test')
+    #success_url = reverse_lazy('update_test')
                 
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
@@ -234,6 +234,7 @@ class TestCreateView(CreateView):
         self.object.owner = self.request.user.get_profile()
         self.object.save()
         return HttpResponseRedirect(reverse('update_test', args=(self.object.pk,)))
+    
     
 class TestUpdateView(UpdateView):
     model = Test
@@ -275,7 +276,59 @@ class TestUpdateView(UpdateView):
             context['error']   = 'You do not have access to this test.'
             context['header']  = 'Test %d' % (self.object.pk)
         return context
+        
 
+class CreateTestInstance(CreateView):
+    model = TestInstance
+    form_class = CreateTestInstanceForm
+    initial = {'schedule_time':datetime.datetime.now(), 'path': 'f:/fatigue', 'location':'VPL'}
+    template_name = 'testtool/manager/create_test_instance.html'
+                
+    @method_decorator(login_required)
+    @method_decorator(group_required('Testers'))
+    @method_decorator(user_passes_test(has_user_profile))
+    def dispatch(self, *args, **kwargs):
+        return super(CreateTestInstance, self).dispatch(*args, **kwargs)
+  
+    def get_form(self, form_class):
+        form = super(CreateTestInstance, self).get_form(form_class)
+        return form
+    
+    def form_valid(self, form):
+        up = self.request.user.get_profile()
+        # create new instance
+        self.object = form.save(commit=False)     # create new test instance from form, but don't save it yet
+        self.object.test = get_object_or_404(Test, pk=self.kwargs['test_id'])         # add in excluded fields
+        self.object.owner = up       # when an admin is logged in, they are not recognized as a user!!!!!!
+        self.object.path = self.object.path.replace("\\","/").rstrip("/")     # make sure path has only forward slashes and no trailing slashes
+        self.object.key = ''.join([random.choice(string.ascii_letters+string.digits) for x in range(20)])
+        self.object.save()           # save the new instance
+        create_log_entry(up,'created',self.object)
+        # create new test case instances
+        tc_all = self.object.test.testcase_set.all()
+        repeat = tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
+        rand_order = range(1,sum(repeat)+1)    # play order starts from 1
+        random.shuffle(rand_order)
+        idx = 0
+        for ii in range(0,tc_all.count()):
+            for jj in range(0,repeat[ii]):
+                tci = TestCaseInstance(test_instance=self.object, test_case=tc_all[ii], play_order=rand_order[idx])
+                idx += 1
+                tci.save()
+        return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=new')
+                    
+    def get_context_data(self, **kwargs):
+        context = super(CreateTestInstance, self).get_context_data(**kwargs)
+        t = get_object_or_404(Test, pk=self.kwargs['test_id'])
+        if user_can('create',self.request.user.get_profile(),t):
+            context['header']  = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
+            context['tif']     = kwargs['form']
+            context['test_id'] = self.kwargs['test_id']
+        else:
+            context['header'] = 'Create New Test Instance'
+            context['error']  = 'You do not have permission to create a test instance of this test.'
+        return context
+        
         
 @login_required
 @group_required('Testers')
@@ -567,60 +620,7 @@ def mirror_score(request, test_instance_id):
         return HttpResponse(json.dumps({'score':'E2'}))
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
-    
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def create_test_instance(request, test_id):
-    t = get_object_or_404(Test, pk=test_id)
-    up = request.user.get_profile()
-    if user_can('create',up,t):
-        if request.method == 'POST':
-            tif = CreateTestInstanceForm(request.POST)
-            tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)   # HAVE TO EXCLUDE TEST COLLABORATORS TOO!!
-            if tif.is_valid():
-                # create new instance
-                new_ti = tif.save(commit=False)     # create new test instance from form, but don't save it yet
-                new_ti.test = t         # add in exluded fields
-                new_ti.owner = up       # when an admin is logged in, they are not recognized as a user!!!!!!
-                new_ti.path = new_ti.path.replace("\\","/").rstrip("/")     # make sure path has only forward slashes and no trailing slashes
-                new_ti.key = ''.join([random.choice(string.ascii_letters+string.digits) for x in range(20)])
-                new_ti.save()           # save the new instance
-                tif.save_m2m()          # save the many-to-many data for the form
-                create_log_entry(up,'created',new_ti)
-                if new_ti.collaborators.count() > 0:
-                    create_log_entry(up,'shared',new_ti,new_ti.collaborators.all())
-                # create new test case instances
-                tc_all = t.testcase_set.all()
-                if t.pk==1:
-                    total_ti = TestInstance.objects.filter(test=t).count()
-                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[0], play_order=1)
-                    tci.save()
-                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[1], play_order=2)
-                    tci.save()
-                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[2], play_order=3+(total_ti%2))
-                    tci.save()
-                    tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[3], play_order=3+((total_ti+1)%2))
-                    tci.save()
-                else:
-                    repeat = tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
-                    rand_order = range(1,sum(repeat)+1)    # play order starts from 1
-                    random.shuffle(rand_order)
-                    idx = 0
-                    for ii in range(0,tc_all.count()):
-                        for jj in range(0,repeat[ii]):
-                            tci = TestCaseInstance(test_instance=new_ti, test_case=tc_all[ii], play_order=rand_order[idx])
-                            idx += 1
-                            tci.save()
-                # redirect to test instance display page
-                return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(t.pk, new_ti.pk))+'?alert=new')
-        else:
-            tif = CreateTestInstanceForm(initial={'schedule_time':datetime.datetime.now(), 'path': 'f:/fatigue', 'location':'VPL'})
-            tif.fields['collaborators'].queryset = tif.fields['collaborators'].queryset.exclude(user=up.user)
-        return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance of Test %d: %s' % (t.pk, t.title), 'tif': tif, 'test_id': test_id }, context_instance=RequestContext(request))
-    return render_to_response('testtool/manager/create_test_instance.html', { 'header': 'Create New Test Instance', 'error': 'You do not have permission to create a test instance of this test.'}, context_instance=RequestContext(request))
-
+   
 
 @login_required
 @group_required('Testers')

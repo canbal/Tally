@@ -29,11 +29,10 @@ class TestDisplayForm(forms.ModelForm):
         exclude = ('title',)
 
 class CreateTestInstanceForm(forms.ModelForm):
-    collaborators = forms.ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Testers'), required=False)
     subjects = forms.ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
     class Meta:
         model = TestInstance
-        exclude = ('test', 'owner', 'collaborator', 'run_time', 'counter', 'key')
+        exclude = ('test', 'owner', 'collaborators', 'run_time', 'counter', 'key')
         
         
 class DisplayTestInstanceForm(forms.ModelForm):

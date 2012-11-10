@@ -118,13 +118,23 @@ class LogEntry(models.Model):
     actor     = models.ForeignKey(UserProfile, related_name='actor_logentries')
     action    = models.CharField(max_length=20, choices=ACTION_CHOICES)
     object    = models.CharField(max_length=20, choices=OBJECT_CHOICES)
-    tags      = models.ManyToManyField(UserProfile, related_name='tags_logentries', null=True, blank=True)
     message   = models.TextField()
-    viewed    = models.ManyToManyField(UserProfile, related_name='viewed_logentries', null=True, blank=True)
     timestamp = models.DateTimeField(null=True)
+    tags      = models.ManyToManyField(UserProfile, through='LogTag', null=True, blank=True)
     
     class Meta:
         app_label = 'testtool'
         verbose_name_plural = 'Log entries'
     def __unicode__(self):
         return '%s : %s' % (unicode(self.actor.user.username), self.action)
+        
+        
+class LogTag(models.Model):
+    log_entry = models.ForeignKey(LogEntry)
+    user      = models.ForeignKey(UserProfile)
+    viewed    = models.BooleanField(default=False)
+    
+    class Meta:
+        app_label = 'testtool'
+    def __unicode__(self):
+        return '%s: viewed = %s' % (unicode(self.user.user.username), self.viewed)
