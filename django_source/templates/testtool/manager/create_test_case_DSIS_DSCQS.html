@@ -1,0 +1,46 @@
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block head %}
+<style>
+    ul {
+        list-style: none;
+    }
+</style>
+{% endblock head %}
+
+{% block header %}
+    {{ header }}
+{% endblock header %}
+
+{% block content %}
+{% if error %}
+    {{ error }}
+{% else %}
+<form class="form-horizontal" id="test_case_create_form" action="" method="post" enctype="multipart/form-data">
+    <fieldset>
+    	{% csrf_token %}
+    	<span style="color:red;font-weight:bold;font-size:1.1em">
+    	{{ form.non_field_errors }}
+    	</span>
+	    {% for field in form %}
+	    	<div class="control-group{% if field.errors %} error{% endif %}">
+    	    	<label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+    	    	<div class="controls">
+    	    		{{ field }}
+                    {% if field.errors %}
+                    	<ul class="help-inline">
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+			</div>
+		{% endfor %}
+		<div class="form-actions">
+            <input type="submit" class="btn" id="add_button" value="Add" />
+        </div>
+    </fieldset>
+</form>
+{% endif %}
+{% endblock %}
