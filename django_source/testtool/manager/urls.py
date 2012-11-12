@@ -1,5 +1,5 @@
 from django.conf.urls.defaults import *
-from testtool.manager.views import TestCreateView, TestUpdateView, CreateTestInstance, DisplayTestInstance, EditTestInstance
+from testtool.manager.views import CreateTest, EditTest, CreateTestInstance, DisplayTestInstance, EditTestInstance
 
 urlpatterns = patterns('testtool.manager.views',
 
@@ -34,8 +34,8 @@ urlpatterns = patterns('testtool.manager.views',
 
 # Class-based views
 urlpatterns += patterns('',
-    url(r'^tests/create/$',             TestCreateView.as_view(), name='create_test'),
-    url(r'^tests/(?P<pk>\d+)/update/$', TestUpdateView.as_view(), name='update_test'),
+    url(r'^tests/create/$',             CreateTest.as_view(), name='create_test'),
+    url(r'^tests/(?P<pk>\d+)/edit/$',   EditTest.as_view(),   name='edit_test'),
     url(r'^tests/(?P<test_id>\d+)/instances/create$', CreateTestInstance.as_view(), name='create_test_instance'),
     url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/$', DisplayTestInstance.as_view(), name='display_test_instance'),
     url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/edit$', EditTestInstance.as_view(), name='edit_test_instance'),

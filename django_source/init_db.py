@@ -80,31 +80,18 @@ for files in videoList:
 
     # generate play order
     for ii in range(0,2): # repeat each video twice
-        rand_order = range(0,len(files)) # TODO: check consistency of start value of play_order (TestCaseItem and TestCase)
-        random.shuffle(rand_order)
-
-        # get or create reference video
-        filename = files[0]
+        # first video is reference, get or create the video to be tested
         try:
-            video = Video.objects.get(test=test,filename=filename)
+            video = Video.objects.get(test=test,filename=files[0])
         except Video.DoesNotExist:
-            video = Video.objects.create(test=test,filename=filename,description=filename)
+            video = Video.objects.create(test=test,filename=files[0],description=files[0])
+        TestCaseItem.objects.create(test_case=test_case,video=video,play_order=1+ii*2,is_reference=True)
 
-        # add to the test case
-        play_order = rand_order[0] + ii*len(files)
-        TestCaseItem.objects.create(test_case=test_case,video=video,play_order=play_order,is_reference=True)
-
-        for idv in range(1,len(files)):
-            # first video is reference, get or create the video to be tested
-            filename = files[idv]
-            try:
-                video = Video.objects.get(test=test,filename=filename)
-            except Video.DoesNotExist:
-                video = Video.objects.create(test=test,filename=filename,description=filename)
-
-            # add to the test case
-            play_order = rand_order[idv] + ii*len(files)
-            TestCaseItem.objects.create(test_case=test_case,video=video,play_order=play_order)
+        try:
+            video = Video.objects.get(test=test,filename=files[1])
+        except Video.DoesNotExist:
+            video = Video.objects.create(test=test,filename=files[1],description=files[1])
+        TestCaseItem.objects.create(test_case=test_case,video=video,play_order=2+ii*2)
 
 # delete all existing test instances that belong to the sample test
 for ti in TestInstance.objects.all():

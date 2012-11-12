@@ -15,22 +15,25 @@ class TestUpdateForm(forms.ModelForm):
     class Meta:
         model = Test
         exclude = ('owner','create_time')
-
     # to ensure that the readonly value won't be overridden by a POST
     def clean_method(self):
         return self.instance.method
+    
 
-        
 class TestDisplayForm(forms.ModelForm):
     class Meta:
         model = Test
         exclude = ('title',)
 
-        
-class TestCaseCreateForm(forms.Form):
+
+class TestCaseCreateFormDiscrete(forms.Form):
     filename1 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
     filename2 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
-        
+
+    
+class TestCaseCreateFormSSCQE(forms.Form):
+    filename = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
+
 
 class CreateTestInstanceForm(forms.ModelForm):
     subjects = forms.ModelMultipleChoiceField(label='Enrolled Subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
