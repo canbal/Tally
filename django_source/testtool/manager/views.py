@@ -383,16 +383,16 @@ class EditTestInstance(UpdateView):
         form.save()
         create_log_entry(self.request.user.get_profile(),'edited',self.object)
         return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=edit')
-                    
+
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
         if user_can('edit',self.request.user.get_profile(),self.object):
-            context['header']    = 'Edit Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
-            context['tif']       = kwargs['form']
-            context['available'] = kwargs['form'].fields['subjects'].queryset
-            context['enrolled']  = self.object.subjects.all()
-            context['test_id']   = self.kwargs['test_id']
-            context['test_instance_id']   = self.kwargs['test_instance_id']
+            context['header']           = 'Edit Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
+            context['tif']              = kwargs['form']
+            context['enrolled']         = self.object.subjects.all()
+            context['available']        = kwargs['form'].fields['subjects'].queryset.exclude(pk__in=context['enrolled'].values_list('pk', flat=True))
+            context['test_id']          = self.kwargs['test_id']
+            context['test_instance_id'] = self.kwargs['test_instance_id']
         else:
             context['header'] = 'Edit Test Instance'
             context['error']  = 'You do not have permission to edit this test instance.'
