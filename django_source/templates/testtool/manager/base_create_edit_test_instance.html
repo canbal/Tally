@@ -1,0 +1,85 @@
+
+{% extends "testtool/manager/base_manager.html" %}
+
+{% block head %}
+    <style>
+        ul {
+            list-style: none;
+        }
+    </style>
+    <script type="text/javascript">
+        $().ready(function() {
+            $('#add_btn').click(function() {
+                return !$('#available_select option:selected').remove().appendTo('#id_subjects').removeAttr("selected");
+            });
+            $('#remove_btn').click(function() {
+                return !$('#id_subjects option:selected').remove().appendTo('#available_select').removeAttr("selected");
+            });
+            $('form').submit(function() {
+                $('#id_subjects option').each(function(i) {
+                    $(this).attr("selected", "selected");
+                });
+            });
+        });
+    </script>
+{% endblock head %}
+
+{% block header %}
+    {{ header }}
+{% endblock header %}
+
+{% block content %}
+    {% if error %}
+        {{ error }}
+    {% else %}
+        <form class="form-horizontal" action="" method="post">
+            <fieldset>
+                {% csrf_token %}
+                <span style="color:red;font-weight:bold;font-size:1.1em">
+                    {{ tif.non_field_errors }}
+                </span>
+                {% for field in tif %}
+                    {% if field.html_name == "subjects" %}
+                        <div class="control-group">
+                            <label class="control-label" for="available_select">Available Subjects</label>
+                            <div class="controls">
+                                <select {% if field.field.widget.attrs.readonly %}readonly{% endif %} {% if field.field.widget.attrs.disabled %}disabled{% endif %} multiple="multiple" name="available" id="available_select">
+                                    {% for a in available %}
+                                        <option value="{{ a.pk }}">{{ a.user.username }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button {% if field.field.widget.attrs.disabled %}disabled{% endif %} class="btn btn-small btn-success" type="button" id="add_btn">Add</button>                        
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="control-group{% if field.errors %} error{% endif %}">
+                        <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {% if field.html_name == "subjects" %}
+                                <select {% if field.field.widget.attrs.readonly %}readonly{% endif %} {% if field.field.widget.attrs.disabled %}disabled{% endif %} multiple="multiple" name="subjects" id="id_{{ field.html_name }}">
+                                    {% for e in enrolled %}
+                                        <option value="{{ e.pk }}">{{ e.user.username }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button {% if field.field.widget.attrs.disabled %}disabled{% endif %} class="btn btn-small btn-danger" type="button" id="remove_btn">Remove</button>
+                            {% else %} 
+                                {{ field }}
+                            {% endif %}
+                            {% if field.errors %}
+                                <ul class="help-inline">
+                                    {% for error in field.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                <div class="form-actions">
+                    <a class="btn" href="{% block cancel_href %}{% endblock cancel_href %}">Cancel</a>
+                    <input type="submit" class="btn btn-primary" value="{% block submit_value %}{% endblock submit_value %}"/>
+                </div>
+            </fieldset>
+        </form>
+    {% endif %}
+{% endblock content %}

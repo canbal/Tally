@@ -5,7 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadReque
 from django.template import RequestContext
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.core.exceptions import ObjectDoesNotExist
-from django.views.generic import CreateView, UpdateView
+from django.views.generic import CreateView, UpdateView, DetailView
 from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db.models import Q
@@ -262,7 +262,6 @@ class TestUpdateView(UpdateView):
         context = super(TestUpdateView, self).get_context_data(**kwargs)
         if user_can('edit',self.request.user.get_profile(),self.object):
             context['files'] = Video.objects.filter(test=self.object)
-
             tc_data = []
             tc_set = TestCase.objects.filter(test=self.object)
             for tc in tc_set:
@@ -281,7 +280,7 @@ class TestUpdateView(UpdateView):
 class CreateTestInstance(CreateView):
     model = TestInstance
     form_class = CreateTestInstanceForm
-    initial = {'schedule_time':datetime.datetime.now(), 'path': 'f:/fatigue', 'location':'VPL'}
+    initial = {'schedule_time':datetime.datetime.now()}
     template_name = 'testtool/manager/create_test_instance.html'
                 
     @method_decorator(login_required)
@@ -303,6 +302,7 @@ class CreateTestInstance(CreateView):
         self.object.path = self.object.path.replace("\\","/").rstrip("/")     # make sure path has only forward slashes and no trailing slashes
         self.object.key = ''.join([random.choice(string.ascii_letters+string.digits) for x in range(20)])
         self.object.save()           # save the new instance
+        form.save_m2m()
         create_log_entry(up,'created',self.object)
         # create new test case instances
         tc_all = self.object.test.testcase_set.all()
@@ -315,18 +315,126 @@ class CreateTestInstance(CreateView):
                 tci = TestCaseInstance(test_instance=self.object, test_case=tc_all[ii], play_order=rand_order[idx])
                 idx += 1
                 tci.save()
-        return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=new')
+        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=new')
                     
     def get_context_data(self, **kwargs):
         context = super(CreateTestInstance, self).get_context_data(**kwargs)
         t = get_object_or_404(Test, pk=self.kwargs['test_id'])
         if user_can('create',self.request.user.get_profile(),t):
-            context['header']  = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
-            context['tif']     = kwargs['form']
-            context['test_id'] = self.kwargs['test_id']
+            context['header']    = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
+            context['tif']       = kwargs['form']
+            context['available'] = kwargs['form'].fields['subjects'].queryset
+            context['enrolled']  = UserProfile.objects.none()
+            context['test_id']   = self.kwargs['test_id']
         else:
             context['header'] = 'Create New Test Instance'
             context['error']  = 'You do not have permission to create a test instance of this test.'
+        return context
+        
+        
+class EditTestInstance(UpdateView):
+    model = TestInstance
+    form_class = CreateTestInstanceForm
+    initial = {'schedule_time':datetime.datetime.now()}
+    template_name = 'testtool/manager/edit_test_instance.html'
+                
+    @method_decorator(login_required)
+    @method_decorator(group_required('Testers'))
+    @method_decorator(user_passes_test(has_user_profile))
+    def dispatch(self, *args, **kwargs):
+        return super(EditTestInstance, self).dispatch(*args, **kwargs)
+
+    def get_object(self):
+        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__pk=self.kwargs['test_id'])   # ensures that test instance belongs to test
+        
+    def get_form(self, form_class):
+        form = super(EditTestInstance, self).get_form(form_class)
+        status = test_instance_status(self.object)
+        if status=='Complete':
+            form.fields['path'].widget.attrs['readonly'] = True
+            form.fields['schedule_time'].widget.attrs['readonly'] = True
+            form.fields['subjects'].widget.attrs['readonly'] = True
+            form.fields['subjects'].widget.attrs['disabled'] = True
+        elif status=='Incomplete':
+            form.fields['schedule_time'].widget.attrs['readonly'] = True
+        return form
+    
+    def form_valid(self, form):
+        form.save()
+        create_log_entry(self.request.user.get_profile(),'edited',self.object)
+        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=edit')
+                    
+    def get_context_data(self, **kwargs):
+        context = super(EditTestInstance, self).get_context_data(**kwargs)
+        if user_can('edit',self.request.user.get_profile(),self.object):
+            context['header']    = 'Edit Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
+            context['tif']       = kwargs['form']
+            context['available'] = kwargs['form'].fields['subjects'].queryset
+            context['enrolled']  = self.object.subjects.all()
+            context['test_id']   = self.kwargs['test_id']
+            context['test_instance_id']   = self.kwargs['test_instance_id']
+        else:
+            context['header'] = 'Edit Test Instance'
+            context['error']  = 'You do not have permission to edit this test instance.'
+        return context
+        
+        
+class DisplayTestInstance(DetailView):
+    model = TestInstance
+    template_name = 'testtool/manager/display_test_instance.html'
+                
+    @method_decorator(login_required)
+    @method_decorator(group_required('Testers'))
+    @method_decorator(user_passes_test(has_user_profile))
+    def dispatch(self, *args, **kwargs):
+        return super(DisplayTestInstance, self).dispatch(*args, **kwargs)
+        
+    def get_object(self):
+        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__pk=self.kwargs['test_id'])   # ensures that test instance belongs to test
+                    
+    def get_context_data(self, **kwargs):
+        context = super(DisplayTestInstance, self).get_context_data(**kwargs)
+        up = self.request.user.get_profile()
+        if user_can('view',up,self.object):
+            if self.request.method == 'GET':
+                try:
+                    alert = self.request.GET['alert']
+                except KeyError:
+                    alert = ''
+                if alert == 'new':
+                    alert_str = 'Test instance successfully created.'
+                elif alert == 'edit':
+                    alert_str = 'Test instance successfully edited.'
+                elif alert == 'share':
+                    alert_str = 'New collaborators successfully added.'
+                else:
+                    alert_str = ''
+            else:
+                alert_str = ''
+            tci_set = self.object.testcaseinstance_set.order_by('pk')
+            tc_set = self.object.test.testcase_set.order_by('pk')
+            rand = []
+            for tc in tc_set:
+                rand.append(tci_set.filter(test_case=tc).values_list('play_order',flat=True))
+            context['header']           = 'Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
+            context['tif']              = DisplayTestInstanceForm(instance=self.object)
+            context['create_time_name'] = self.object._meta.get_field('create_time').verbose_name
+            context['create_time']      = self.object.create_time
+            context['test_id']          = self.kwargs['test_id']
+            context['test_instance_id'] = self.kwargs['test_instance_id']
+            context['status']           = test_instance_status(self.object)
+            context['rand']             = rand
+            context['already_run']      = self.object.run_time is not None
+            context['can_share']        = user_can('share',up,self.object)
+            context['can_export']       = user_can('export',up,self.object)
+            context['can_edit']         = user_can('edit',up,self.object)
+            context['can_run']          = is_test_instance_active(self.object) and user_can('run',up,self.object)
+            context['alert']            = alert_str
+        else:
+            context['header']           = 'Test Instance %d of Test %d' % (self.object.pk, self.object.test.pk)
+            context['test_id']          = self.kwargs['test_id']
+            context['test_instance_id'] = self.kwargs['test_instance_id']
+            context['error']            = 'You do not have access to this test instance.'
         return context
         
         
@@ -563,45 +671,6 @@ def display_test(request, test_id):
                  'error': 'You do not have access to this test.' }
     return render_to_response('testtool/manager/display_test.html', args, context_instance=RequestContext(request))
         
-        
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def display_test_instance(request, test_id, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
-    up = request.user.get_profile()
-    if user_can('view',up,ti):
-        tif = DisplayTestInstanceForm(instance=ti)
-        if request.method == 'GET':
-            try:
-                alert = request.GET['alert']
-            except KeyError:
-                alert = ''
-        tci_set = ti.testcaseinstance_set.order_by('pk')
-        tc_set = ti.test.testcase_set.order_by('pk')
-        rand = []
-        for tc in tc_set:
-            rand.append(tci_set.filter(test_case=tc).values_list('play_order',flat=True))
-        args = { 'header': 'Test Instance %d of Test %d: %s' % (ti.pk, ti.test.pk, ti.test.title),
-                 'tif': tif,
-                 'create_time_name': ti._meta.get_field('create_time').verbose_name,
-                 'create_time': ti.create_time,
-                 'test_id': test_id,
-                 'test_instance_id': test_instance_id,
-                 'status': test_instance_status(ti),
-                 'rand': rand,
-                 'already_run': ti.run_time is not None,
-                 'can_share': user_can('share',up,ti),
-                 'can_export': user_can('export',up,ti),
-                 'can_run': is_test_instance_active(ti) and user_can('run',up,ti),
-                 'alert': alert }
-    else:
-        args = { 'header': 'Test Instance %d of Test %d' % (ti.pk, ti.test.pk),
-                 'test_id': test_id,
-                 'test_instance_id': test_instance_id,
-                 'error': 'You do not have access to this test instance.' }
-    return render_to_response('testtool/manager/display_test_instance.html', args, context_instance=RequestContext(request))
-
 
 @login_required
 @group_required('Testers')

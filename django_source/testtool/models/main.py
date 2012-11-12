@@ -51,7 +51,7 @@ class TestInstance(models.Model):
     subjects       = models.ManyToManyField(UserProfile, related_name='subjects_testinstances', null=True)
     create_time    = models.DateTimeField('Date created', auto_now_add=True)
     schedule_time  = models.DateTimeField('Date scheduled', null=True)
-    run_time       = models.DateTimeField('Date run', null=True)
+    run_time       = models.DateTimeField('Date run', null=True, blank=True)
     path           = models.CharField(max_length=200)
     description    = models.TextField(blank=True)
     location       = models.CharField(max_length=200)
