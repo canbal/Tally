@@ -5,7 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadReque
 from django.template import RequestContext
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.core.exceptions import ObjectDoesNotExist
-from django.views.generic import CreateView, UpdateView, DetailView
+from django.views.generic import CreateView, UpdateView, DetailView, DeleteView
 from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db.models import Q
@@ -443,6 +443,8 @@ class DisplayTestInstance(DetailView):
         context = super(DisplayTestInstance, self).get_context_data(**kwargs)
         up = self.request.user.get_profile()
         if user_can('view',up,self.object):
+            alert_str = ''
+            alert_class = 'success'
             if self.request.method == 'GET':
                 try:
                     alert = self.request.GET['alert']
@@ -450,14 +452,19 @@ class DisplayTestInstance(DetailView):
                     alert = ''
                 if alert == 'new':
                     alert_str = 'Test instance successfully created.'
+                    alert_class = 'success'
                 elif alert == 'edit':
                     alert_str = 'Test instance successfully edited.'
+                    alert_class = 'success'
                 elif alert == 'share':
                     alert_str = 'New collaborators successfully added.'
-                else:
-                    alert_str = ''
-            else:
-                alert_str = ''
+                    alert_class = 'success'
+                elif alert == 'delete1':
+                    alert_str = 'Only the test instance owner can delete a test instance.'
+                    alert_class = 'error'
+                elif alert == 'delete2':
+                    alert_str = 'All collaborators must remove themselves before this test instance can be deleted.'
+                    alert_class = 'error'
             tci_set = self.object.testcaseinstance_set.order_by('pk')
             tc_set = self.object.test.testcase_set.order_by('pk')
             rand = []
@@ -475,14 +482,76 @@ class DisplayTestInstance(DetailView):
             context['can_share']        = user_can('share',up,self.object)
             context['can_export']       = user_can('export',up,self.object)
             context['can_edit']         = user_can('edit',up,self.object)
+            context['can_delete']       = user_can('delete',up,self.object) and self.object.collaborators.count()==0
             context['can_run']          = is_test_instance_active(self.object) and user_can('run',up,self.object)
             context['alert']            = alert_str
+            context['alert_class']      = alert_class
         else:
             context['header']           = 'Test Instance %d of Test %d' % (self.object.pk, self.object.test.pk)
             context['test_id']          = self.kwargs['test_id']
             context['test_instance_id'] = self.kwargs['test_instance_id']
             context['error']            = 'You do not have access to this test instance.'
         return context
+        
+        
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def delete_test_instance(request, test_id, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
+    if request.method=='POST':
+        up = request.user.get_profile()
+        perm = user_can('delete',up,ti)
+        coll = ti.collaborators.count()==0
+        if perm and coll:
+            create_log_entry(up,'deleted',ti)
+            ti.delete()
+            return HttpResponseRedirect(reverse('testtool.manager.views.list_test_instances', args=(test_id))+'?alert=delete&pk='+str(test_instance_id))
+        else:
+            if not perm:
+                return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete1')
+            if not coll:
+                return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete2')
+    else:
+        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk)))
+
+        
+# class DeleteTestInstance(DeleteView):
+    # model = TestInstance
+    # template_name = 'testtool/manager/display_test_instance.html'
+                
+    # @method_decorator(login_required)
+    # @method_decorator(group_required('Testers'))
+    # @method_decorator(user_passes_test(has_user_profile))
+    # def dispatch(self, *args, **kwargs):
+        # return super(DeleteTestInstance, self).dispatch(*args, **kwargs)
+
+    # def get_success_url(self): 
+        # return reverse('testtool.manager.views.list_test_instances', args=(self.kwargs['test_id']))+'?alert=delete&pk='+str(self.kwargs['test_instance_id'])
+        
+    # def get_object(self):
+        # return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__pk=self.kwargs['test_id'])   # ensures that test instance belongs to test
+    
+    # def delete(self, *args, **kwargs):
+        # up = self.request.user.get_profile()
+        # ti = self.get_object()
+        # perm = user_can('delete',up,ti)
+        # coll = ti.collaborators.count()==0
+        # if perm and coll:
+            # super(DeleteTestInstance, self).delete(self, *args, **kwargs)
+            # create_log_entry(self.request.user.get_profile(),'deleted',ti)
+            # return HttpResponseRedirect(self.get_success_url())
+        # else:
+            # if not perm:
+                # return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete1')
+            # if not coll:
+                # return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete2')
+    
+    # def get_context_data(self, **kwargs):
+        # context = super(DeleteTestInstance, self).get_context_data(**kwargs)
+        # context['test_instance_id'] = self.kwargs['test_instance_id']
+        # context['test_id']          = self.kwargs['test_id']
+        # return context
         
         
 @login_required
@@ -702,6 +771,15 @@ def list_tests(request):
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def list_test_instances(request,test_pk):
+    alert_str = ''
+    if request.method == 'GET':
+        try:
+            alert = request.GET['alert']
+            pk = int(request.GET['pk'])
+            if alert == 'delete':
+                alert_str = 'Test Instance %d successfully deleted.' % (pk)
+        except KeyError:
+            pass
     up = request.user.get_profile()
     t = get_object_or_404(Test, pk=test_pk)
     ti_set = TestInstance.objects.filter(test=t)
@@ -712,12 +790,12 @@ def list_test_instances(request,test_pk):
             ti_data.append([ti.pk, status, test_instance_status(ti), ti.subjects.count()])
     if len(ti_data)==0:
         if user_status(up,t) in ['Owner', 'Collaborator']:
-            errMsg = 'No instances of this test have been created yet.'
+            errMsg = 'No instances of this test exist.'
         else:
-            errMsg = 'No instances of this test have been created yet to which you have access.'
-        args = { 'header': 'Test Instances', 'error': errMsg, 'test_id': t.pk }
+            errMsg = 'No instances of this test exist to which you have access.'
+        args = { 'header': 'Test Instances', 'error': errMsg, 'test_id': t.pk, 'alert': alert_str }
     else:
-        args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk }
+        args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk, 'alert': alert_str }
     return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
     
             

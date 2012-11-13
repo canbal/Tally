@@ -17,7 +17,7 @@
         {{ error }}
     {% else %}
         {% if alert %}
-            <div class="alert alert-success alert-block">
+            <div class="alert alert-{{ alert_class }} alert-block">
                 <a class="close" data-dismiss="alert" href="#">&times</a>
                 {{ alert }}
             </div>
@@ -65,6 +65,24 @@
                 {% endif %}
                 {% if can_edit %}
                     <a class="btn btn-primary" href="{% url edit_test_instance test_id=test_id test_instance_id=test_instance_id %}">Edit</a>
+                {% endif %}
+                {% if can_delete %}
+                    <a href="#deleteModal" role="button" class="btn btn-danger" data-toggle="modal">Delete</a>
+                    <div id="deleteModal" class="modal hide fade" tabindex="-1" role="dialog" data-backdrop="static" keyboard="false">
+                        <div class="modal-header">
+                            <h3>Delete this test instance?</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p>This cannot be undone and all related data will also be removed.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn" data-dismiss="modal">Cancel</button>
+                            <form action="{% url testtool.manager.views.delete_test_instance test_id=test_id test_instance_id=test_instance_id %}" method="post">
+                                {% csrf_token %}
+                                <input type="submit" class="btn btn-danger" value="Yes, delete" />
+                            </form>
+                        </div>
+                    </div>
                 {% endif %}
                 {% if can_run %}
                     <a class="btn btn-success" href="{% url testtool.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
