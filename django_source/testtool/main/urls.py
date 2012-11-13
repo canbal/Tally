@@ -3,7 +3,7 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('testtool.main.views',
     # Subject URLs
-    url(r'^$','index'),
+    url(r'^$', 'index', name='home'),
     url(r'^(?P<test_instance_id>\d+)/tally/$', 'tally'),
     url(r'^(?P<test_instance_id>\d+)/status/$', 'status'),
     

@@ -1,12 +1,11 @@
-
 {% extends "testtool/manager/base_manager.html" %}
 
 {% block head %}
-    <style>
-        .form-container form {
-            display: inline;
-        }
-    </style>
+<style>
+    ul {
+        list-style: none;
+    }
+</style>
 {% endblock head %}
 
 {% block header %}
@@ -14,75 +13,75 @@
 {% endblock header %}
 
 {% block content %}
-    {% if error %}
-        {{ error }}
-    {% else %}
-        <div class="form-horizontal">
-            <div class="control-group">
-                <label class="control-label" for="id_create_time">{{ create_time_name }}</label>
-                <div class="controls"><span class="uneditable-input">{{ create_time }}</span></div>
-            </div>
-            {% for field in tf %}
-                <div class="control-group">
-                    <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
-                    <div class="controls"><span class="uneditable-input">{{ field.value }}</span></div>
+{% if error %}
+    {{ error }}
+{% else %}
+<form class="form-horizontal" id="test_display_form" action="" method="post" enctype="multipart/form-data">
+    <fieldset>
+	    {% for field in form %}
+	    	<div class="control-group{% if field.errors %} error{% endif %}">
+    	    	<label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+    	    	<div class="controls">
+    	    		{{ field }}
                 </div>
-            {% endfor %}
-            <div class="control-group">
-                <label class="control-label" for="id_videos">Videos</label>
-                <div class="controls">
-                    {% for vid in videos %}
-                        <span class="uneditable-input">{{ vid.filename }}</span><br/>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="id_test_cases">Test Cases</label>
-                <div class="controls">
-                    <div class="accordion span5" id="id_test_cases">
-                        {% for tc in tc_data %}
-                            <div class="accordion-group">
-                                <div class="accordion-heading">
-                                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">
-                                        Test Case #{{ forloop.counter }}
-                                    </a>
-                                </div>
-                                <div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
-                                    <div class="accordion-inner">
-                                        {% for vid in tc %}
-                                            {{ forloop.counter }}. {{ vid }}<br/>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="id_test_instances">Test Instances</label>
-                <div class="controls">
-                    <span class="uneditable-input"><a href="{% url testtool.manager.views.list_test_instances test_pk=test_id %}">View test instances</a></span>
-                </div>
-            </div>
-            <div class="form-actions form-container">
-                <a class="btn" href="{% url testtool.manager.views.list_tests %}">View Test List</a>
-                {% if can_share %}
-                    <form action="{% url testtool.manager.views.share_test %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="test_id" value="{{ test_id }}" />
-                        <input type="submit" class="btn btn-info" value="Share" />
-                    </form>
-                {% endif %}
-                {% if can_export %}
-                    <form action="{% url testtool.manager.views.export_data %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="test_id" value="{{ test_id }}" />
-                        <input type="submit" class="btn btn-primary" value="Export Data" />
-                    </form>
-                {% endif %}
-            </div>
-        </div>
-    {% endif %}
-{% endblock content %}
+			</div>
+		{% endfor %}
+    </fieldset>
+</form>
+<div class="form-horizontal">
+	<fieldset>
+		<div class="control-group">
+			<label class="control-label" for="files_show">Files</label>
+			<div class="controls">
+				<div class="span5">
+					<table class="table table-striped table-condensed table-bordered">
+	    				{% for file in files %}
+    					<tr id="row_del_file_{{ file.pk }}">
+	    	    			<td align="left" width="100%">{{ file.filename }}</td>
+	    				</tr>
+    					{% endfor %}
+					</table>
+				</div>
+			</div>
+		</div>
+        {% if files %}
+		<div class="control-group">
+    		<label class="control-label" for="id_test_cases">Test Cases</label>
+			<div class="controls">
+    			<div class="accordion span5" id="id_test_cases">
+        		{% for tc in tc_data %}
+        			<div class="accordion-group" id="row_del_tc_{{ tc.0.pk }}">
+            			<div class="accordion-heading">
+        					<table width="95%" align="center">
+        						<tr>
+									<td align="left" width="100%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
+								</tr>
+							</table>
+            			</div>
+            			<div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
+                			<div class="accordion-inner">
+                    			{% for vid in tc.1 %}
+                        			{{ forloop.counter }}. {{ vid.0 }}{% if vid.1 %}<span style="color:red"> [ref]</span>{% endif %}<br/>
+                    			{% endfor %}
+                			</div>
+        				</div>
+        			</div>
+        		{% endfor %}
+    			</div>
+			</div>
+		</div>
+      {% endif %}
+	</fieldset>
+</div>
+<div class="form-horizontal">
+    <div class="form-actions">
+       <a class="btn" href="{% url testtool.manager.views.list_tests %}">View Test List</a>
+       <a class="btn btn-primary" href="{% url edit_test test_id=test_pk %}">Edit</a>  
+       {% if tc_data %}
+       <a class="btn btn-success" href="{% url create_test_instance test_id=test_pk %}">Create New Instance</a>
+       {% endif %}
+    </div>
+</div>
 
+{% endif %}
+{% endblock content %}
