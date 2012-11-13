@@ -71,7 +71,7 @@
 {% if error %}
     {{ error }}
 {% else %}
-<form class="form-horizontal" id="test_update_form" action="" method="post" enctype="multipart/form-data">
+<form class="form-horizontal" id="test_edit_form" action="" method="post" enctype="multipart/form-data">
     <fieldset>
     	{% csrf_token %}
 	    <span style="color:red;font-weight:bold;font-size:1.1em">
@@ -168,18 +168,24 @@
 </div>
 <div class="form-horizontal">
     <div class="form-actions">
-	    <input type="button" class="btn" id="save_button" value="Save">
-        <a class="btn btn-primary" href="{% url display_test test_id=test_pk %}">Done</a>
+	    <input type="button" class="btn" id="update_button" value="Update">
+        <input type="button" class="btn btn-primary" id="save_button" value="Save">
         {% if tc_data %}	   
         <a class="btn btn-success" href="{% url create_test_instance test_id=test_pk %}">Create New Instance</a>
         {% endif %}
     </div>
 </div>
 
-{% if allow_modify %}
 <script type="text/javascript">
-$("#save_button").click(function() { $("#test_update_form").submit(); });
+$("#update_button").click(function() { $("#test_edit_form").submit(); });
 </script>
+<script type="text/javascript">
+$("#save_button").click(function() {
+    $('#test_edit_form').append('<input type="hidden" name="save" value="save">');    
+    $("#test_edit_form").submit(); 
+    });
+</script>
+{% if allow_modify %}
 <script type="text/javascript">
 {% for file in files %}
 $("#btn_del_file_{{ file.pk }}").click(function() { postDeleteFile("{% url delete_video file.pk %}", {{ file.pk }}); });

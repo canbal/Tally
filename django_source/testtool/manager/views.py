@@ -262,8 +262,13 @@ class EditTest(UpdateView):
         self.object.owner = up
         self.object.save()
         form.save_m2m()
-        create_log_entry(up,'edited',self.object)        
-        return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,)))
+        create_log_entry(up,'edited',self.object)
+        try:
+            save = self.request.POST['save']
+        except KeyError:
+            return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,)))
+        else:
+            return HttpResponseRedirect(reverse('display_test', args=(self.object.pk,)))            
     
     def get_context_data(self, **kwargs):
         context = super(EditTest, self).get_context_data(**kwargs)
@@ -302,7 +307,7 @@ class DisplayTest(UpdateView):
         
     def get_object(self):
         return get_object_or_404(Test, pk=self.kwargs['test_id'])
-                    
+    
     def get_context_data(self, **kwargs):
         context = super(DisplayTest, self).get_context_data(**kwargs)
         up = self.request.user.get_profile()
@@ -715,35 +720,7 @@ def list_test_instances(request,test_pk):
         args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk }
     return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
     
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def display_test(request, test_id):
-    t = get_object_or_404(Test, pk=test_id)
-    up = request.user.get_profile()
-    if user_can('view',up,t):
-        tf = TestDisplayForm(instance=t)
-        tc_data = []
-        tc_set = TestCase.objects.filter(test=t)
-        for tc in tc_set:
-            tci = tc.testcaseitem_set.order_by('play_order')
-            tc_data.append(tci.values_list('video__filename',flat=True))
-        args = { 'header': 'Test %d: %s' % (t.pk, t.title),
-                 'tf': tf,
-                 'create_time_name': t._meta.get_field('create_time').verbose_name,
-                 'create_time': t.create_time,
-                 'test_id': test_id,
-                 'videos': Video.objects.filter(test=t),
-                 'tc_data': tc_data,
-                 'can_share': user_can('share',up,t),
-                 'can_export': user_can('export',up,t) }
-    else:
-        args = { 'header': 'Test %d' % (t.pk),
-                 'error': 'You do not have access to this test.' }
-    return render_to_response('testtool/manager/display_test.html', args, context_instance=RequestContext(request))
-        
-
+            
 @login_required
 @group_required('Testers')
 def mirror_score(request, test_instance_id):

@@ -20,6 +20,8 @@ class EditTestForm(forms.ModelForm):
     
 
 class DisplayTestForm(forms.ModelForm):
+    owner = forms.CharField(widget=forms.TextInput(attrs={'readonly':True}))
+    create_time = forms.CharField(widget=forms.TextInput(attrs={'readonly':True}))
     method = forms.CharField(widget=forms.TextInput(attrs={'readonly':True})) # make the field readonly
     class Meta:
         model = Test
@@ -27,10 +29,13 @@ class DisplayTestForm(forms.ModelForm):
         
     def __init__(self, *args, **kwargs):
         super(DisplayTestForm, self).__init__(*args, **kwargs)
+        self.fields['owner'].initial = self.instance.owner
         self.fields['collaborators'].widget.attrs={'readonly':True}
         self.fields['collaborators'].queryset = self.instance.collaborators
         self.fields['title'].widget.attrs={'readonly':True}
         self.fields['description'].widget.attrs={'readonly':True}
+        self.fields['create_time'].label = 'Date created'
+        self.fields['create_time'].initial = self.instance.create_time
 
     # to ensure that the readonly value won't be overridden by a POST
     def clean_collaborators(self):
@@ -41,6 +46,7 @@ class DisplayTestForm(forms.ModelForm):
         return self.instance.description
     def clean_method(self):
         return self.instance.method
+    
 
 class TestCaseCreateFormDiscrete(forms.Form):
     filename1 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
