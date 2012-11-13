@@ -489,9 +489,9 @@ class DisplayTestInstance(DetailView):
         return context
         
         
-@method_decorator(login_required)
-@method_decorator(group_required('Testers'))
-@method_decorator(user_passes_test(has_user_profile))
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
 def delete_test_instance(request, test_id, test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
     if request.method=='POST':
