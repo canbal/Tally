@@ -1,5 +1,5 @@
 from django.conf.urls.defaults import *
-from testtool.manager.views import CreateTest, EditTest, CreateTestInstance, DisplayTestInstance, EditTestInstance#, DeleteTestInstance
+from testtool.manager.views import CreateTest, DisplayTest, EditTest, CreateTestInstance, DisplayTestInstance, EditTestInstance#, DeleteTestInstance
 
 urlpatterns = patterns('testtool.manager.views',
 
@@ -12,7 +12,6 @@ urlpatterns = patterns('testtool.manager.views',
     ### Display Test and TestInstance
     url(r'^tests/$', 'list_tests'),
     url(r'^tests/(?P<test_pk>\d+)/instances/$', 'list_test_instances'),
-    url(r'^tests/(?P<test_id>\d+)/$', 'display_test'),
     
     ### Create TestInstance and run
     url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/start/$', 'start_test'),
@@ -35,10 +34,11 @@ urlpatterns = patterns('testtool.manager.views',
 
 # Class-based views
 urlpatterns += patterns('',
-    url(r'^tests/create/$',             CreateTest.as_view(), name='create_test'),
-    url(r'^tests/(?P<pk>\d+)/edit/$',   EditTest.as_view(),   name='edit_test'),
-    url(r'^tests/(?P<test_id>\d+)/instances/create$', CreateTestInstance.as_view(), name='create_test_instance'),
-    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/$', DisplayTestInstance.as_view(), name='display_test_instance'),
-    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/edit$', EditTestInstance.as_view(), name='edit_test_instance'),
+    url(r'^tests/create/$',                                                   CreateTest.as_view(),          name='create_test'),
+    url(r'^tests/(?P<test_id>\d+)/$',                                         DisplayTest.as_view(),         name='display_test'),
+    url(r'^tests/(?P<test_id>\d+)/edit/$',                                    EditTest.as_view(),            name='edit_test'),
+    url(r'^tests/(?P<test_id>\d+)/instances/create$',                         CreateTestInstance.as_view(),  name='create_test_instance'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/$',     DisplayTestInstance.as_view(), name='display_test_instance'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/edit$', EditTestInstance.as_view(),    name='edit_test_instance'),
     # url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/delete$', DeleteTestInstance.as_view(), name='delete_test_instance'),
 )

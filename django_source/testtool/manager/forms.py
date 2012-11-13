@@ -2,29 +2,45 @@ from django import forms
 from testtool.models import *
 
 
-class TestCreateForm(forms.ModelForm):
-    collaborators = forms.ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Testers'), required=False)
+class CreateTestForm(forms.ModelForm):
     class Meta:
         model = Test
-        exclude = ('owner','create_time')
+        exclude = ('owner','collaborators')
 
         
-class TestUpdateForm(forms.ModelForm):
-    collaborators = forms.ModelMultipleChoiceField(queryset = UserProfile.objects.filter(user__groups__name__iexact='Testers'), required=False)
+class EditTestForm(forms.ModelForm):
     method = forms.CharField(widget=forms.TextInput(attrs={'readonly':True})) # make the field readonly
     class Meta:
         model = Test
-        exclude = ('owner','create_time')
+        exclude = ('owner','collaborators')
+
     # to ensure that the readonly value won't be overridden by a POST
     def clean_method(self):
         return self.instance.method
     
 
-class TestDisplayForm(forms.ModelForm):
+class DisplayTestForm(forms.ModelForm):
+    method = forms.CharField(widget=forms.TextInput(attrs={'readonly':True})) # make the field readonly
     class Meta:
         model = Test
-        exclude = ('title',)
+        exclude = ('owner')
+        
+    def __init__(self, *args, **kwargs):
+        super(DisplayTestForm, self).__init__(*args, **kwargs)
+        self.fields['collaborators'].widget.attrs={'readonly':True}
+        self.fields['collaborators'].queryset = self.instance.collaborators
+        self.fields['title'].widget.attrs={'readonly':True}
+        self.fields['description'].widget.attrs={'readonly':True}
 
+    # to ensure that the readonly value won't be overridden by a POST
+    def clean_collaborators(self):
+        return self.instance.collaborators
+    def clean_title(self):
+        return self.instance.title
+    def clean_description(self):
+        return self.instance.description
+    def clean_method(self):
+        return self.instance.method
 
 class TestCaseCreateFormDiscrete(forms.Form):
     filename1 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)

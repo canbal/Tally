@@ -223,21 +223,15 @@ def get_log(request,mode):
         
 class CreateTest(CreateView):
     model = Test
-    form_class = TestCreateForm
+    form_class = CreateTestForm
     template_name = 'testtool/manager/create_test.html'
-    #success_url = reverse_lazy('update_test')
                 
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
     @method_decorator(user_passes_test(has_user_profile))
     def dispatch(self, *args, **kwargs):
         return super(CreateTest, self).dispatch(*args, **kwargs)
-  
-    def get_form(self, form_class):
-        form = super(CreateTest, self).get_form(form_class)
-        form.fields['collaborators'].queryset = form.fields['collaborators'].queryset.exclude(user=self.request.user)
-        return form
-    
+
     def form_valid(self, form):
         up = self.request.user.get_profile()
         self.object = form.save(commit=False)
@@ -250,7 +244,7 @@ class CreateTest(CreateView):
     
 class EditTest(UpdateView):
     model = Test
-    form_class = TestUpdateForm
+    form_class = EditTestForm
     template_name = 'testtool/manager/edit_test.html'
                 
     @method_decorator(login_required)
@@ -258,12 +252,10 @@ class EditTest(UpdateView):
     @method_decorator(user_passes_test(has_user_profile))
     def dispatch(self, *args, **kwargs):
         return super(EditTest, self).dispatch(*args, **kwargs)
-  
-    def get_form(self, form_class):
-        form = super(EditTest, self).get_form(form_class)
-        form.fields['collaborators'].queryset = form.fields['collaborators'].queryset.exclude(user=self.request.user)
-        return form
     
+    def get_object(self):
+        return get_object_or_404(Test, pk=self.kwargs['test_id'])
+
     def form_valid(self, form):
         up = self.request.user.get_profile()
         self.object = form.save(commit=False)
@@ -295,7 +287,41 @@ class EditTest(UpdateView):
             context['error']   = 'You do not have access to this test.'
             context['header']  = 'Test %d' % (self.object.pk)
         return context
+
+
+class DisplayTest(UpdateView):
+    model = Test
+    form_class = DisplayTestForm
+    template_name = 'testtool/manager/display_test.html'
+                
+    @method_decorator(login_required)
+    @method_decorator(group_required('Testers'))
+    @method_decorator(user_passes_test(has_user_profile))
+    def dispatch(self, *args, **kwargs):
+        return super(DisplayTest, self).dispatch(*args, **kwargs)
         
+    def get_object(self):
+        return get_object_or_404(Test, pk=self.kwargs['test_id'])
+                    
+    def get_context_data(self, **kwargs):
+        context = super(DisplayTest, self).get_context_data(**kwargs)
+        up = self.request.user.get_profile()
+        if user_can('view',up,self.object):
+            context['files'] = Video.objects.filter(test=self.object)
+            tc_data = []
+            tc_set = TestCase.objects.filter(test=self.object)
+            for tc in tc_set:
+                tci = tc.testcaseitem_set.order_by('play_order')
+                item = [tc,tci.values_list('video__filename','is_reference')]
+                tc_data.append(item)
+            context['tc_data'] = tc_data
+            context['test_pk'] = self.object.pk
+        else:
+            context['error']   = 'You do not have access to this test.'
+
+        context['header']  = 'Test %d' % (self.object.pk)
+        return context
+
 
 class CreateTestInstance(CreateView):
     model = TestInstance
@@ -308,10 +334,6 @@ class CreateTestInstance(CreateView):
     @method_decorator(user_passes_test(has_user_profile))
     def dispatch(self, *args, **kwargs):
         return super(CreateTestInstance, self).dispatch(*args, **kwargs)
-  
-    def get_form(self, form_class):
-        form = super(CreateTestInstance, self).get_form(form_class)
-        return form
     
     def form_valid(self, form):
         up = self.request.user.get_profile()
@@ -1202,7 +1224,7 @@ def share_test_submit(request):
                         share_list.append(u)
                     t.collaborators.add(*share_list)
                     create_log_entry(up,'shared',t,share_list)
-                    return HttpResponseRedirect(reverse('testtool.manager.views.display_test', args=(t.pk,)))
+                    return HttpResponseRedirect(reverse('display_test', args=(t.pk,)))
                 else:
                     return HttpResponse('You do not have permission to share this test.')
             elif mode == 'share_test_instance':
@@ -1219,7 +1241,7 @@ def share_test_submit(request):
                             share_list.append(u)
                         ti.collaborators.add(*share_list)
                         create_log_entry(up,'shared',ti,share_list)
-                        return HttpResponseRedirect(reverse('testtool.manager.views.display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
+                        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share')
                     else:
                         return HttpResponse('You do not have permission to share this test instance.')
             else:

@@ -46,7 +46,7 @@
                 </span></div>
             </div>
             <div class="form-actions form-container">
-                <a class="btn" href="{% url testtool.manager.views.display_test test_id=test_id %}">Parent Test</a>
+                <a class="btn" href="{% url display_test test_id=test_id %}">Parent Test</a>
                 {% if can_share %}
                     <form action="{% url testtool.manager.views.share_test %}" method="post">
                         {% csrf_token %}

@@ -2,7 +2,7 @@
 {% extends "testtool/manager/base_create_edit_test_instance.html" %}
 
 {% block cancel_href %}
-    {% url testtool.manager.views.display_test test_id=test_id %}
+    {% url display_test test_id=test_id %}
 {% endblock cancel_href %}
 
 <!-- must be on one line -->

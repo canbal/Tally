@@ -166,8 +166,14 @@
       {% endif %}
 	</fieldset>
 </div>
-<div class="form-actions">
-	<input type="button" class="btn btn-primary" id="save_button" value="Save">
+<div class="form-horizontal">
+    <div class="form-actions">
+	    <input type="button" class="btn" id="save_button" value="Save">
+        <a class="btn btn-primary" href="{% url display_test test_id=test_pk %}">Done</a>
+        {% if tc_data %}	   
+        <a class="btn btn-success" href="{% url create_test_instance test_id=test_pk %}">Create New Instance</a>
+        {% endif %}
+    </div>
 </div>
 
 {% if allow_modify %}
