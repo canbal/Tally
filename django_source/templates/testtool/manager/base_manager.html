@@ -104,6 +104,12 @@
                 <div class="span9">
                     <h1>{% block header %}Default header{% endblock header %}</h1>
                     <br/><br/>
+					{% if alert %}
+					<div class="alert alert-{{ alert_class }} alert-block">
+						<a class="close" data-dismiss="alert" href="#">&times</a>
+						{{ alert }}
+						</div>
+					{% endif %}
                     {% if error %}
 					<div class="alert alert-error alert-block">
 						<a class="close" data-dismiss="alert" href="#">&times</a>

@@ -13,12 +13,6 @@
 {% endblock header %}
 
 {% block content %}
-{% if alert %}
-<div class="alert alert-{{ alert_class }} alert-block">
-<a class="close" data-dismiss="alert" href="#">&times</a>
-	{{ alert }}
-</div>
-{% endif %}
 <form class="form-horizontal" id="test_display_form" action="" method="post" enctype="multipart/form-data">
     <fieldset>
         <div class="control-group{% if form.owner.errors %} error{% endif %}">
