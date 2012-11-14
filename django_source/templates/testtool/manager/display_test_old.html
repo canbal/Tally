@@ -62,20 +62,20 @@
             <div class="control-group">
                 <label class="control-label" for="id_test_instances">Test Instances</label>
                 <div class="controls">
-                    <span class="uneditable-input"><a href="{% url testtool.manager.views.list_test_instances test_pk=test_id %}">View test instances</a></span>
+                    <span class="uneditable-input"><a href="{% url list_test_instances test_id=test_id %}">View test instances</a></span>
                 </div>
             </div>
             <div class="form-actions form-container">
-                <a class="btn" href="{% url testtool.manager.views.list_tests %}">View Test List</a>
+                <a class="btn" href="{% url list_tests %}">View Test List</a>
                 {% if can_share %}
-                    <form action="{% url testtool.manager.views.share_test %}" method="post">
+                    <form action="{% url share_test %}" method="post">
                         {% csrf_token %}
                         <input type="hidden" name="test_id" value="{{ test_id }}" />
                         <input type="submit" class="btn btn-info" value="Share" />
                     </form>
                 {% endif %}
                 {% if can_export %}
-                    <form action="{% url testtool.manager.views.export_data %}" method="post">
+                    <form action="{% url export_data %}" method="post">
                         {% csrf_token %}
                         <input type="hidden" name="test_id" value="{{ test_id }}" />
                         <input type="submit" class="btn btn-primary" value="Export Data" />

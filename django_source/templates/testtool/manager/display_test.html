@@ -83,10 +83,11 @@
 </div>
 <div class="form-horizontal">
     <div class="form-actions">
-       <a class="btn" href="{% url testtool.manager.views.list_tests %}">View Test List</a>
-       <a class="btn btn-primary" href="{% url edit_test test_id=test_pk %}">Edit</a>  
+       <a class="btn" href="{% url list_tests %}">View Test List</a>
+       <a class="btn btn-info" href="{% url list_test_instances test_id=test_id %}">View Instances</a>
+       <a class="btn btn-primary" href="{% url edit_test test_id=test_id %}">Edit</a>  
        {% if tc_data %}
-       <a class="btn btn-success" href="{% url create_test_instance test_id=test_pk %}">Create New Instance</a>
+       <a class="btn btn-success" href="{% url create_test_instance test_id=test_id %}">Create New Instance</a>
        {% endif %}
     </div>
 </div>

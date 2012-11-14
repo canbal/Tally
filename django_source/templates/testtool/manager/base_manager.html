@@ -71,15 +71,15 @@
                             <li class="info">{{ request.user.first_name }} {{ request.user.last_name }}</li>
                             <li class="info">{{ request.user.email }}</li>
                             <li class="divider"></li>
-                            <li><a href="{% url testtool.registration.views.render_profile %}"><i class="icon-th-list"></i> Profile</a></li>
-                            <li><a href="{% url django.contrib.auth.views.logout_then_login %}"><i class="icon-off"></i> Sign Out</a></li>
+                            <li><a href="{% url profile %}"><i class="icon-th-list"></i> Profile</a></li>
+                            <li><a href="{% url logout %}"><i class="icon-off"></i> Sign Out</a></li>
                         </ul>
                     </div>
                     <div class="nav-collapse">
                         <ul class="nav pull-right">
-                            <li class="{% active request 'testtool.main.views.index' %}"><a href="{% url testtool.main.views.index %}">Home</a></li>
-                            <li class="{% active request 'testtool.manager.views.about' %}"><a href="{% url testtool.manager.views.about %}">About</a></li>
-                            <li class="{% active request 'testtool.manager.views.help' %}"><a href="{% url testtool.manager.views.help %}">Help</a></li>
+                            <li class="{% active request 'home' %}"><a href="{% url home %}">Home</a></li>
+                            <li class="{% active request 'about' %}"><a href="{% url about %}">About</a></li>
+                            <li class="{% active request 'help' %}"><a href="{% url help %}">Help</a></li>
                         </ul>
                     </div><!--/.nav-collapse -->
                 </div>
@@ -92,12 +92,12 @@
                     <div class="well sidebar-nav">
                         <ul class="nav nav-list">
                             <li class="nav-header">Tests</li>
-                            <li class="{% active request 'testtool.manager.views.list_tests' %}"><a href="{% url testtool.manager.views.list_tests %}"><i class="icon-list"></i> My Tests</a></li>
+                            <li class="{% active request 'list_tests' %}"><a href="{% url list_tests %}"><i class="icon-list"></i> My Tests</a></li>
                             <li class="{% active request 'create_test' %}"><a href="{% url create_test %}"><i class="icon-file"></i> Create New Test</a></li>
                             <li class="nav-header">Tools</li>
-                            <li class="{% active request 'testtool.manager.views.share_test' %}"><a href="{% url testtool.manager.views.share_test %}"><i class="icon-share"></i> Share</a></li>
-                            <li class="{% active request 'testtool.manager.views.export_data' %}"><a href="{% url testtool.manager.views.export_data %}"><i class="icon-briefcase"></i> Export</a></li>
-                            <li class="{% active request 'testtool.manager.views.log_book' %}"><a href="{% url testtool.manager.views.log_book %}"><i class="icon-book"></i> Log Book</a></li>
+                            <li class="{% active request 'share_test' %}"><a href="{% url share_test %}"><i class="icon-share"></i> Share</a></li>
+                            <li class="{% active request 'export_data' %}"><a href="{% url export_data %}"><i class="icon-briefcase"></i> Export</a></li>
+                            <li class="{% active request 'log_book' %}"><a href="{% url log_book %}"><i class="icon-book"></i> Log Book</a></li>
                         </ul>
                     </div><!--/.well -->
                 </div><!--/span-->

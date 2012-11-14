@@ -59,7 +59,7 @@
                 </div>
                 
                 <div class="span4">
-                    <form class="well" action="{% url testtool.registration.views.custom_login %}" method="post">
+                    <form class="well" action="{% url login %}" method="post">
                         {% csrf_token %}
                         <div class="control-group{% if form.username.errors or form.non_field_errors %} error{% endif %}">
                             <label class="control-label" for="id_{{ form.username.html_name }}">{{ form.username.label }}{% if form.username.errors %} (required){% endif %}</label>
@@ -86,7 +86,7 @@
                     </form>
                     <div class="well">
                         New subjects, register here.
-                        <a class="btn btn-large btn-primary pull-right" href="{% url testtool.registration.views.register_subject %}" data-role="button" data-theme="e">Register</a> 
+                        <a class="btn btn-large btn-primary pull-right" href="{% url register_subject %}" data-role="button" data-theme="e">Register</a> 
                     </div>
                 </div>
             </div>

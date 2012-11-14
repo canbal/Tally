@@ -13,7 +13,7 @@
 
 {% block content %}
     {% if error %}
-        {{ error }}{% comment %} Create one <a href="{% url testtool.manager.views.create_test %}">here</a>. {% endcomment %}
+        {{ error }}{% comment %} Create one <a href="{% url create_test %}">here</a>. {% endcomment %}
     {% else %}
         <table class="table">
             <thead>
@@ -33,7 +33,7 @@
                                     <span class="caret"></span>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{% url testtool.manager.views.list_test_instances test_pk=t.3 %}">View test instances</a></li>
+                                    <li><a href="{% url list_test_instances test_id=t.3 %}">View test instances</a></li>
                                     <li><a href="{% url create_test_instance test_id=t.3 %}">Create new test instance</a></li>
                                 </ul>
                             </div>

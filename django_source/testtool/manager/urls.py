@@ -4,32 +4,32 @@ from testtool.manager.views import CreateTest, DisplayTest, EditTest, CreateTest
 urlpatterns = patterns('testtool.manager.views',
 
     ### Create Test
-    url(r'^tests/(?P<test_pk>\d+)/addvideo/$',      'add_video',        name='add_video'),
-    url(r'^deletevideo/(?P<video_pk>\d+)/$',        'delete_video',     name='delete_video'),
-    url(r'^tests/(?P<test_pk>\d+)/addtestcase/$',   'add_test_case',    name='add_test_case'),
-    url(r'^deletetestcase/(?P<test_case_pk>\d+)/$', 'delete_test_case', name='delete_test_case'),
+    url(r'^tests/(?P<test_id>\d+)/addvideo/$',      'add_video',        name='add_video'),
+    url(r'^deletevideo/(?P<video_id>\d+)/$',        'delete_video',     name='delete_video'),
+    url(r'^tests/(?P<test_id>\d+)/addtestcase/$',   'add_test_case',    name='add_test_case'),
+    url(r'^deletetestcase/(?P<test_case_id>\d+)/$', 'delete_test_case', name='delete_test_case'),
     
     ### Display Test and TestInstance
-    url(r'^tests/$', 'list_tests'),
-    url(r'^tests/(?P<test_pk>\d+)/instances/$', 'list_test_instances'),
+    url(r'^tests/$',                            'list_tests',          name='list_tests'),
+    url(r'^tests/(?P<test_id>\d+)/instances/$', 'list_test_instances', name='list_test_instances'),
     
     ### Create TestInstance and run
-    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/start/$', 'start_test'),
-    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/delete$', 'delete_test_instance'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/start/$', 'start_test',           name='start_test'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/delete$', 'delete_test_instance', name='delete_test_instance'),
     
     ### Export data
-    url(r'^export/$', 'export_data'),
-    url(r'^export/save/$', 'save_data'),
+    url(r'^export/$',      'export_data', name='export_data'),
+    url(r'^export/save/$', 'save_data',   name='save_data'),
     
     ### Share data
-    url(r'^share/$', 'share_test'),
-    url(r'^share/save/$', 'share_test_submit'),
+    url(r'^share/$',      'share_test',        name='share_test'),
+    url(r'^share/save/$', 'share_test_submit', name='share_test_submit'),
     
     ### Misc
-    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score'),
-    url(r'^logbook/$', 'log_book'),
-    url(r'^about/$', 'about'),
-    url(r'^help/$', 'help'),
+    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score', name='mirror_score'),
+    url(r'^logbook/$',                          'log_book',     name='log_book'),
+    url(r'^about/$',                            'about',        name='about'),
+    url(r'^help/$',                             'help',         name='help'),
 )
 
 # Class-based views

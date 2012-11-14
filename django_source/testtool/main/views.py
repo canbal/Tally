@@ -46,7 +46,7 @@ def tally(request,test_instance_id):
     ti = get_object_or_404(TestInstance, pk=test_instance_id)
     subject = request.user.get_profile()
     if subject not in ti.subjects.all():
-        return HttpResponseRedirect(reverse('testtool.registration.views.render_profile'))
+        return HttpResponseRedirect(reverse('profile'))
     if ti.test.method in method_list('Continuous'):
         return tally_continuous(request, ti, subject)
     elif ti.test.method in method_list('Discrete'):
@@ -139,7 +139,7 @@ def get_media(request, test_instance_id):
     return media_signal(ti,'wait')      # otherwise, the subjects haven't finished scoring- return a wait signal
         
 
-def validate_request_and_ti(request,ti_pk):
+def validate_request_and_ti(request,ti_id):
     # check that request is a POST and contains 'key' parameter; check that test instance exists, is active, and POST key is correct
     success = False
     ti = 0
@@ -153,7 +153,7 @@ def validate_request_and_ti(request,ti_pk):
             msg = 'Must include "key" parameter.'
         else:
             try:
-                ti = TestInstance.objects.get(pk=ti_pk)
+                ti = TestInstance.objects.get(pk=ti_id)
             except TestInstance.DoesNotExist:
                 msg = 'Test instance does not exist.'
             else:
@@ -205,18 +205,6 @@ def desktop_signal(ti,status,handle,msg,mediaList,validKeys):
 ########################################################################################################
 ################################            UNUSED FUNCTIONS            ################################
 ########################################################################################################
-@csrf_exempt
-def testme(request):
-    if request.method == 'GET':
-        return HttpResponse('You successfully sent a GET request!\n')
-    elif request.method == 'POST':
-        data = request.POST['data']
-        print data
-        return HttpResponse('You successfully POSTed ' + data + '\n')
-    else:
-        return HttpResponse('Error: Unknown request method\n')
-        
-        
 @login_required
 @group_required('Subjects')
 def enroll(request):
@@ -238,21 +226,3 @@ def enroll_to_test_instance(request, test_instance_id):
     # else:
         # ti.subjects.add(subject)
     return HttpResponseRedirect('/')
-    
-    
-@login_required
-@permission_required('testtool.main.add_testcaseitem')
-def add_test_case_item(request, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    t = ti.test
-    if request.method == 'POST':
-        form = TestCaseItemForm(request.POST)
-        form.fields['video'].queryset = Video.objects.filter(test=t)
-        if form.is_valid():
-            form.save()
-            return HttpResponse('Test case item created successfully!')
-    else:
-        form = TestCaseItemForm()
-        form.fields['video'].queryset = Video.objects.filter(test=t)
-    return render_to_response('testtool/main/add_testcaseitem.html',  {'form': form,  'header': 'Add Test Case Item'},
-                              context_instance=RequestContext(request))

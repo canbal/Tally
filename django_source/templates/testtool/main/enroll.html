@@ -12,7 +12,7 @@
     {% if latest_test_instances %}
         <ul data-role="listview" data-theme="g">
         {% for test_instance in latest_test_instances %}
-            <li><a href="{% url testtool.main.views.enroll_to_test_instance test_instance_id=test_instance.id %}">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
+            <li><a href="{% url enroll_to_test_instance test_instance_id=test_instance.id %}">{{test_instance.id}} : {{test_instance.owner.user.username}} : {{ test_instance.test.title }}</a></li>
         {% endfor %}
         </ul>
     {% endif %}

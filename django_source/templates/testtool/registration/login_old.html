@@ -12,7 +12,7 @@
 
 {% block content %}
 
-    <form action="{% url 'testtool.registration.views.custom_login' %}" method="post" data-ajax="false">
+    <form action="{% url login %}" method="post" data-ajax="false">
         {% csrf_token %}
         <div data-role="fieldcontain">
             {{ form.username.label_tag }} {{ form.username }}
@@ -21,6 +21,6 @@
         <input type="hidden" name="next" value="{{ next }}" />
         <input type="submit" data-theme="b" value="Login" />
     </form>
-    <a href="{% url 'testtool.registration.views.register' %}" data-role="button" data-theme="e">Register</a> 
+    <a href="{% url register %}" data-role="button" data-theme="e">Register</a> 
     
 {% endblock %}

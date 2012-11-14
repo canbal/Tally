@@ -12,9 +12,9 @@
     <div data-role="fieldcontain">
         <fieldset data-role="controlgroup"> 
             {% for ti in ti_list %}
-                <li><a href="{% url testtool.main.views.tally test_instance_id=ti.pk %}" data-role="button" data-ajax="false">Begin test {{ ti.id }}</a></li>
+                <li><a href="{% url tally test_instance_id=ti.pk %}" data-role="button" data-ajax="false">Begin test {{ ti.id }}</a></li>
             {% endfor %}
         </fieldset>
     </div>
-    <!-- <a href="{% url testtool.main.views.enroll %}" data-role="button">Enroll in other subjective tests</a> -->
+    <!-- <a href="{% url enroll %}" data-role="button">Enroll in other subjective tests</a> -->
 {% endblock content %}

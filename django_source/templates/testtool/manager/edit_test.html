@@ -3,34 +3,34 @@
 {% block head %}
 {% if not error %}
 <script type="text/javascript">
-    function postDeleteFile(url, file_pk) {
+    function postDeleteFile(url, file_id) {
         $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}"}, function(data) {
             if (data.status=="0") {
-                $("#row_del_file_"+file_pk).fadeOut(300, function() {
-                    $("#row_del_file_"+file_pk).hide();
+                $("#row_del_file_"+file_id).fadeOut(300, function() {
+                    $("#row_del_file_"+file_id).hide();
                 });
             } else {
                 alert("Error: "+data.message);
             }
         },"json");
     }
-    function postAddFile(url, file_pk, str) {
+    function postAddFile(url, file_id, str) {
         $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}", filename: str}, function(data) {
             if (data.status=="0") {
-                $("#btn_add_file_"+file_pk).hide();
+                $("#btn_add_file_"+file_id).hide();
             } else {
                 alert("Error: "+data.message);
-                $("#row_add_file_"+file_pk).fadeOut(300, function() {
-                    $("#row_add_file_"+file_pk).hide();
+                $("#row_add_file_"+file_id).fadeOut(300, function() {
+                    $("#row_add_file_"+file_id).hide();
                 });
             }
         },"json");
     }
-    function postDeleteTestCase(url, tc_pk) {
+    function postDeleteTestCase(url, tc_id) {
         $.post(url, {csrfmiddlewaretoken: "{{ csrf_token }}"}, function(data) {
             if (data.status=="0") {
-                $("#row_del_tc_"+tc_pk).fadeOut(300, function() {
-                    $("#row_del_tc_"+tc_pk).hide();
+                $("#row_del_tc_"+tc_id).fadeOut(300, function() {
+                    $("#row_del_tc_"+tc_id).hide();
                 });
             } else {
                 alert("Error: "+data.message);
@@ -45,7 +45,7 @@
         for (var i = 0, f; f = files[i]; i++) {
             show.push('<tr id="row_add_file_',i,'"><td align="left" width="100%">', escape(f.name), '</td>',
                       '<td align="right"><button class="btn btn-mini btn-success" id="btn_add_file_',i,'"><i class="icon-upload"></i></button></td></tr>');
-            js.push('$("#btn_add_file_',i,'").click(function() { postAddFile("{% url add_video test_pk %}",',i,',"',escape(f.name),'") });\n');
+            js.push('$("#btn_add_file_',i,'").click(function() { postAddFile("{% url add_video test_id %}",',i,',"',escape(f.name),'") });\n');
         }
         $("#files_show").append(show.join(''));
         $("#btn_add_scripts").append(js.join(''));
@@ -156,7 +156,7 @@
         		    {% if allow_modify %}
         			<div class="accordion-group">
             			<div class="accordion-heading">
-                			<a class="accordion-toggle" href={% url add_test_case test_pk %}>Add new test case</a>
+                			<a class="accordion-toggle" href={% url add_test_case test_id %}>Add new test case</a>
             			</div>
         			</div>
         			{% endif %}
@@ -168,11 +168,11 @@
 </div>
 <div class="form-horizontal">
     <div class="form-actions">
-        <a class="btn" href="{% url display_test test_id=test_pk %}">Cancel</a>
+        <a class="btn" href="{% url display_test test_id=test_id %}">Cancel</a>
 	    <input type="button" class="btn btn-info" id="update_button" value="Update">
         <input type="button" class="btn btn-primary" id="save_button" value="Save">
         {% if tc_data %}	   
-        <a class="btn btn-success" href="{% url create_test_instance test_id=test_pk %}">Create New Instance</a>
+        <a class="btn btn-success" href="{% url create_test_instance test_id=test_id %}">Create New Instance</a>
         {% endif %}
     </div>
 </div>
