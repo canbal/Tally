@@ -266,9 +266,9 @@ class EditTest(UpdateView):
         try:
             save = self.request.POST['save']
         except KeyError:
-            return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,)))
+            return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,))+'?alert=update')
         else:
-            return HttpResponseRedirect(reverse('display_test', args=(self.object.pk,)))            
+            return HttpResponseRedirect(reverse('display_test', args=(self.object.pk,))+'?alert=save')            
     
     def get_context_data(self, **kwargs):
         context = super(EditTest, self).get_context_data(**kwargs)
@@ -283,14 +283,22 @@ class EditTest(UpdateView):
                 tc_data.append(item)
             context['tc_data'] = tc_data
             context['test_id'] = self.object.pk
-            context['header']  = 'Test %d' % (self.object.pk)
             if user_can('modify',up,self.object):
                 context['allow_modify'] = True
             else:
                 context['allow_modify'] = False
+            if self.request.method == 'GET':
+                try:
+                    alert = self.request.GET['alert']
+                except KeyError:
+                    pass
+                else:
+                    if alert == 'update':
+                        context['alert'] = 'Test is successfully updated.'
+                        context['alert_class'] = 'success'
         else:
-            context['error']   = 'You do not have access to this test.'
-            context['header']  = 'Test %d' % (self.object.pk)
+            context['error']   = 'You do not have permission to edit this test.'
+        context['header']  = 'Test %d: %s' % (self.object.pk,self.object.title)
         return context
 
 
@@ -312,19 +320,27 @@ class DisplayTest(UpdateView):
         context = super(DisplayTest, self).get_context_data(**kwargs)
         up = self.request.user.get_profile()
         if user_can('view',up,self.object):
-            context['files'] = Video.objects.filter(test=self.object)
             tc_data = []
             tc_set = TestCase.objects.filter(test=self.object)
             for tc in tc_set:
                 tci = tc.testcaseitem_set.order_by('play_order')
                 item = [tc,tci.values_list('video__filename','is_reference')]
                 tc_data.append(item)
+            context['files']   = Video.objects.filter(test=self.object)
             context['tc_data'] = tc_data
             context['test_id'] = self.object.pk
+            if self.request.method == 'GET':
+                try:
+                    alert = self.request.GET['alert']
+                except KeyError:
+                    pass
+                else:
+                    if alert == 'save':
+                        context['alert'] = 'Test is successfully saved.'
+                        context['alert_class'] = 'success'
         else:
             context['error']   = 'You do not have access to this test.'
-
-        context['header']  = 'Test %d' % (self.object.pk)
+        context['header'] = 'Test %d: %s' % (self.object.pk,self.object.title)
         return context
 
 
@@ -659,12 +675,12 @@ def add_test_case(request, test_id):
     else:
         args = { 'status': 'error',
                  'error' : 'You cannot add a new test case to this test.' }
-    
-    args['header'] = 'Add new test case to Test %d' % (t.pk)
+    args['test_id']     = t.pk
+    args['header']      = 'Add new test case to Test %d: %s' % (t.pk, t.title)
     if args['status'] == 'done': # success
         return HttpResponseRedirect(reverse('edit_test', args=(test_id,)))
     else:
-        return render_to_response('testtool/manager/create_test_case_DSIS_DSCQS.html', args, context_instance=RequestContext(request))
+        return render_to_response('testtool/manager/create_test_case.html', args, context_instance=RequestContext(request))
 
 def add_test_case_discrete(request, test, user_profile):
     if request.method == 'POST':
@@ -801,9 +817,12 @@ def list_test_instances(request,test_id):
             errMsg = 'No instances of this test exist.'
         else:
             errMsg = 'No instances of this test exist to which you have access.'
-        args = { 'header': 'Test Instances', 'error': errMsg, 'test_id': t.pk, 'alert': alert_str }
+        args = { 'error': errMsg }
     else:
-        args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk, 'alert': alert_str }
+        args = { 'ti_data': ti_data }
+    args['header']  = 'Test Instances of Test %d: %s' % (t.pk, t.title)
+    args['test_id'] = t.pk
+    args['alert']   = alert_str
     return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
     
             

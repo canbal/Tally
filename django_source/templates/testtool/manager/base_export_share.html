@@ -1,63 +1,58 @@
-
 {% extends "testtool/manager/base_manager.html" %}
 
 {% block head %}
-    <script type="text/javascript">
-        function update_ti_select(){
-            var form = document.getElementById("form_id");
-            var ii = document.form.test_select.selectedIndex;
-            document.form.test_instance_select.options.length = 0;
-            {% for list in ti_valid %}
-                if (ii=={{ forloop.counter0 }}) {
-                    {% for ti in list %}
-                        form.test_instance_select.options[{{ forloop.counter0 }}] = new Option('{{ ti.pk }}','{{ ti.pk }}');
-                    {% endfor %}
-                }
-            {% endfor %}
-        }
-    </script>
+<script type="text/javascript">
+    function update_ti_select(){
+        var form = document.getElementById("form_id");
+        var ii = document.form.test_select.selectedIndex;
+        document.form.test_instance_select.options.length = 0;
+        {% for list in ti_valid %}
+            if (ii=={{ forloop.counter0 }}) {
+                {% for ti in list %}
+                    form.test_instance_select.options[{{ forloop.counter0 }}] = new Option('{{ ti.pk }}','{{ ti.pk }}');
+                {% endfor %}
+            }
+        {% endfor %}
+    }
+</script>
 {% endblock head %}
 
 {% block content %}
-    {% if error %}
-        {{ error }}
-    {% else %}
-        <form name="form" id="form_id" class="form-horizontal" action="{% block form_action %}{% endblock form_action %}" method="post">
-            {% csrf_token %}
-            {% block form_additional_pre %}
-            {% endblock form_additional_pre %}
-            <div class="control-group">
-                <label class="control-label" for="test">Test</label>
-                <div class="controls" id="test">
-                    <select name="test_select" id="test_select_id" {% block test_attr %}{% endblock test_attr %}>
-                        {% for t in t_valid %}
-                            <option value="{{ t.pk }}"{% if forloop.counter0 == t_valid_index_default %}selected{% endif %}>{{ t.title }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="testInstance">Test Instance</label>
-                <div class="controls" id="testInstance">
-                    <select name="test_instance_select" id="test_instance_select_id" {% block test_instance_attr %}{% endblock test_instance_attr %}>
-                        {% for list in ti_valid %}
-                            {% if forloop.counter0 == t_valid_index_default %}
-                                {% for ti in list %}
-                                    <option value="{{ ti.pk }}"{% if forloop.counter0 == ti_valid_index_default %}selected{% endif %}>{{ ti.pk }}</option>
-                                {% endfor %}
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            {% block form_additional_post %}
-            {% endblock form_additional_post %}
-            <div class="form-actions">
-                <a class="btn" href="{% url list_tests %}">Cancel</a>
-                {% block form_control %}
-                {% endblock form_control %}
-            </div>
-        </form>
-    {% endif %}
+<form name="form" id="form_id" class="form-horizontal" action="{% block form_action %}{% endblock form_action %}" method="post">
+    {% csrf_token %}
+    {% block form_additional_pre %}
+    {% endblock form_additional_pre %}
+    <div class="control-group">
+        <label class="control-label" for="test">Test</label>
+        <div class="controls" id="test">
+            <select name="test_select" id="test_select_id" {% block test_attr %}{% endblock test_attr %}>
+            {% for t in t_valid %}
+                <option value="{{ t.pk }}"{% if forloop.counter0 == t_valid_index_default %}selected{% endif %}>{{ t.title }}</option>
+            {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="testInstance">Test Instance</label>
+        <div class="controls" id="testInstance">
+            <select name="test_instance_select" id="test_instance_select_id" {% block test_instance_attr %}{% endblock test_instance_attr %}>
+            {% for list in ti_valid %}
+	            {% if forloop.counter0 == t_valid_index_default %}
+                    {% for ti in list %}
+                    <option value="{{ ti.pk }}"{% if forloop.counter0 == ti_valid_index_default %}selected{% endif %}>{{ ti.pk }}</option>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+            </select>
+        </div>
+    </div>
+    {% block form_additional_post %}
+    {% endblock form_additional_post %}
+    <div class="form-actions">
+        <a class="btn" href="{% url list_tests %}">Cancel</a>
+        {% block form_control %}
+        {% endblock form_control %}
+    </div>
+</form>
 {% endblock content %}
 

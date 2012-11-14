@@ -104,9 +104,18 @@
                 <div class="span9">
                     <h1>{% block header %}Default header{% endblock header %}</h1>
                     <br/><br/>
-                    {% block content %}
-                        <p>Default content</p>
-                    {% endblock content %}
+                    {% if error %}
+					<div class="alert alert-error alert-block">
+						<a class="close" data-dismiss="alert" href="#">&times</a>
+						{{ error }}
+					</div>
+					{% else %}
+                    	{% block content %}
+      	        	    <p>Default content</p>
+                    	{% endblock content %}
+                    {% endif %}
+                    {% block buttons %}
+                    {% endblock buttons  %}
                 </div><!--/span-->
             </div><!--/row-->
 

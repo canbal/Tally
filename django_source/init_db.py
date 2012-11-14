@@ -35,6 +35,21 @@ try:
 except UserProfile.DoesNotExist:
     tester_profile = UserProfile(birth_date='2000-01-01',sex='F',user=tester)
     tester_profile.save()
+
+# create another sample tester profile
+try:
+    tester2 = User.objects.get(username='tester2')
+except User.DoesNotExist:
+    tester2 = User.objects.create_user('tester2','','1234')
+    tester2.first_name = 'Tester2'
+    tester2.groups.add(testers)
+    tester2.save()
+    
+try:
+    tester2_profile = UserProfile.objects.get(user=tester2)
+except UserProfile.DoesNotExist:
+    tester2_profile = UserProfile(birth_date='2000-01-01',sex='F',user=tester2)
+    tester2_profile.save()
     
 # setup the database for the Subjects group
 try:

@@ -13,9 +13,6 @@
 {% endblock header %}
 
 {% block content %}
-    {% if error %}
-        {{ error }}
-    {% else %}
         {% if alert %}
             <div class="alert alert-{{ alert_class }} alert-block">
                 <a class="close" data-dismiss="alert" href="#">&times</a>
@@ -89,5 +86,4 @@
                 {% endif %}
             </div>
         </div>
-    {% endif %}
 {% endblock content %}
