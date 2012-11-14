@@ -472,7 +472,7 @@ class DisplayTestInstance(DetailView):
             context['test_id']          = self.kwargs['test_id']
             context['test_instance_id'] = self.kwargs['test_instance_id']
             context['status']           = test_instance_status(self.object)
-            context['rand']             = rand
+            context['rand']             = str(rand)
             context['already_run']      = self.object.run_time is not None
             context['can_share']        = user_can('share',up,self.object)
             context['can_export']       = user_can('export',up,self.object)

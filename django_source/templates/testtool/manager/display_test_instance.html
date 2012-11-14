@@ -23,71 +23,77 @@
             </div>
         {% endif %}
         <div class="form-horizontal">
-            <div class="control-group">
-                <label class="control-label" for="id_status">Status</label>
-                <div class="controls"><span class="uneditable-input">{{ status }}</span></div>
-            </div>
-            <div class="control-group">
-                <label class="control-label" for="id_create_time">{{ create_time_name }}</label>
-                <div class="controls"><span class="uneditable-input">{{ create_time }}</span></div>
-            </div>
-            {% for field in tif %}
+            <fieldset>
                 <div class="control-group">
-                    <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
-                    <div class="controls"><span class="uneditable-input">{{ field.value }}</span></div>
+                    <label class="control-label" for="id_status">Status</label>
+                    <div class="controls">
+                        <input readonly="True" type="text" name="status" value="{{ status }}" id="id_status" />
+                    </div>
                 </div>
-            {% endfor %}
-            <div class="control-group">
-                <label class="control-label" for="id_rand">Play order</label>
-                <div class="controls"><span class="uneditable-input">
-                    {% for tc in rand %}
-                        ({% for el in tc %}{{ el }}{% if forloop.counter < tc|length %}, {% endif %}{% endfor %}){% if forloop.counter < rand|length %}, {% endif %}
-                    {% endfor %}
-                </span></div>
-            </div>
-            <div class="form-actions form-container">
-                <a class="btn" href="{% url display_test test_id=test_id %}">Parent Test</a>
-                {% if can_share %}
-                    <form action="{% url testtool.manager.views.share_test %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="test_id" value="{{ test_id }}" />
-                        <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
-                        <input type="submit" class="btn btn-info" value="Share" />
-                    </form>
-                {% endif %}
-                {% if already_run and can_export %}
-                    <form action="{% url testtool.manager.views.export_data %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="test_id" value="{{ test_id }}" />
-                        <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
-                        <input type="submit" class="btn btn-primary" value="Export Data" />
-                    </form>
-                {% endif %}
-                {% if can_edit %}
-                    <a class="btn btn-primary" href="{% url edit_test_instance test_id=test_id test_instance_id=test_instance_id %}">Edit</a>
-                {% endif %}
-                {% if can_delete %}
-                    <a href="#deleteModal" role="button" class="btn btn-danger" data-toggle="modal">Delete</a>
-                    <div id="deleteModal" class="modal hide fade" tabindex="-1" role="dialog" data-backdrop="static" keyboard="false">
-                        <div class="modal-header">
-                            <h3>Delete this test instance?</h3>
-                        </div>
-                        <div class="modal-body">
-                            <p>This cannot be undone and all related data will also be removed.</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn" data-dismiss="modal">Cancel</button>
-                            <form action="{% url testtool.manager.views.delete_test_instance test_id=test_id test_instance_id=test_instance_id %}" method="post">
-                                {% csrf_token %}
-                                <input type="submit" class="btn btn-danger" value="Yes, delete" />
-                            </form>
+                <div class="control-group">
+                    <label class="control-label" for="id_create_time">{{ create_time_name }}</label>
+                    <div class="controls">
+                        <input readonly="True" type="text" name="create_time" value="{{ create_time }}" id="id_create_time" />
+                    </div>
+                </div>
+                {% for field in tif %}
+                    <div class="control-group{% if field.errors %} error{% endif %}">
+                        <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
                         </div>
                     </div>
-                {% endif %}
-                {% if can_run %}
-                    <a class="btn btn-success" href="{% url testtool.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
-                {% endif %}
-            </div>
+                {% endfor %}
+                <div class="control-group">
+                    <label class="control-label" for="id_rand">Play order</label>
+                    <div class="controls">
+                        <input readonly="True" type="text" name="rand" value="{{ rand }}" id="id_rand" />
+                    </div>
+                </div>
+                <div class="form-actions form-container">
+                    <a class="btn" href="{% url display_test test_id=test_id %}">Parent Test</a>
+                    {% if can_share %}
+                        <form action="{% url testtool.manager.views.share_test %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="test_id" value="{{ test_id }}" />
+                            <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
+                            <input type="submit" class="btn btn-info" value="Share" />
+                        </form>
+                    {% endif %}
+                    {% if already_run and can_export %}
+                        <form action="{% url testtool.manager.views.export_data %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="test_id" value="{{ test_id }}" />
+                            <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
+                            <input type="submit" class="btn btn-primary" value="Export Data" />
+                        </form>
+                    {% endif %}
+                    {% if can_edit %}
+                        <a class="btn btn-primary" href="{% url edit_test_instance test_id=test_id test_instance_id=test_instance_id %}">Edit</a>
+                    {% endif %}
+                    {% if can_delete %}
+                        <a href="#deleteModal" role="button" class="btn btn-danger" data-toggle="modal">Delete</a>
+                        <div id="deleteModal" class="modal hide fade" tabindex="-1" role="dialog" data-backdrop="static" keyboard="false">
+                            <div class="modal-header">
+                                <h3>Delete this test instance?</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>This cannot be undone and all related data will also be removed.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn" data-dismiss="modal">Cancel</button>
+                                <form action="{% url testtool.manager.views.delete_test_instance test_id=test_id test_instance_id=test_instance_id %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="submit" class="btn btn-danger" value="Yes, delete" />
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if can_run %}
+                        <a class="btn btn-success" href="{% url testtool.manager.views.start_test test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
+                    {% endif %}
+                </div>
+            </fieldset>
         </div>
     {% endif %}
 {% endblock content %}
