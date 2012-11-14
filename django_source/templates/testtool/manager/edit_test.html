@@ -69,101 +69,95 @@
 
 {% block content %}
 <form class="form-horizontal" id="test_edit_form" action="" method="post" enctype="multipart/form-data">
-    <fieldset>
-    	{% csrf_token %}
-	    <span style="color:red;font-weight:bold;font-size:1.1em">
-    	{{ form.non_field_errors }}
-    	</span>
-	    {% for field in form %}
-	    	<div class="control-group{% if field.errors %} error{% endif %}">
-    	    	<label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
-    	    	<div class="controls">
-    	    		{{ field }}
-                    {% if field.errors %}
-                    	<ul class="help-inline">
-                            {% for error in field.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-			</div>
-		{% endfor %}
-    </fieldset>
+	{% csrf_token %}
+    <span style="color:red;font-weight:bold;font-size:1.1em">
+	{{ form.non_field_errors }}
+	</span>
+    {% for field in form %}
+    	<div class="control-group{% if field.errors %} error{% endif %}">
+	    	<label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+	    	<div class="controls">
+	    		{{ field }}
+                {% if field.errors %}
+                	<ul class="help-inline">
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+	                    {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+		</div>
+	{% endfor %}
 </form>
 <div class="form-horizontal">
-	<fieldset>
-		<div class="control-group">
-			<label class="control-label" for="files_show">Existing Files</label>
-			<div class="controls">
-				<div class="span5">
-					<table class="table table-striped table-condensed table-bordered">
-	    				{% for file in files %}
-    					<tr id="row_del_file_{{ file.pk }}">
-	    	    			<td align="left" width="100%">{{ file.filename }}</td>
-	    	    			{% if allow_modify %}
-    	    				<td align="right"><button class="btn btn-mini btn-danger" id="btn_del_file_{{ file.pk }}"><i class="icon-remove"></i></button></td>
-    	    				{% endif %}
-	    				</tr>
-    					{% endfor %}
-					</table>
-				</div>
+	<div class="control-group">
+		<label class="control-label" for="files_show">Existing Files</label>
+		<div class="controls">
+			<div class="span5">
+				<table class="table table-striped table-condensed table-bordered">
+					{% for file in files %}
+					<tr id="row_del_file_{{ file.pk }}">
+    	    			<td align="left" width="100%">{{ file.filename }}</td>
+    	    			{% if allow_modify %}
+	    				<td align="right"><button class="btn btn-mini btn-danger" id="btn_del_file_{{ file.pk }}"><i class="icon-remove"></i></button></td>
+	    				{% endif %}
+    				</tr>
+					{% endfor %}
+				</table>
 			</div>
 		</div>
-		{% if allow_modify %}
-		<div class="control-group">  
-			<label class="control-label" for="file_select">Add New Files</label>
-        	<div class="controls">
-            	<input class="input-file" id="file_select" type="file" multiple="">  
-            </div>
-            <div class="controls">
-            	<div class="span5">
-            		<table class="table table-striped table-condensed table-bordered" id="files_show">
-					</table>
-				</div>
-            </div>
+	</div>
+	{% if allow_modify %}
+	<div class="control-group">  
+		<label class="control-label" for="file_select">Add New Files</label>
+    	<div class="controls">
+        	<input class="input-file" id="file_select" type="file" multiple="">  
         </div>
-        {% endif %}
-        {% if files %}
-		<div class="control-group">
-    		<label class="control-label" for="id_test_cases">Test Cases</label>
-			<div class="controls">
-    			<div class="accordion span5" id="id_test_cases">
-        		{% for tc in tc_data %}
-        			<div class="accordion-group" id="row_del_tc_{{ tc.0.pk }}">
-            			<div class="accordion-heading">
-        					<table width="95%" align="center">
-        						<tr>
-									<td align="left" width="100%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
-									{% if allow_modify %}
-									<td align="right"><button class="btn btn-mini btn-danger" id="btn_del_tc_{{ tc.0.pk }}"><i class="icon-remove"></i></button></td>
-									{% endif %}
-								</tr>
-							</table>
-            			</div>
-            			<div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
-                			<div class="accordion-inner">
-                    			{% for vid in tc.1 %}
-                        			{{ forloop.counter }}. {{ vid.0 }}{% if vid.1 %}<span style="color:red"> [ref]</span>{% endif %}<br/>
-                    			{% endfor %}
-                			</div>
-        				</div>
+        <div class="controls">
+        	<div class="span5">
+        		<table class="table table-striped table-condensed table-bordered" id="files_show">
+				</table>
+			</div>
+        </div>
+    </div>
+    {% endif %}
+    {% if files %}
+	<div class="control-group">
+		<label class="control-label" for="id_test_cases">Test Cases</label>
+		<div class="controls">
+			<div class="accordion span5" id="id_test_cases">
+    		{% for tc in tc_data %}
+    			<div class="accordion-group" id="row_del_tc_{{ tc.0.pk }}">
+        			<div class="accordion-heading">
+    					<table width="95%" align="center">
+    						<tr>
+								<td align="left" width="100%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
+								{% if allow_modify %}
+								<td align="right"><button class="btn btn-mini btn-danger" id="btn_del_tc_{{ tc.0.pk }}"><i class="icon-remove"></i></button></td>
+								{% endif %}
+							</tr>
+						</table>
         			</div>
-        		{% endfor %}
-        		    {% if allow_modify %}
-        			<div class="accordion-group">
-            			<div class="accordion-heading">
-                			<a class="accordion-toggle" href={% url add_test_case test_id %}>Add new test case</a>
+        			<div id="collapse{{ forloop.counter }}" class="accordion-body collapse">
+            			<div class="accordion-inner">
+                			{% for vid in tc.1 %}
+                    			{{ forloop.counter }}. {{ vid.0 }}{% if vid.1 %}<span style="color:red"> [ref]</span>{% endif %}<br/>
+                			{% endfor %}
             			</div>
-        			</div>
-        			{% endif %}
+    				</div>
     			</div>
+    		{% endfor %}
+    		    {% if allow_modify %}
+    			<div class="accordion-group">
+        			<div class="accordion-heading">
+            			<a class="accordion-toggle" href={% url add_test_case test_id %}>Add new test case</a>
+        			</div>
+    			</div>
+    			{% endif %}
 			</div>
 		</div>
-      {% endif %}
-	</fieldset>
-</div>
-<div class="form-horizontal">
+	</div>
+	{% endif %}
     <div class="form-actions">
         <a class="btn" href="{% url display_test test_id=test_id %}">Cancel</a>
 	    <input type="button" class="btn btn-info" id="update_button" value="Update">

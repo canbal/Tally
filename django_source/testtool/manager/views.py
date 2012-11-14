@@ -326,9 +326,10 @@ class DisplayTest(UpdateView):
                 tci = tc.testcaseitem_set.order_by('play_order')
                 item = [tc,tci.values_list('video__filename','is_reference')]
                 tc_data.append(item)
-            context['files']   = Video.objects.filter(test=self.object)
-            context['tc_data'] = tc_data
-            context['test_id'] = self.object.pk
+            context['files']     = Video.objects.filter(test=self.object)
+            context['tc_data']   = tc_data
+            context['test_id']   = self.object.pk
+            context['can_share'] = user_can('share',up,self.object)
             if self.request.method == 'GET':
                 try:
                     alert = self.request.GET['alert']
