@@ -62,6 +62,24 @@ class TestInstance(models.Model):
         app_label = 'testtool'
     def __unicode__(self):
         return '%d : %s : %s' % (self.pk, self.owner.user.username, self.test.title)
+    def get_status(self):
+        if self.subjects.count()==0:
+            return 'Invalid - no subjects'
+        counter = self.counter
+        max_count = self.testcaseinstance_set.count()
+        if max_count == 0:
+            return 'Invalid - no test cases'
+        run_time = self.run_time
+        if run_time is None and counter==0:
+            return 'Ready to run'
+        elif run_time is not None and counter > max_count:
+            return 'Complete'
+        elif run_time is not None and counter > 0 and counter <= max_count:
+            return 'Incomplete'
+        else:
+            return 'Error'
+    def is_active(self):
+        return self.get_status() in ['Ready to run', 'Incomplete']
 
 
 class Video(models.Model):

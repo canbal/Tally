@@ -5,7 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadReque
 from django.template import RequestContext
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.core.exceptions import ObjectDoesNotExist
-from django.views.generic import CreateView, UpdateView, DetailView, DeleteView
+from django.views.generic import CreateView, UpdateView, DetailView
 from django.utils.decorators import method_decorator
 from django.conf import settings
 from django.db.models import Q
@@ -19,6 +19,9 @@ from scipy import io
 import string, random, csv, json, os, zipfile
 
 
+########################################################################################################
+########################         SUPPORT/POLICY/LOGGING/MISC FUNCTIONS         #########################
+########################################################################################################
 class JSONResponse(HttpResponse):
     """JSON response class."""
     def __init__(self,data='',json_opts={},mimetype="application/json",*args,**kwargs):
@@ -32,9 +35,14 @@ def is_file_supported(filename):
     return ext in supported_ext
 
     
-def user_can(action,up,obj):
+def user_can(action,up,obj,detail=False):
     perm = user_permission(up,obj)
-    return perm['status'] in perm['policy'][action]
+    perm_user = perm['status'] in perm['perm_policy'][action]
+    perm_obj = perm['obj_policy'][action]
+    granted = perm_user and perm_obj
+    if detail:
+        return {'granted': granted, 'perm_user': perm_user, 'perm_obj': perm_obj}
+    return granted
     
     
 def user_status(up,obj):
@@ -63,21 +71,26 @@ def user_permission_test(up,t):
         idx = 3
     else:
         idx = 4
-    
-    policy = { 'view':   status[0:4],
-               'export': status[0:2],
-               'share':  status[0:1],
-               'create': status[0:2],  # refers to creating test instances from the test
-               'edit':   status[0:1],  # refers to changing fields that WON'T affect already existing test instances
-               'modify': status[0:1],  # refers to changing fields that WILL  affect already existing test instances
-               'delete': status[0:1] }
-
-    # policy changes depending if there are any test instances associated with that test
-    if TestInstance.objects.filter(test=t).count() != 0:
-        policy['modify'] = ''
-        policy['delete'] = ''
-        
-    return { 'status': status[idx], 'policy': policy }
+    # policy based on user status for actions on tests
+    perm_policy = { 'view':    status[0:4],
+                    'export':  status[0:2],
+                    'share':   status[0:1],
+                    'create':  status[0:2],  # refers to creating test instances from the test
+                    'edit':    status[0:1],  # refers to changing fields that WON'T affect already existing test instances
+                    'modify':  status[0:1],  # refers to changing fields that WILL  affect already existing test instances
+                    'delete':  status[0:1],
+                    'unshare': status[1:2] }
+    # policy based on test status for actions on tests
+    zero_ti = TestInstance.objects.filter(test=t).count() == 0
+    obj_policy = { 'view':    True,
+                   'export':  True,
+                   'share':   True,
+                   'create':  t.testcase_set.count() > 0,
+                   'edit':    True,
+                   'modify':  zero_ti,
+                   'delete':  zero_ti,
+                   'unshare': True }
+    return { 'status': status[idx], 'perm_policy': perm_policy, 'obj_policy': obj_policy }
 
 
 def user_permission_test_instance(up,ti):
@@ -92,36 +105,53 @@ def user_permission_test_instance(up,ti):
         idx = 3
     else:
         idx = 4
-    policy = { 'view':   status[0:4],
-               'export': status[0:4],
-               'share':  status[0:3:2],
-               'run':    status[0:1],
-               'edit':   status[0:1],
-               'modify': status[0:1],  # same as edit, added for consistency with test permissions
-               'delete': status[0:1] }
-    return { 'status': status[idx], 'policy': policy }
+    # policy based on user status for actions on test instances
+    perm_policy = { 'view':    status[0:4],
+                    'export':  status[0:4],
+                    'share':   status[0:3:2],
+                    'run':     status[0:1],
+                    'edit':    status[0:1],
+                    'delete':  status[0:1],
+                    'unshare': status[1:2] }
+    # policy based on test instance status for actions on test instances
+    obj_policy = { 'view':    True,
+                   'export':  ti.run_time is not None,
+                   'share':   True,
+                   'run':     ti.is_active(),
+                   'edit':    True,
+                   'delete':  ti.collaborators.count() == 0,
+                   'unshare': True }
+    return { 'status': status[idx], 'perm_policy': perm_policy, 'obj_policy': obj_policy }
+
+
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def log_book(request):
+    log = get_log(request,'all')
+    return render_to_response('testtool/manager/log_book.html', { 'log':log }, context_instance=RequestContext(request))
     
-
-def test_instance_status(ti):
-    if ti.subjects.count()==0:
-        return 'Invalid - no subjects'
-    counter = ti.counter
-    max_count = ti.testcaseinstance_set.count()
-    if max_count == 0:
-        return 'Invalid - no test cases'
-    run_time = ti.run_time
-    if run_time is None and counter==0:
-        return 'Ready to run'
-    elif run_time is not None and counter > max_count:
-        return 'Complete'
-    elif run_time is not None and counter > 0 and counter <= max_count:
-        return 'Incomplete'
-    else:
-        return 'Error'
         
-
-def is_test_instance_active(ti):
-    return test_instance_status(ti) in ['Ready to run', 'Incomplete']
+def get_log(request,mode):
+    up = request.user.get_profile()    
+    entries_all = LogEntry.objects.filter(logtag__user=up).order_by('-timestamp')
+    entries_new = entries_all.filter(logtag__user=up,logtag__viewed=False)
+    if mode=='all':
+        entry_set = entries_all
+    elif mode=='new':
+        entry_set = entries_new
+    else:
+        raise Exception('get_log: Mode must be ''all'' or ''new''.')
+    icon_map = {'joined':   'icon-user',
+                'created':  'icon-file',
+                'edited':   'icon-edit',
+                'ran':      'icon-pencil',
+                'shared':   'icon-share',
+                'unshared': 'icon-remove',
+                'deleted':  'icon-trash' }
+    log = [(e, e.logtag_set.get(user=up).viewed, icon_map[e.action]) for e in entry_set]  # pass in old 'viewed' parameter to highlight new entries
+    LogTag.objects.filter(user=up).update(viewed=True)                            # mark all entries as viewed
+    return log
         
         
 def create_log_entry(actor,action,obj,tags_arg=[]):
@@ -197,30 +227,48 @@ def get_collaborator_string(collaborators):
                 collab_str_list.append('%s, ' % (up.user.username))
         collab_str = ''.join(collab_str_list)
     return collab_str
-
-
-def get_log(request,mode):
-    up = request.user.get_profile()    
-    entries_all = LogEntry.objects.filter(logtag__user=up).order_by('-timestamp')
-    entries_new = entries_all.filter(logtag__user=up,logtag__viewed=False)
-    if mode=='all':
-        entry_set = entries_all
-    elif mode=='new':
-        entry_set = entries_new
-    else:
-        raise Exception('get_log: Mode must be ''all'' or ''new''.')
-    icon_map = {'joined':   'icon-user',
-                'created':  'icon-file',
-                'edited':   'icon-edit',
-                'ran':      'icon-pencil',
-                'shared':   'icon-share',
-                'unshared': 'icon-remove',
-                'deleted':  'icon-trash' }
-    log = [(e, e.logtag_set.get(user=up).viewed, icon_map[e.action]) for e in entry_set]  # pass in old 'viewed' parameter to highlight new entries
-    LogTag.objects.filter(user=up).update(viewed=True)                            # mark all entries as viewed
-    return log
     
-        
+    
+### Misc. functions
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def mirror_score(request, test_instance_id):
+    if request.is_ajax():
+        try:
+            ti = TestInstance.objects.get(pk=test_instance_id)
+        except:
+            return HttpResponse(json.dumps({'score':'E1'}))
+        if ti.subjects.count() == 1:
+            up = ti.subjects.all()[0];
+            try:
+                score = ScoreSSCQE.objects.filter(subject=up).latest('pk')
+                return HttpResponse(json.dumps({'score':str(score.value)}))
+            except:
+                return HttpResponse(json.dumps({'score':'0'}))
+        return HttpResponse(json.dumps({'score':'E2'}))
+    ti = get_object_or_404(TestInstance, pk=test_instance_id)
+    return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
+    
+
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def about(request):
+    return render_to_response('testtool/manager/about.html',context_instance=RequestContext(request))
+    
+
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def help(request):
+    return render_to_response('testtool/manager/help.html',context_instance=RequestContext(request))
+    
+    
+
+########################################################################################################
+####################################         TEST FUNCTIONS         ####################################
+########################################################################################################
 class CreateTest(CreateView):
     model = Test
     form_class = CreateTestForm
@@ -262,8 +310,13 @@ class EditTest(UpdateView):
         self.object.owner = up
         self.object.save()
         form.save_m2m()
-        create_log_entry(up,'edited',self.object)        
-        return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,)))
+        create_log_entry(up,'edited',self.object)
+        try:
+            save = self.request.POST['save']
+        except KeyError:
+            return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,))+'?alert=update')
+        else:
+            return HttpResponseRedirect(reverse('display_test', args=(self.object.pk,))+'?alert=save')            
     
     def get_context_data(self, **kwargs):
         context = super(EditTest, self).get_context_data(**kwargs)
@@ -277,15 +330,20 @@ class EditTest(UpdateView):
                 item = [tc,tci.values_list('video__filename','is_reference')]
                 tc_data.append(item)
             context['tc_data'] = tc_data
-            context['test_pk'] = self.object.pk
-            context['header']  = 'Test %d' % (self.object.pk)
-            if user_can('modify',up,self.object):
-                context['allow_modify'] = True
-            else:
-                context['allow_modify'] = False
+            context['test_id'] = self.object.pk
+            context['allow_modify'] = user_can('modify',up,self.object)
+            if self.request.method == 'GET':
+                try:
+                    alert = self.request.GET['alert']
+                except KeyError:
+                    pass
+                else:
+                    if alert == 'update':
+                        context['alert'] = 'Test is successfully updated.'
+                        context['alert_class'] = 'success'
         else:
-            context['error']   = 'You do not have access to this test.'
-            context['header']  = 'Test %d' % (self.object.pk)
+            context['error']   = 'You do not have permission to edit this test.'
+        context['header']  = 'Test %d: %s' % (self.object.pk,self.object.title)
         return context
 
 
@@ -302,27 +360,267 @@ class DisplayTest(UpdateView):
         
     def get_object(self):
         return get_object_or_404(Test, pk=self.kwargs['test_id'])
-                    
+    
     def get_context_data(self, **kwargs):
         context = super(DisplayTest, self).get_context_data(**kwargs)
         up = self.request.user.get_profile()
         if user_can('view',up,self.object):
-            context['files'] = Video.objects.filter(test=self.object)
             tc_data = []
             tc_set = TestCase.objects.filter(test=self.object)
             for tc in tc_set:
                 tci = tc.testcaseitem_set.order_by('play_order')
                 item = [tc,tci.values_list('video__filename','is_reference')]
                 tc_data.append(item)
-            context['tc_data'] = tc_data
-            context['test_pk'] = self.object.pk
+            context['files']     = Video.objects.filter(test=self.object)
+            context['tc_data']   = tc_data
+            context['test_id']   = self.object.pk
+            context['can_share'] = user_can('share',up,self.object)
+            context['can_edit']  = user_can('edit',up,self.object)
+            if self.request.method == 'GET':
+                try:
+                    alert = self.request.GET['alert']
+                except KeyError:
+                    pass
+                else:
+                    if alert == 'save':
+                        context['alert'] = 'Test is successfully saved.'
+                        context['alert_class'] = 'success'
         else:
-            context['error']   = 'You do not have access to this test.'
-
-        context['header']  = 'Test %d' % (self.object.pk)
+            context['error'] = 'You do not have access to this test.'
+        context['header'] = 'Test %d: %s' % (self.object.pk,self.object.title)
         return context
 
+        
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def add_video(request, test_id):
+    if request.method == 'POST':
+        messages = {'0': 'Done', '1': 'Test does not exist', '2': 'No file provided', '3':'Video already exists', '4':'File type is not supported', '5':'Permission failed'}
+        
+        #checking for json data type
+        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
+            mimetype = 'application/json'
+        else:
+            mimetype = 'text/plain'
+            
+        try:
+            t = Test.objects.get(pk=test_id)
+        except Test.DoesNotExist:
+            status = 1;
+        else:
+            up = request.user.get_profile()
+            if user_can('modify',up,t):
+                try:
+                    filename =  request.POST['filename']
+                except KeyError:
+                    status = 2; #TODO: should change when file upload is supported
+                else:
+                    if is_file_supported(filename):
+                        try:
+                            f = Video.objects.get(test=t, filename=filename)
+                        except Video.DoesNotExist:
+                            f = Video.objects.create(test=t, filename=filename)
+                            if t.method == 'SSCQE':
+                                tc = TestCase.objects.create(test=t)
+                                TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
+                            create_log_entry(up,'edited',t)
+                            status = 0;
+                        else:
+                            status = 3;
+                    else:
+                        status = 4;
+            else:
+                status = 5;
+        
+        data = {'status':status,'message':messages[str(status)]}
+        response = JSONResponse(data, {}, mimetype)
+        return response
+    else:
+        return HttpResponseBadRequest('GET is not supported')
 
+        
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def delete_video(request, video_id):
+    if request.method == 'POST':
+        messages = {'0': 'Done', '1': 'Video does not exist', '5': 'Permission failed'}
+        
+        #checking for json data type
+        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
+            mimetype = 'application/json'
+        else:
+            mimetype = 'text/plain'
+            
+        try:
+            f = Video.objects.get(pk=video_id)
+            t = f.test
+        except Video.DoesNotExist:
+            status = 1;
+        else:
+            up = request.user.get_profile()
+            if user_can('modify',up,t):
+                # delete associated test cases first
+                for tc in TestCase.objects.filter(videos=f):
+                    tc.delete()
+                # finally delete the video
+                f.delete()
+                create_log_entry(up,'edited',t)
+                status = 0;
+            else:
+                status = 5;
+            
+        data = {'status':status,'message':messages[str(status)]}
+        response = JSONResponse(data, {}, mimetype)
+        return response
+    else:
+        return HttpResponseBadRequest('GET is not supported')
+    
+    
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def add_test_case(request, test_id):
+    t = get_object_or_404(Test, pk=test_id)
+    up = request.user.get_profile()
+    if user_can('modify',up,t):
+        if t.method == 'DSIS' or t.method == 'DSCQS':
+            args = add_test_case_discrete(request, t, up)
+            create_log_entry(up,'edited',t)
+        elif t.method == 'SSCQE':
+            args = add_test_case_SSCQE(request, t, up)
+            create_log_entry(up,'edited',t)
+        else:
+            args = { 'status': 'error',
+                     'error' : 'Test mode creation for %s is not supported.' % (t.method) }
+    else:
+        args = { 'status': 'error',
+                 'error' : 'You cannot add a new test case to this test.' }
+    args['test_id']     = t.pk
+    args['header']      = 'Add new test case to Test %d: %s' % (t.pk, t.title)
+    if args['status'] == 'done': # success
+        return HttpResponseRedirect(reverse('edit_test', args=(test_id,)))
+    else:
+        return render_to_response('testtool/manager/create_test_case.html', args, context_instance=RequestContext(request))
+
+        
+def add_test_case_discrete(request, test, user_profile):
+    if request.method == 'POST':
+        form = CreateTestCaseFormDiscrete(request.POST)
+        if form.is_valid():
+            tc = TestCase.objects.create(test=test)
+            data = form.cleaned_data
+            f1 = data['filename1']
+            f2 = data['filename2']
+            for ii in range(0,2): # repeat each video twice
+                if test.method == 'DSIS':
+                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=1+ii*2,is_reference=True)
+                    TestCaseItem.objects.create(test_case=tc,video=f2,play_order=2+ii*2)
+                else:
+                    # generate play order
+                    rand_order = range(1,3)
+                    random.shuffle(rand_order)
+                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2)
+                    TestCaseItem.objects.create(test_case=tc,video=f2,play_order=rand_order[1]+ii*2)
+            return {'status': 'done'}
+    else:
+        if Video.objects.filter(test=test):
+            form = CreateTestCaseFormDiscrete()            
+        else:
+            return { 'status': 'error',
+                     'error': 'There are no videos associated with this test.'}
+
+    form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
+    form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
+        
+    if test.method == 'DSIS':
+        form.fields['filename1'].label = 'Reference video'
+        form.fields['filename2'].label = 'Test video'
+    elif test.method == 'DSCQS':
+        form.fields['filename1'].label = 'First video'
+        form.fields['filename2'].label = 'Second video'
+    return {'status': 'incomplete', 'form': form}
+
+    
+def add_test_case_SSCQE(request, test, user_profile):
+    if request.method == 'POST':
+        form = CreateTestCaseFormSSCQE(request.POST)
+        if form.is_valid():
+            tc = TestCase.objects.create(test=test)
+            data = form.cleaned_data
+            f = data['filename']
+            TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
+            return {'status': 'done'}
+    else:
+        # if there are no videos associated with the Test, redirect to update view
+        if Video.objects.filter(test=test):
+            form = CreateTestCaseFormSSCQE()
+        else:
+            return { 'status': 'error',
+                     'error': 'There are no videos associated with this test.'}
+
+    form.fields['filename'].queryset = form.fields['filename'].queryset.filter(test=test)
+    form.fields['filename'].label = 'Video'
+    return {'status': 'incomplete', 'form': form}
+    
+    
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def delete_test_case(request, test_case_id):
+    if request.method == 'POST':
+        messages = {'0': 'Done', '1': 'Test case does not exist', '5': 'Permission failed'}
+        
+        #checking for json data type
+        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
+            mimetype = 'application/json'
+        else:
+            mimetype = 'text/plain'
+            
+        try:
+            tc = TestCase.objects.get(pk=test_case_id)
+            t = tc.test
+        except TestCase.DoesNotExist:
+            status = 1;
+        else:
+            up = request.user.get_profile()
+            if user_can('modify',up,t):
+                tc.delete()
+                create_log_entry(up,'edited',t)
+                status = 0;
+            else:
+                status = 5;
+            
+        data = {'status':status,'message':messages[str(status)]}
+        response = JSONResponse(data, {}, mimetype)
+        return response
+    else:
+        return HttpResponseBadRequest('GET is not supported')
+
+        
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def list_tests(request):
+    up = request.user.get_profile()
+    tests = Test.objects.all()
+    t_data = []
+    for t in tests:
+        status = user_status(up,t)
+        if status != 'None':
+            t_data.append([t.title, status, t.create_time, t.pk])
+    if len(t_data)==0:
+        args = { 'error': 'You do not own or have access to any tests.' }
+    else:
+        args = { 't_data': t_data }
+    return render_to_response('testtool/manager/list_tests.html', args, context_instance=RequestContext(request))
+        
+        
+        
+########################################################################################################
+###############################         TEST INSTANCE FUNCTIONS         ################################
+########################################################################################################
 class CreateTestInstance(CreateView):
     model = TestInstance
     form_class = CreateTestInstanceForm
@@ -362,57 +660,48 @@ class CreateTestInstance(CreateView):
     def get_context_data(self, **kwargs):
         context = super(CreateTestInstance, self).get_context_data(**kwargs)
         t = get_object_or_404(Test, pk=self.kwargs['test_id'])
-        if user_can('create',self.request.user.get_profile(),t):
-            context['header']    = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
-            context['tif']       = kwargs['form']
-            context['available'] = kwargs['form'].fields['subjects'].queryset
-            context['enrolled']  = UserProfile.objects.none()
-            context['test_id']   = self.kwargs['test_id']
+        perm = user_can('create',self.request.user.get_profile(),t,True)
+        if perm['granted']:
+            context['header']   = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
+            context['enrolled'] = UserProfile.objects.none()
+            context['test_id']  = self.kwargs['test_id']
         else:
             context['header'] = 'Create New Test Instance'
-            context['error']  = 'You do not have permission to create a test instance of this test.'
+            if not perm['perm_user']:
+                context['error']  = 'You do not have permission to create a test instance of this test.'
+            elif not perm['perm_obj']:
+                context['error']  = 'The test does not have any test cases, so instances of this test cannot be created.'
         return context
         
         
 class EditTestInstance(UpdateView):
     model = TestInstance
     form_class = CreateTestInstanceForm
-    initial = {'schedule_time':datetime.datetime.now()}
     template_name = 'testtool/manager/edit_test_instance.html'
-                
+    
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
     @method_decorator(user_passes_test(has_user_profile))
     def dispatch(self, *args, **kwargs):
         return super(EditTestInstance, self).dispatch(*args, **kwargs)
 
-    def get_object(self):
-        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__pk=self.kwargs['test_id'])   # ensures that test instance belongs to test
+    def get_success_url(self):
+        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id']))+'?alert=edit'
         
-    def get_form(self, form_class):
-        form = super(EditTestInstance, self).get_form(form_class)
-        status = test_instance_status(self.object)
-        if status=='Complete':
-            form.fields['path'].widget.attrs['readonly'] = True
-            form.fields['schedule_time'].widget.attrs['readonly'] = True
-            form.fields['subjects'].widget.attrs['readonly'] = True
-            form.fields['subjects'].widget.attrs['disabled'] = True
-        elif status=='Incomplete':
-            form.fields['schedule_time'].widget.attrs['readonly'] = True
-        return form
+    def get_object(self):
+        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
     
-    def form_valid(self, form):
-        form.save()
-        create_log_entry(self.request.user.get_profile(),'edited',self.object)
-        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=edit')
+    # def form_valid(self, form):
+        # self.object = form.save()
+        # create_log_entry(self.request.user.get_profile(),'edited',self.object)
+        # return super(EditTestInstance, self).form_valid(form)
+        # return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=edit')
 
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
         if user_can('edit',self.request.user.get_profile(),self.object):
             context['header']           = 'Edit Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
-            context['tif']              = kwargs['form']
             context['enrolled']         = self.object.subjects.all()
-            context['available']        = kwargs['form'].fields['subjects'].queryset.exclude(pk__in=context['enrolled'].values_list('pk', flat=True))
             context['test_id']          = self.kwargs['test_id']
             context['test_instance_id'] = self.kwargs['test_instance_id']
         else:
@@ -421,10 +710,11 @@ class EditTestInstance(UpdateView):
         return context
         
         
-class DisplayTestInstance(DetailView):
+class DisplayTestInstance(UpdateView):
     model = TestInstance
+    form_class = DisplayTestInstanceForm
     template_name = 'testtool/manager/display_test_instance.html'
-                
+    
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
     @method_decorator(user_passes_test(has_user_profile))
@@ -432,7 +722,7 @@ class DisplayTestInstance(DetailView):
         return super(DisplayTestInstance, self).dispatch(*args, **kwargs)
         
     def get_object(self):
-        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__pk=self.kwargs['test_id'])   # ensures that test instance belongs to test
+        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
                     
     def get_context_data(self, **kwargs):
         context = super(DisplayTestInstance, self).get_context_data(**kwargs)
@@ -454,11 +744,11 @@ class DisplayTestInstance(DetailView):
                 elif alert == 'share':
                     alert_str = 'New collaborators successfully added.'
                     alert_class = 'success'
-                elif alert == 'delete1':
-                    alert_str = 'Only the test instance owner can delete a test instance.'
+                elif alert == 'delete_err':
+                    alert_str = 'Only the test instance owner can delete a test instance, after all collaborators have removed themselves.'
                     alert_class = 'error'
-                elif alert == 'delete2':
-                    alert_str = 'All collaborators must remove themselves before this test instance can be deleted.'
+                elif alert == 'unshare_err':
+                    alert_str = 'You are not a collaborator on this test instance.'
                     alert_class = 'error'
             tci_set = self.object.testcaseinstance_set.order_by('pk')
             tc_set = self.object.test.testcase_set.order_by('pk')
@@ -466,19 +756,15 @@ class DisplayTestInstance(DetailView):
             for tc in tc_set:
                 rand.append(tci_set.filter(test_case=tc).values_list('play_order',flat=True))
             context['header']           = 'Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
-            context['tif']              = DisplayTestInstanceForm(instance=self.object)
-            context['create_time_name'] = self.object._meta.get_field('create_time').verbose_name
-            context['create_time']      = self.object.create_time
             context['test_id']          = self.kwargs['test_id']
             context['test_instance_id'] = self.kwargs['test_instance_id']
-            context['status']           = test_instance_status(self.object)
             context['rand']             = str(rand)
-            context['already_run']      = self.object.run_time is not None
             context['can_share']        = user_can('share',up,self.object)
             context['can_export']       = user_can('export',up,self.object)
             context['can_edit']         = user_can('edit',up,self.object)
-            context['can_delete']       = user_can('delete',up,self.object) and self.object.collaborators.count()==0
-            context['can_run']          = is_test_instance_active(self.object) and user_can('run',up,self.object)
+            context['can_delete']       = user_can('delete',up,self.object)
+            context['can_unshare']      = user_can('unshare',up,self.object)
+            context['can_run']          = user_can('run',up,self.object)
             context['alert']            = alert_str
             context['alert_class']      = alert_class
         else:
@@ -493,390 +779,115 @@ class DisplayTestInstance(DetailView):
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def delete_test_instance(request, test_id, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)   # ensures that test instance belongs to test
+    ti = get_object_or_404(TestInstance, pk=test_instance_id, test__id=test_id)   # ensures that test instance belongs to test
     if request.method=='POST':
         up = request.user.get_profile()
-        perm = user_can('delete',up,ti)
-        coll = ti.collaborators.count()==0
-        if perm and coll:
+        if user_can('delete',up,ti):
             create_log_entry(up,'deleted',ti)
             ti.delete()
-            return HttpResponseRedirect(reverse('testtool.manager.views.list_test_instances', args=(test_id))+'?alert=delete&pk='+str(test_instance_id))
+            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id))+'?alert=delete&pk='+str(test_instance_id))
         else:
-            if not perm:
-                return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete1')
-            if not coll:
-                return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete2')
+            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete_err')
     else:
         return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk)))
 
         
-# class DeleteTestInstance(DeleteView):
-    # model = TestInstance
-    # template_name = 'testtool/manager/display_test_instance.html'
-                
-    # @method_decorator(login_required)
-    # @method_decorator(group_required('Testers'))
-    # @method_decorator(user_passes_test(has_user_profile))
-    # def dispatch(self, *args, **kwargs):
-        # return super(DeleteTestInstance, self).dispatch(*args, **kwargs)
-
-    # def get_success_url(self): 
-        # return reverse('testtool.manager.views.list_test_instances', args=(self.kwargs['test_id']))+'?alert=delete&pk='+str(self.kwargs['test_instance_id'])
-        
-    # def get_object(self):
-        # return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__pk=self.kwargs['test_id'])   # ensures that test instance belongs to test
-    
-    # def delete(self, *args, **kwargs):
-        # up = self.request.user.get_profile()
-        # ti = self.get_object()
-        # perm = user_can('delete',up,ti)
-        # coll = ti.collaborators.count()==0
-        # if perm and coll:
-            # super(DeleteTestInstance, self).delete(self, *args, **kwargs)
-            # create_log_entry(self.request.user.get_profile(),'deleted',ti)
-            # return HttpResponseRedirect(self.get_success_url())
-        # else:
-            # if not perm:
-                # return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete1')
-            # if not coll:
-                # return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete2')
-    
-    # def get_context_data(self, **kwargs):
-        # context = super(DeleteTestInstance, self).get_context_data(**kwargs)
-        # context['test_instance_id'] = self.kwargs['test_instance_id']
-        # context['test_id']          = self.kwargs['test_id']
-        # return context
-        
-        
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def add_video(request, test_pk):
-    if request.method == 'POST':
-        messages = {'0': 'Done', '1': 'Test does not exist', '2': 'No file provided', '3':'Video already exists', '4':'File type is not supported', '5':'Permission failed'}
-        
-        #checking for json data type
-        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
-            mimetype = 'application/json'
+def unshare_test_instance(request, test_id, test_instance_id):
+    ti = get_object_or_404(TestInstance, pk=test_instance_id, test__id=test_id)   # ensures that test instance belongs to test
+    if request.method=='POST':
+        up = request.user.get_profile()
+        if user_can('unshare',up,ti):
+            ti.collaborators.remove(up)
+            create_log_entry(up,'unshared',ti)
+            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id))+'?alert=unshare&pk='+str(test_instance_id))
         else:
-            mimetype = 'text/plain'
-            
-        try:
-            t = Test.objects.get(pk=test_pk)
-        except Test.DoesNotExist:
-            status = 1;
-        else:
-            if user_can('modify',request.user.get_profile(),t):
-                try:
-                    filename =  request.POST['filename']
-                except KeyError:
-                    status = 2; #TODO: should change when file upload is supported
-                else:
-                    if is_file_supported(filename):
-                        try:
-                            f = Video.objects.get(test=t, filename=filename)
-                        except Video.DoesNotExist:
-                            f = Video.objects.create(test=t, filename=filename)
-                            if t.method == 'SSCQE':
-                                tc = TestCase.objects.create(test=t)
-                                TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
-                            status = 0;
-                        else:
-                            status = 3;
-                    else:
-                        status = 4;
-            else:
-                status = 5;
-        
-        data = {'status':status,'message':messages[str(status)]}
-        response = JSONResponse(data, {}, mimetype)
-        return response
+            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=unshare_err')
     else:
-        return HttpResponseBadRequest('GET is not supported')
-
-        
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def delete_video(request, video_pk):
-    if request.method == 'POST':
-        messages = {'0': 'Done', '1': 'Video does not exist', '5': 'Permission failed'}
-        
-        #checking for json data type
-        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
-            mimetype = 'application/json'
-        else:
-            mimetype = 'text/plain'
-            
-        try:
-            f = Video.objects.get(pk=video_pk)
-            t = f.test
-        except Video.DoesNotExist:
-            status = 1;
-        else:
-            if user_can('modify',request.user.get_profile(),t):
-                # delete associated test cases first
-                for tc in TestCase.objects.filter(videos=f):
-                    tc.delete()
-                # finally delete the video
-                f.delete()
-                status = 0;
-            else:
-                status = 5;
-            
-        data = {'status':status,'message':messages[str(status)]}
-        response = JSONResponse(data, {}, mimetype)
-        return response
-    else:
-        return HttpResponseBadRequest('GET is not supported')
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def add_test_case(request, test_pk):
-    t = get_object_or_404(Test, pk=test_pk)
-    up = request.user.get_profile()
-    if user_can('modify',up,t):
-        if t.method == 'DSIS' or t.method == 'DSCQS':
-            args = add_test_case_discrete(request, t, up)
-        elif t.method == 'SSCQE':
-            args = add_test_case_SSCQE(request, t, up)
-        else:
-            args = { 'status': 'error',
-                     'error' : 'Test mode creation for %s is not supported.' % (t.method) }
-    else:
-        args = { 'status': 'error',
-                 'error' : 'You cannot add a new test case to this test.' }
-    
-    args['header'] = 'Add new test case to Test %d' % (t.pk)
-    if args['status'] == 'done': # success
-        return HttpResponseRedirect(reverse('edit_test', args=(test_pk,)))
-    else:
-        return render_to_response('testtool/manager/create_test_case_DSIS_DSCQS.html', args, context_instance=RequestContext(request))
-
-def add_test_case_discrete(request, test, user_profile):
-    if request.method == 'POST':
-        form = TestCaseCreateFormDiscrete(request.POST)
-        if form.is_valid():
-            tc = TestCase.objects.create(test=test)
-            data = form.cleaned_data
-            f1 = data['filename1']
-            f2 = data['filename2']
-            for ii in range(0,2): # repeat each video twice
-                if test.method == 'DSIS':
-                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=1+ii*2,is_reference=True)
-                    TestCaseItem.objects.create(test_case=tc,video=f2,play_order=2+ii*2)
-                else:
-                    # generate play order
-                    rand_order = range(1,3)
-                    random.shuffle(rand_order)
-                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2)
-                    TestCaseItem.objects.create(test_case=tc,video=f2,play_order=rand_order[1]+ii*2)
-            return {'status': 'done'}
-    else:
-        if Video.objects.filter(test=test):
-            form = TestCaseCreateFormDiscrete()            
-        else:
-            return { 'status': 'error',
-                     'error': 'There are no videos associated with this test.'}
-
-    form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
-    form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
-        
-    if test.method == 'DSIS':
-        form.fields['filename1'].label = 'Reference video'
-        form.fields['filename2'].label = 'Test video'
-    elif test.method == 'DSCQS':
-        form.fields['filename1'].label = 'First video'
-        form.fields['filename2'].label = 'Second video'
-    return {'status': 'incomplete', 'form': form}
-
-def add_test_case_SSCQE(request, test, user_profile):
-    if request.method == 'POST':
-        form = TestCaseCreateFormSSCQE(request.POST)
-        if form.is_valid():
-            tc = TestCase.objects.create(test=test)
-            data = form.cleaned_data
-            f = data['filename']
-            TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
-            return {'status': 'done'}
-    else:
-        # if there are no videos associated with the Test, redirect to update view
-        if Video.objects.filter(test=test):
-            form = TestCaseCreateFormSSCQE()
-        else:
-            return { 'status': 'error',
-                     'error': 'There are no videos associated with this test.'}
-
-    form.fields['filename'].queryset = form.fields['filename'].queryset.filter(test=test)
-    form.fields['filename'].label = 'Video'
-    return {'status': 'incomplete', 'form': form}
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def delete_test_case(request, test_case_pk):
-    if request.method == 'POST':
-        messages = {'0': 'Done', '1': 'Test case does not exist', '5': 'Permission failed'}
-        
-        #checking for json data type
-        if "application/json" in request.META['HTTP_ACCEPT_ENCODING']:
-            mimetype = 'application/json'
-        else:
-            mimetype = 'text/plain'
-            
-        try:
-            tc = TestCase.objects.get(pk=test_case_pk)
-            t = tc.test
-        except TestCase.DoesNotExist:
-            status = 1;
-        else:
-            if user_can('modify',request.user.get_profile(),t):
-                tc.delete()
-                status = 0;
-            else:
-                status = 5;
-            
-        data = {'status':status,'message':messages[str(status)]}
-        response = JSONResponse(data, {}, mimetype)
-        return response
-    else:
-        return HttpResponseBadRequest('GET is not supported')
-
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def list_tests(request):
-    up = request.user.get_profile()
-    tests = Test.objects.all()
-    t_data = []
-    for t in tests:
-        status = user_status(up,t)
-        if status != 'None':
-            t_data.append([t.title, status, t.create_time, t.pk])
-    if len(t_data)==0:
-        args = { 'error': 'You do not own or have access to any tests.' }
-    else:
-        args = { 't_data': t_data }
-    return render_to_response('testtool/manager/list_tests.html', args, context_instance=RequestContext(request))
+        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk)))        
 
 
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def list_test_instances(request,test_pk):
+def list_test_instances(request,test_id):
     alert_str = ''
+    alert_class = 'success'
     if request.method == 'GET':
         try:
             alert = request.GET['alert']
             pk = int(request.GET['pk'])
             if alert == 'delete':
                 alert_str = 'Test Instance %d successfully deleted.' % (pk)
+            elif alert == 'unshare':
+                alert_str = 'You are no longer collaborating on Test Instance %d.' % (pk)
         except KeyError:
             pass
     up = request.user.get_profile()
-    t = get_object_or_404(Test, pk=test_pk)
+    t = get_object_or_404(Test, pk=test_id)
     ti_set = TestInstance.objects.filter(test=t)
     ti_data = []
     for ti in ti_set:
         status = user_status(up,ti)
         if status != 'None':
-            ti_data.append([ti.pk, status, test_instance_status(ti), ti.subjects.count()])
+            ti_data.append([ti.pk, status, ti.get_status(), ti.subjects.count()])
     if len(ti_data)==0:
         if user_status(up,t) in ['Owner', 'Collaborator']:
             errMsg = 'No instances of this test exist.'
         else:
             errMsg = 'No instances of this test exist to which you have access.'
-        args = { 'header': 'Test Instances', 'error': errMsg, 'test_id': t.pk, 'alert': alert_str }
+        args = { 'error': errMsg }
     else:
-        args = { 'header': 'Test Instances of Test %d: %s' % (t.pk, t.title), 'ti_data': ti_data, 'test_id': t.pk, 'alert': alert_str }
+        args = { 'ti_data': ti_data }
+    args['header']      = 'Test Instances of Test %d: %s' % (t.pk, t.title)
+    args['test_id']     = t.pk
+    args['alert']       = alert_str
+    args['alert_class'] = alert_class
     return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
-    
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def display_test(request, test_id):
-    t = get_object_or_404(Test, pk=test_id)
-    up = request.user.get_profile()
-    if user_can('view',up,t):
-        tf = TestDisplayForm(instance=t)
-        tc_data = []
-        tc_set = TestCase.objects.filter(test=t)
-        for tc in tc_set:
-            tci = tc.testcaseitem_set.order_by('play_order')
-            tc_data.append(tci.values_list('video__filename',flat=True))
-        args = { 'header': 'Test %d: %s' % (t.pk, t.title),
-                 'tf': tf,
-                 'create_time_name': t._meta.get_field('create_time').verbose_name,
-                 'create_time': t.create_time,
-                 'test_id': test_id,
-                 'videos': Video.objects.filter(test=t),
-                 'tc_data': tc_data,
-                 'can_share': user_can('share',up,t),
-                 'can_export': user_can('export',up,t) }
-    else:
-        args = { 'header': 'Test %d' % (t.pk),
-                 'error': 'You do not have access to this test.' }
-    return render_to_response('testtool/manager/display_test.html', args, context_instance=RequestContext(request))
-        
-
-@login_required
-@group_required('Testers')
-def mirror_score(request, test_instance_id):
-    if request.is_ajax():
-        try:
-            ti = TestInstance.objects.get(pk=test_instance_id)
-        except:
-            return HttpResponse(json.dumps({'score':'E1'}))
-        if ti.subjects.count() == 1:
-            up = ti.subjects.all()[0];
-            try:
-                score = ScoreSSCQE.objects.filter(subject=up).latest('pk')
-                return HttpResponse(json.dumps({'score':str(score.value)}))
-            except:
-                return HttpResponse(json.dumps({'score':'0'}))
-        return HttpResponse(json.dumps({'score':'E2'}))
-    ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    return render_to_response('testtool/last_score.html', {'test_instance': ti.pk})
    
 
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def start_test(request, test_id, test_instance_id):
+def run_test_instance(request, test_id, test_instance_id):
     # when this page is hit, it places the test instance key in the URL for the desktop app to extract (by redirecting to itself with the key as a GET parameter).  If the key is already present, it checks if the key matches the database and then renders the page.  Otherwise, it shows an error message.
     key_name = 'key'
     if request.method == 'GET':
-        ti = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)
+        ti = get_object_or_404(TestInstance, pk=test_instance_id, test__id=test_id)
         up = request.user.get_profile()
-        if user_can('run',up,ti):
-            if is_test_instance_active(ti):
-                try:
-                    key = request.GET[key_name]
-                except KeyError:
-                    return HttpResponseRedirect(reverse('testtool.manager.views.start_test', args=(test_id, test_instance_id))+'?%s=%s'%(key_name,ti.key))
-                else:
-                    if key == ti.key:
-                        return render_to_response('testtool/manager/start_test.html', context_instance=RequestContext(request))
-                    else:
-                        msg = 'Invalid key.'
-            elif test_instance_status(ti) == 'Complete':
-                msg = 'This test instance has already been run.'
+        perm = user_can('run',up,ti,True)
+        if perm['granted']:
+            try:
+                key = request.GET[key_name]
+            except KeyError:
+                return HttpResponseRedirect(reverse('run_test_instance', args=(test_id, test_instance_id))+'?%s=%s'%(key_name,ti.key))
             else:
-                msg = 'This test instance is invalid and cannot be run.'
+                if key == ti.key:
+                    return render_to_response('testtool/manager/run_test_instance.html', context_instance=RequestContext(request))
+                else:
+                    msg = 'Invalid key.'
+        elif ti.get_status() == 'Complete':
+            msg = 'This test instance has already been run.'
         else:
-            msg = 'You do not have permission to run this test instance.'
-        return render_to_response('testtool/manager/start_test.html',{ 'error': msg }, context_instance=RequestContext(request))
-    return HttpResponseRedirect(reverse('testtool.manager.views.start_test', args=(test_id)))
+            if not perm['perm_user']:
+                msg = 'You do not have permission to run this test instance.'
+            elif not perm['perm_obj']:
+                msg = 'This test instance is invalid and cannot be run.'
+        return render_to_response('testtool/manager/run_test_instance.html',{ 'error': msg }, context_instance=RequestContext(request))
+    return HttpResponseRedirect(reverse('run_test_instance', args=(test_id)))
+
+
     
-    
+########################################################################################################
+#############################         SHARING/EXPORTING FUNCTIONS         ##############################
+########################################################################################################
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
 def export_data(request):
-    test_id_ran = TestInstance.objects.exclude(run_time=None).values_list('test__pk',flat=True).distinct()    # pk's of all tests that have test instances that have been run
+    test_id_ran = TestInstance.objects.exclude(run_time=None).values_list('test__id',flat=True).distinct()    # pk's of all tests that have test instances that have been run
     up = request.user.get_profile()
     # of these, find the ones of which the user is an owner or collaborator
     t_valid = []
@@ -887,15 +898,15 @@ def export_data(request):
         t_ran = Test.objects.get(pk=id)
         t_ran_ti = t_ran.testinstance_set.exclude(run_time=None)
         tmp_list = []
-        tmp_list_pk = []
+        tmp_list_id = []
         for ti in t_ran_ti:
             if user_can('export',up,ti):
                 tmp_list.append(ti)
-                tmp_list_pk.append(ti.pk)
+                tmp_list_id.append(ti.pk)
         if len(tmp_list) > 0:
             t_valid.append(t_ran)
             ti_valid.append(tmp_list)
-            ti_valid_id.append(tmp_list_pk)
+            ti_valid_id.append(tmp_list_id)
             t_valid_id.append(t_ran.pk)
     # if this page was reached from a test/test instance page, select default options
     if len(t_valid) > 0:
@@ -935,14 +946,14 @@ def save_data(request):
     # 
     if request.method == 'POST':
         try:
-            t_pk = int(request.POST['test_select'])
-            ti_pk = int(request.POST['test_instance_select'])
+            t_id = int(request.POST['test_select'])
+            ti_id = int(request.POST['test_instance_select'])
             format_list = request.POST.getlist('format')
         except KeyError:
             return HttpResponse('Please select a choice')
         else:
             up = request.user.get_profile()
-            ti = get_object_or_404(TestInstance, pk=ti_pk)
+            ti = get_object_or_404(TestInstance, pk=ti_id)
             if user_can('export',up,ti):        # check that user can export test instances
                 if len(format_list) == 0:
                     response = HttpResponse('Please select a data format')
@@ -951,7 +962,7 @@ def save_data(request):
                     if len(format_list) == 1:
                         data = get_formatted_data(raw_data, format_list[0])
                         response = HttpResponse(content_type=data['type'])
-                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.%s' % (ti.test.title, ti_pk, data['ext'])
+                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.%s' % (ti.test.title, ti_id, data['ext'])
                         response.write(data['buffer'].getvalue())
                         data['buffer'].close()
                     else:
@@ -959,19 +970,19 @@ def save_data(request):
                         zip = zipfile.ZipFile(zip_buffer,'a',zipfile.ZIP_DEFLATED)
                         for format in format_list:
                             data = get_formatted_data(raw_data, format)
-                            zip.writestr('%s_instance_%d.%s' % (ti.test.title, ti_pk, data['ext']), data['buffer'].getvalue())
+                            zip.writestr('%s_instance_%d.%s' % (ti.test.title, ti_id, data['ext']), data['buffer'].getvalue())
                             data['buffer'].close()
                         for file in zip.filelist:       # fix for Linux zip files read in Windows (http://bitkickers.blogspot.com/2010/07/django-zip-files-create-dynamic-in.html)
                             file.create_system = 0
                         zip.close()
                         response = HttpResponse(content_type='application/zip')
-                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.zip' % (ti.test.title, ti_pk)
+                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.zip' % (ti.test.title, ti_id)
                         response.write(zip_buffer.getvalue())
                         zip_buffer.close()
                 return response
             else:
                 return HttpResponse('You do not have permission to export this test instance.')
-    return HttpResponseRedirect(reverse('testtool.manager.views.export_data'))
+    return HttpResponseRedirect(reverse('export_data'))
 
 
 def get_raw_data(ti):
@@ -1059,7 +1070,7 @@ def format_as_csv(ti, buffer):
                 subj_scores = []
                 for pk in subject_data('pk',flat=True):     # have to loop through subjects in case of empty scores
                     try:
-                        obj = ScoreDSIS.objects.get(test_case_instance=tci,subject__pk=pk)
+                        obj = ScoreDSIS.objects.get(test_case_instance=tci,subject__id=pk)
                         val = obj.value
                     except ScoreDSIS.DoesNotExist:
                         val = ''
@@ -1127,7 +1138,7 @@ def process_mat_py_data(ti):
 def share_test(request):
     up = request.user.get_profile()
     t_own = Test.objects.filter(owner=up)
-    t_share = list(set(list(t_own.values_list('pk',flat=True)) + list(TestInstance.objects.filter(owner=up).values_list('test__pk',flat=True))))
+    t_share = list(set(list(t_own.values_list('pk',flat=True)) + list(TestInstance.objects.filter(owner=up).values_list('test__id',flat=True))))
     
     # group test instances by test
     t_valid = []
@@ -1207,7 +1218,7 @@ def share_test_submit(request):
     if request.method == 'POST':
         try:
             mode = request.POST['radio_share']
-            t_pk = int(request.POST['test_select'])
+            t_id = int(request.POST['test_select'])
             share_with = request.POST.getlist('tester_select')
         except KeyError:
             return HttpResponse('please select a choice')
@@ -1216,7 +1227,7 @@ def share_test_submit(request):
                 return HttpResponse('please select a choice')
             up = request.user.get_profile()
             if mode == 'share_test':
-                t = get_object_or_404(Test, pk=t_pk)
+                t = get_object_or_404(Test, pk=t_id)
                 if user_can('share',up,t):                              # check that user can share test
                     share_list = []
                     for id in share_with:                               # add collaborators to test
@@ -1229,11 +1240,11 @@ def share_test_submit(request):
                     return HttpResponse('You do not have permission to share this test.')
             elif mode == 'share_test_instance':
                 try:
-                    ti_pk = int(request.POST['test_instance_select'])
+                    ti_id = int(request.POST['test_instance_select'])
                 except KeyError:
                     return HttpResponse('please select a test instance')
                 else:
-                    ti = get_object_or_404(TestInstance, pk=ti_pk, test__pk=t_pk)   # ensures that test instance belongs to test
+                    ti = get_object_or_404(TestInstance, pk=ti_id, test__id=t_id)   # ensures that test instance belongs to test
                     if user_can('share',up,ti):                                     # check that user can share test instance
                         share_list = []
                         for id in share_with:                                       # add collaborators to test instance
@@ -1247,23 +1258,4 @@ def share_test_submit(request):
             else:
                 return HttpResponse('mode must be ''share_test'' or ''share_test_instance''')
     else:
-        return HttpResponseRedirect(reverse('testtool.manager.views.share_test'))
-
-
-@login_required
-@group_required('Testers')
-def log_book(request):
-    log = get_log(request,'all')
-    return render_to_response('testtool/manager/log_book.html', { 'log':log }, context_instance=RequestContext(request))
-    
-
-@login_required
-@group_required('Testers')
-def about(request):
-    return render_to_response('testtool/manager/about.html',context_instance=RequestContext(request))
-    
-
-@login_required
-@group_required('Testers')
-def help(request):
-    return render_to_response('testtool/manager/help.html',context_instance=RequestContext(request))
+        return HttpResponseRedirect(reverse('share_test'))

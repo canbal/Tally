@@ -13,6 +13,19 @@ else:
     else:
         tester_profile.delete()
     tester.delete()
+    
+try:
+    tester2 = User.objects.get(username='tester2')
+except User.DoesNotExist:
+    pass
+else:
+    try:
+        tester2_profile = UserProfile.objects.get(user=tester2)
+    except UserProfile.DoesNotExist:
+        pass
+    else:
+        tester2_profile.delete()
+    tester2.delete()
 
 try:
     testers = Group.objects.get(name='Testers')

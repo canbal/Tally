@@ -19,7 +19,7 @@
         </style>
         <script type="text/javascript">
             function updateScore() {
-                $.getJSON("{% url testtool.main.views.mirror_score test_instance_id=test_instance %}", function(data) {
+                $.getJSON("{% url mirror_score test_instance_id=test_instance %}", function(data) {
                     $( "#score" ).empty().append(data.score);
                 });
             }

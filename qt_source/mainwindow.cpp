@@ -137,7 +137,7 @@ void MainWindow::on_startTest_clicked()
     if (success) {
         QUrl currentUrl = QUrl(ui->webView->url().toString(QUrl::StripTrailingSlash));
         m_rootURL = QString("http://%1").arg(currentUrl.authority());
-        QRegExp urlPattern("^/tests/(\\d+)/instances/(\\d+)/start$");
+        QRegExp urlPattern("^/tests/(\\d+)/instances/(\\d+)/run$");
         if (urlPattern.exactMatch(currentUrl.path())) {
             // check for valid key parameter
             QList<QPair<QString, QString> > urlQueryItems = currentUrl.queryItems();

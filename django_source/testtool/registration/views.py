@@ -28,7 +28,7 @@ def register_subject(request):
             profile = pform.save(commit=False)
             profile.user = subject
             profile.save()
-            return HttpResponseRedirect(reverse('testtool.registration.views.render_profile'))
+            return HttpResponseRedirect(reverse('profile'))
     else:
         rform = RegistrationForm()
         pform = UserProfileForm()
@@ -74,6 +74,6 @@ def render_profile(request):
 
 def custom_login(request, *args, **kwargs):
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('testtool.main.views.index'))
+        return HttpResponseRedirect(reverse('home'))
     else:
         return login(request, *args, **kwargs)

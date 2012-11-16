@@ -2,9 +2,9 @@
 {% extends "testtool/manager/base_manager.html" %}
 
 {% block head %}
-    <style>
-        .row-click { cursor: pointer }
-    </style>
+<style>
+    .row-click { cursor: pointer }
+</style>
 {% endblock head %}
 
 {% block header %}
@@ -12,38 +12,34 @@
 {% endblock header %}
 
 {% block content %}
-    {% if error %}
-        {{ error }}{% comment %} Create one <a href="{% url testtool.manager.views.create_test %}">here</a>. {% endcomment %}
-    {% else %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Actions</th>
-                    <th>Title</th>
-                    <th>My Status</th>
-                    <th>Create Time</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in t_data %}
-                    <tr>
-                        <td>
-                            <div class="btn-group">
-                                <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
-                                    <span class="caret"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a href="{% url testtool.manager.views.list_test_instances test_pk=t.3 %}">View test instances</a></li>
-                                    <li><a href="{% url create_test_instance test_id=t.3 %}">Create new test instance</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                        <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.0 }}</td>
-                        <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.1 }}</td>
-                        <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.2 }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Actions</th>
+            <th>Title</th>
+            <th>My Status</th>
+            <th>Create Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in t_data %}
+        <tr>
+            <td>
+                <div class="btn-group">
+                    <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a href="{% url list_test_instances test_id=t.3 %}">View test instances</a></li>
+                        <li><a href="{% url create_test_instance test_id=t.3 %}">Create new test instance</a></li>
+                    </ul>
+                </div>
+            </td>
+            <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.0 }}</td>
+            <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.1 }}</td>
+            <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock content %}
