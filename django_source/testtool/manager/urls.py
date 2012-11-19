@@ -5,6 +5,8 @@ urlpatterns = patterns('testtool.manager.views',
 
     ### Tests
     url(r'^tests/$',                                'list_tests',       name='list_tests'),
+    url(r'^tests/(?P<test_id>\d+)/delete$',         'delete_test',      name='delete_test'),
+    url(r'^tests/(?P<test_id>\d+)/unshare$',        'unshare_test',     name='unshare_test'),
     url(r'^tests/(?P<test_id>\d+)/addvideo/$',      'add_video',        name='add_video'),
     url(r'^deletevideo/(?P<video_id>\d+)/$',        'delete_video',     name='delete_video'),
     url(r'^tests/(?P<test_id>\d+)/addtestcase/$',   'add_test_case',    name='add_test_case'),
