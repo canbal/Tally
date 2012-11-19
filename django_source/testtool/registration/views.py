@@ -63,9 +63,8 @@ def register_tester(request):
 @login_required
 @user_passes_test(has_user_profile)
 def render_profile(request):
-    up = request.user.get_profile()
     if request.user.groups.filter(name='Testers'):
-        return render_to_response('testtool/manager/profile.html', context_instance=RequestContext(request))
+        return HttpResponseRedirect(reverse('tester_profile'))
     elif request.user.groups.filter(name='Subjects'):
         return HttpResponseRedirect('/')
     else:

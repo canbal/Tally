@@ -1294,3 +1294,17 @@ def share_test_submit(request):
                 return HttpResponse('mode must be ''share_test'' or ''share_test_instance''')
     else:
         return HttpResponseRedirect(reverse('share_test'))
+
+
+
+########################################################################################################
+##################################         PROFILE FUNCTIONS        ####################################
+########################################################################################################
+@login_required
+@group_required('Testers')
+@user_passes_test(has_user_profile)
+def render_profile(request):
+    u = request.user
+    up = u.get_profile()
+    args = {'uform':DisplayUserForm(instance=u),'upform':DisplayUserProfileForm(instance=up)}
+    return render_to_response('testtool/manager/profile.html', args, context_instance=RequestContext(request))

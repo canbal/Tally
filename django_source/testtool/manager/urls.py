@@ -25,10 +25,11 @@ urlpatterns = patterns('testtool.manager.views',
     url(r'^export/save/$', 'save_data',         name='save_data'),
     
     ### Misc
-    url(r'^logbook/$',                          'log_book',     name='log_book'),
-    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score', name='mirror_score'),
-    url(r'^about/$',                            'about',        name='about'),
-    url(r'^help/$',                             'help',         name='help'),
+    url(r'^logbook/$',                          'log_book',       name='log_book'),
+    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score',   name='mirror_score'),
+    url(r'^testerprofile/$',                    'render_profile', name='tester_profile'),
+    url(r'^about/$',                            'about',          name='about'),
+    url(r'^help/$',                             'help',           name='help'),
 )
 
 # Class-based views
