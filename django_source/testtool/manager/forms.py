@@ -87,6 +87,8 @@ class CreateTestInstanceForm(forms.ModelForm):
             return self.instance.schedule_time
         return self.cleaned_data['schedule_time']
     def clean_subjects(self):
+        # return self.instance.subjects.all()
+        # raise forms.ValidationError(str(self.instance.subjects.all()))
         if self.instance.pk and self.status=='Complete':
             return self.instance.subjects.all()
         return self.cleaned_data['subjects']

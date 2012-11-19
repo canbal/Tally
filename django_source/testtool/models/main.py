@@ -48,7 +48,7 @@ class TestInstance(models.Model):
     test           = models.ForeignKey(Test)
     owner          = models.ForeignKey(UserProfile, related_name='owner_testinstances')
     collaborators  = models.ManyToManyField(UserProfile, related_name='collaborators_testinstances', null=True, blank=True)
-    subjects       = models.ManyToManyField(UserProfile, related_name='subjects_testinstances', null=True)
+    subjects       = models.ManyToManyField(UserProfile, related_name='subjects_testinstances', null=True, blank=True)
     create_time    = models.DateTimeField('Date created', auto_now_add=True)
     schedule_time  = models.DateTimeField('Date scheduled', null=True)
     run_time       = models.DateTimeField('Date run', null=True, blank=True)

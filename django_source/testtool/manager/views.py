@@ -692,10 +692,8 @@ class EditTestInstance(UpdateView):
         return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
     
     # def form_valid(self, form):
-        # self.object = form.save()
         # create_log_entry(self.request.user.get_profile(),'edited',self.object)
         # return super(EditTestInstance, self).form_valid(form)
-        # return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=edit')
 
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
