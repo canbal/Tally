@@ -421,6 +421,7 @@ class DisplayTest(UpdateView):
             context['can_edit']    = user_can('edit',up,self.object)
             context['can_delete']  = user_can('delete',up,self.object)
             context['can_unshare'] = user_can('unshare',up,self.object)
+            context['can_create']  = user_can('create',up,self.object)
             context.update(get_alert_context(self.request,self.object))
         else:
             context['error'] = 'You do not have access to this test.'
@@ -439,9 +440,9 @@ def delete_test(request, test_id):
             t.delete()
             return HttpResponseRedirect(reverse('list_tests')+'?alert=delete&pk='+str(test_id))
         else:
-            return HttpResponseRedirect(reverse('display_test', args=(test_id))+'?alert=delete_err')
+            return HttpResponseRedirect(reverse('display_test', args=(test_id,))+'?alert=delete_err')
     else:
-        return HttpResponseRedirect(reverse('display_test', args=(test_id)))
+        return HttpResponseRedirect(reverse('display_test', args=(test_id,)))
         
 
 @login_required
@@ -456,7 +457,7 @@ def unshare_test(request, test_id):
             owned_ti_set = TestInstance.objects.filter(test=t,owner=up)
             for ti in owned_ti_set:
                 if not user_can('delete',up,ti):
-                    return HttpResponseRedirect(reverse('display_test_instance', args=(test_id, ti.pk))+'?alert=delete_err')
+                    return HttpResponseRedirect(reverse('display_test_instance', args=(test_id, ti.pk,))+'?alert=delete_err')
             # if all is good delete/unshare all the associated TestInstances
             for ti in owned_ti_set:
                 create_log_entry(up,'deleted',ti)
@@ -469,9 +470,9 @@ def unshare_test(request, test_id):
             create_log_entry(up,'unshared',t)
             return HttpResponseRedirect(reverse('list_tests')+'?alert=unshare&pk='+str(test_id))
         else:
-            return HttpResponseRedirect(reverse('display_test', args=(test_id))+'?alert=unshare_err')
+            return HttpResponseRedirect(reverse('display_test', args=(test_id,))+'?alert=unshare_err')
     else:
-        return HttpResponseRedirect(reverse('display_test', args=(test_id)))        
+        return HttpResponseRedirect(reverse('display_test', args=(test_id,)))        
 
 
 @login_required
@@ -739,7 +740,7 @@ class CreateTestInstance(CreateView):
                 tci = TestCaseInstance(test_instance=self.object, test_case=tc_all[ii], play_order=rand_order[idx])
                 idx += 1
                 tci.save()
-        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=new')
+        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,))+'?alert=new')
                     
     def get_context_data(self, **kwargs):
         context = super(CreateTestInstance, self).get_context_data(**kwargs)
@@ -770,7 +771,7 @@ class EditTestInstance(UpdateView):
         return super(EditTestInstance, self).dispatch(*args, **kwargs)
 
     def get_success_url(self):
-        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id']))+'?alert=edit&pk='+str(test_instance_id)
+        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id'],))+'?alert=edit&pk='+str(test_instance_id)
         
     def get_object(self):
         return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
@@ -778,7 +779,7 @@ class EditTestInstance(UpdateView):
     # def form_valid(self, form):
         # create_log_entry(self.request.user.get_profile(),'edited',self.object)
         # return super(EditTestInstance, self).form_valid(form)
-        # return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk))+'?alert=edit&pk='+str(test_instance_id)
+        # return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,))+'?alert=edit&pk='+str(test_instance_id)
 
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
@@ -845,11 +846,11 @@ def delete_test_instance(request, test_id, test_instance_id):
         if user_can('delete',up,ti):
             create_log_entry(up,'deleted',ti)
             ti.delete()
-            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id))+'?alert=delete&pk='+str(test_instance_id))
+            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id,))+'?alert=delete&pk='+str(test_instance_id))
         else:
-            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=delete_err')
+            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,))+'?alert=delete_err')
     else:
-        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk)))
+        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,)))
 
         
 @login_required
@@ -862,11 +863,11 @@ def unshare_test_instance(request, test_id, test_instance_id):
         if user_can('unshare',up,ti):
             ti.collaborators.remove(up)
             create_log_entry(up,'unshared',ti)
-            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id))+'?alert=unshare&pk='+str(test_instance_id))
+            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id,))+'?alert=unshare&pk='+str(test_instance_id))
         else:
-            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk))+'?alert=unshare_err')
+            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,))+'?alert=unshare_err')
     else:
-        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk)))        
+        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,)))        
 
 
 @login_required
@@ -891,6 +892,7 @@ def list_test_instances(request,test_id):
         args = { 'ti_data': ti_data }
     args['header'] = 'Test Instances of Test %d: %s' % (t.pk, t.title)
     args['test_id'] = t.pk
+    args['can_create'] = user_can('create',up,t)
     args.update(get_alert_context(request,TestInstance()))
     return render_to_response('testtool/manager/list_test_instances.html', args, context_instance=RequestContext(request))
    
@@ -909,7 +911,7 @@ def run_test_instance(request, test_id, test_instance_id):
             try:
                 key = request.GET[key_name]
             except KeyError:
-                return HttpResponseRedirect(reverse('run_test_instance', args=(test_id, test_instance_id))+'?%s=%s'%(key_name,ti.key))
+                return HttpResponseRedirect(reverse('run_test_instance', args=(test_id, test_instance_id,))+'?%s=%s'%(key_name,ti.key))
             else:
                 if key == ti.key:
                     return render_to_response('testtool/manager/run_test_instance.html', context_instance=RequestContext(request))
@@ -923,7 +925,7 @@ def run_test_instance(request, test_id, test_instance_id):
             elif not perm['perm_obj']:
                 msg = 'This test instance is invalid and cannot be run.'
         return render_to_response('testtool/manager/run_test_instance.html',{ 'error': msg }, context_instance=RequestContext(request))
-    return HttpResponseRedirect(reverse('run_test_instance', args=(test_id)))
+    return HttpResponseRedirect(reverse('run_test_instance', args=(test_id,)))
 
 
     

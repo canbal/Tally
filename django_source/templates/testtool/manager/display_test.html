@@ -101,7 +101,7 @@
             </div>
         </div>
         {% endif %}
-		{% if tc_data %}
+		{% if can_create and tc_data %}
 		<a class="btn btn-success" href="{% url create_test_instance test_id=test_id %}">Create New Instance</a>
        	{% endif %}
     </div>
