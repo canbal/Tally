@@ -452,6 +452,19 @@ def unshare_test(request, test_id):
     if request.method=='POST':
         up = request.user.get_profile()
         if user_can('unshare',up,t):
+            # check if all of its owned TestInstances are free to delete
+            owned_ti_set = TestInstance.objects.filter(test=t,owner=up)
+            for ti in owned_ti_set:
+                if not user_can('delete',up,ti):
+                    return HttpResponseRedirect(reverse('display_test_instance', args=(test_id, ti.pk))+'?alert=delete_err')
+            # if all is good delete/unshare all the associated TestInstances
+            for ti in owned_ti_set:
+                create_log_entry(up,'deleted',ti)
+                ti.delete()
+            for ti in TestInstance.objects.filter(test=t,collaborators=up):
+                ti.collaborators.remove(up)
+                create_log_entry(up,'unshared',ti)
+            # finally unshare the Test
             t.collaborators.remove(up)
             create_log_entry(up,'unshared',t)
             return HttpResponseRedirect(reverse('list_tests')+'?alert=unshare&pk='+str(test_id))
