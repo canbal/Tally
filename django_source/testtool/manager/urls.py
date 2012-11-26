@@ -5,6 +5,8 @@ urlpatterns = patterns('testtool.manager.views',
 
     ### Tests
     url(r'^tests/$',                                'list_tests',       name='list_tests'),
+    url(r'^tests/(?P<test_id>\d+)/delete$',         'delete_test',      name='delete_test'),
+    url(r'^tests/(?P<test_id>\d+)/unshare$',        'unshare_test',     name='unshare_test'),
     url(r'^tests/(?P<test_id>\d+)/addvideo/$',      'add_video',        name='add_video'),
     url(r'^deletevideo/(?P<video_id>\d+)/$',        'delete_video',     name='delete_video'),
     url(r'^tests/(?P<test_id>\d+)/addtestcase/$',   'add_test_case',    name='add_test_case'),
@@ -23,10 +25,11 @@ urlpatterns = patterns('testtool.manager.views',
     url(r'^export/save/$', 'save_data',         name='save_data'),
     
     ### Misc
-    url(r'^logbook/$',                          'log_book',     name='log_book'),
-    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score', name='mirror_score'),
-    url(r'^about/$',                            'about',        name='about'),
-    url(r'^help/$',                             'help',         name='help'),
+    url(r'^logbook/$',                          'log_book',       name='log_book'),
+    url(r'^(?P<test_instance_id>\d+)/mirror/$', 'mirror_score',   name='mirror_score'),
+    url(r'^testerprofile/$',                    'render_profile', name='tester_profile'),
+    url(r'^about/$',                            'about',          name='about'),
+    url(r'^help/$',                             'help',           name='help'),
 )
 
 # Class-based views

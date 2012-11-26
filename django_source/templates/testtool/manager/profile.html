@@ -5,5 +5,34 @@
 {% endblock header %}
 
 {% block content %}
+<div class="form-horizontal">
+    {% for field in uform %}
+    {% if field.name != 'date_joined' %}
+    <div class="control-group{% if field.errors %} error{% endif %}">
+        <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+        <div class="controls">
+            {{ field }}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% for field in upform %}
+    <div class="control-group{% if field.errors %} error{% endif %}">
+        <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+        <div class="controls">
+            {{ field }}
+        </div>
+    </div>
+    {% endfor %}
+    {% for field in uform %}
+    {% if field.name == 'date_joined' %}
+    <div class="control-group{% if field.errors %} error{% endif %}">
+        <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
+        <div class="controls">
+            {{ field }}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
 {% endblock content %}
-

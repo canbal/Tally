@@ -1,6 +1,6 @@
 from django import forms
 from testtool.models import *
-
+    
 class CreateTestForm(forms.ModelForm):
     class Meta:
         model = Test
@@ -19,20 +19,22 @@ class EditTestForm(forms.ModelForm):
     
 
 class DisplayTestForm(forms.ModelForm):
-    owner = forms.CharField(widget=forms.TextInput(attrs={'readonly':True}))
-    create_time = forms.DateTimeField(widget=forms.DateTimeInput(attrs={'readonly':True}))
-    method = forms.CharField(widget=forms.TextInput(attrs={'readonly':True}))
+    owner = forms.CharField()
+    create_time = forms.DateTimeField()
     class Meta:
         model = Test
         exclude = ('owner')
         
     def __init__(self, *args, **kwargs):
         super(DisplayTestForm, self).__init__(*args, **kwargs)
+        # set fields to read-only
+        for key in ['owner', 'create_time', 'method', 'collaborators', 'title', 'description']:
+            self.fields[key].widget.attrs['readonly'] = True
+        # override initial values
         self.fields['owner'].initial = self.instance.owner
-        self.fields['collaborators'].widget.attrs={'readonly':True}
+        # define querysets
         self.fields['collaborators'].queryset = self.instance.collaborators.all()
-        self.fields['title'].widget.attrs={'readonly':True}
-        self.fields['description'].widget.attrs={'readonly':True}
+        # define extra fields
         self.fields['create_time'].label = self.instance._meta.get_field('create_time').verbose_name
         self.fields['create_time'].initial = self.instance.create_time
 
@@ -138,4 +140,41 @@ class DisplayTestInstanceForm(forms.ModelForm):
         return self.instance.description
     def clean_location(self):
         return self.instance.location
+    
+
+class DisplayUserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        exclude = ('password','is_active','is_staff','is_superuser','groups','user_permissions','last_login')
+    
+    def __init__(self, *args, **kwargs):
+        super(DisplayUserForm, self).__init__(*args, **kwargs)
+        # set fields to read-only
+        for key in ['username', 'first_name', 'last_name', 'email', 'date_joined']:
+            self.fields[key].widget.attrs['readonly'] = True
+    
+    def clean_username(self):
+        return self.instance.username
+    def clean_first_name(self):
+        return self.instance.first_name
+    def clean_last_name(self):
+        return self.instance.last_name
+    def clean_email(self):
+        return self.instance.email
+    def clean_date_joined(self):
+        return self.instance.date_joined
+    
+class DisplayUserProfileForm(forms.ModelForm):
+    sex = forms.CharField(widget=forms.TextInput(attrs={'readonly':True}))
+    class Meta:
+        model = UserProfile
+        exclude = ('user')
         
+    def __init__(self, *args, **kwargs):
+        super(DisplayUserProfileForm, self).__init__(*args, **kwargs)
+        self.fields['birth_date'].widget.attrs['readonly'] = True
+        
+    def clean_sex(self):
+        return self.instance.sex
+    def clean_birth_date(self):
+        return self.instance.birth_date
