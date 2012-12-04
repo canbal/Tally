@@ -1,4 +1,3 @@
-
 {% load staticfiles %}
 
 <!DOCTYPE html>
@@ -10,8 +9,10 @@
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <!-- Le styles -->
-        <link href="{% static 'twitter-bootstrap-b261f97/docs/assets/css/bootstrap.css' %}" rel="stylesheet">
+        <!-- styles -->
+        <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link href="{% static 'bootstrap/css/bootstrap-responsive.min.css' %}" rel="stylesheet" >
+        <link type="text/css" href="{% static 'css/smoothness/jquery-ui-1.8.18.custom.css' %}" rel="stylesheet" />
         <style type="text/css">
             body {
                 padding-top: 60px;
@@ -24,25 +25,11 @@
                 list-style: none;
             }
         </style>
-        <link href="{% static 'twitter-bootstrap-b261f97/docs/assets/css/bootstrap-responsive.css' %}" rel="stylesheet">
-
-        <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
-        <!--[if lt IE 9]>
-            <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
-
-        <!-- Le fav and touch icons -->
-        <link rel="shortcut icon" href="{% static 'twitter-bootstrap-b261f97/docs/assets/ico/favicon.ico' %}">
-        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'twitter-bootstrap-b261f97/docs/assets/ico/apple-touch-icon-144-precomposed.png' %}">
-        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'twitter-bootstrap-b261f97/docs/assets/ico/apple-touch-icon-114-precomposed.png' %}">
-        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'twitter-bootstrap-b261f97/docs/assets/ico/apple-touch-icon-72-precomposed.png' %}">
-        <link rel="apple-touch-icon-precomposed" href="{% static 'twitter-bootstrap-b261f97/docs/assets/ico/apple-touch-icon-57-precomposed.png' %}">
     </head>
     
     <body>
 
         <div class="container-fluid">
-            <!-- Main hero unit for a primary marketing message or call to action -->
             <div class="row-fluid">
                 <div class="span8">
                     <div class="hero-unit">
@@ -54,67 +41,56 @@
                         <br/>
                         <br/>
                         <p>Thank you for helping with our research!</p>
-                        <!-- <p><a class="btn btn-primary btn-large">Learn more &raquo;</a></p> -->
                     </div>
                 </div>
                 
                 <div class="span4">
-                    <form class="well" action="{% url login %}" method="post">
+                    <form class="well form-horizontal" action="{% url login %}" method="post">
                         {% csrf_token %}
-                        <div class="control-group{% if form.username.errors or form.non_field_errors %} error{% endif %}">
-                            <label class="control-label" for="id_{{ form.username.html_name }}">{{ form.username.label }}{% if form.username.errors %} (required){% endif %}</label>
-                            <div class="controls">
-                                {{ form.username }}
-                            </div>
-                        </div>
-                        <div class="control-group{% if form.password.errors or form.non_field_errors %} error{% endif %}">
-                            <label class="control-label" for="id_{{ form.password.html_name }}">{{ form.password.label }}{% if form.password.errors %} (required){% endif %}</label>
-                            <div class="controls">
-                                {{ form.password }}
-                            </div>
-                        </div>
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-error">
+                            Your username and password didn't match. Please try again.
+                    	</div>
+                    	{% endif %}
+	                	<table width="100%">
+            			<tr>
+                			<td>
+                        		<div class="control-group{% if form.username.errors or form.non_field_errors %} error{% endif %}">
+                            		<label class="control-label" for="id_{{ form.username.html_name }}">{{ form.username.label }}{% if form.username.errors %} (required){% endif %}</label>
+                            		<div class="controls">
+                                	{{ form.username }}
+                            	</div>
+                        		</div>
+                        		<div class="control-group{% if form.password.errors or form.non_field_errors %} error{% endif %}">
+                            		<label class="control-label" for="id_{{ form.password.html_name }}">{{ form.password.label }}{% if form.password.errors %} (required){% endif %}</label>
+                            		<div class="controls">
+                                	{{ form.password }}
+                        			</div>
+                        		</div>
+                    		</td>
+                        	<td><input type="submit" class="btn btn-large btn-success pull-right" value="Login" /></td>
+                        </tr>
+                        </table>
                         <input type="hidden" name="next" value="{{ next }}" />
-                        <div class="form-actions">
-                            <input type="submit" class="btn btn-large btn-success pull-right" value="Login" />
-                            {% if form.non_field_errors %}
-                                <span style="color: #b94a48">
-                                    Your username and password didn't match. Please try again.
-                                </span>
-                            {% endif %}
-                            {{ form.username.max_length }}
-                        </div>
                     </form>
                     <div class="well">
-                        New subjects, register here.
-                        <a class="btn btn-large btn-primary pull-right" href="{% url register_subject %}" data-role="button" data-theme="e">Register</a> 
+                    	<table width="100%">
+                			<tr>
+                				<td>New subjects, register here.</td>
+                        		<td><a class="btn btn-large btn-primary pull-right" href="{% url register_subject %}">Register</a></td>
+                        	</tr>
+                        </table>
                     </div>
                 </div>
             </div>
         
             <hr>
-<!--
+
             <footer>
                 <p>&copy; UCSD - Video Processing Lab 2012</p>
             </footer>
--->
-        </div><!--/.fluid-container-->
 
-        <!-- Le javascript
-        ================================================== -->
-        <!-- Placed at the end of the document so the pages load faster -->
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/jquery.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-transition.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-alert.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-modal.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-dropdown.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-scrollspy.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-tab.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-tooltip.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-popover.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-button.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-collapse.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-carousel.js' %}"></script>
-        <script src="{% static 'twitter-bootstrap-b261f97/docs/assets/js/bootstrap-typeahead.js' %}"></script>
+        </div><!--/.fluid-container-->
 
     </body>
 </html>
