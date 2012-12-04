@@ -80,6 +80,9 @@
             <input type="submit" class="btn btn-info" value="Share" />
         </form>
         {% endif %}
+        {% if can_export %}
+            <a class="btn btn-primary" href="{% url export_test test_id=test_id %}">Export Data</a>
+        {% endif %}
         {% if can_edit %}
 		<a class="btn btn-primary" href="{% url edit_test test_id=test_id %}">Edit</a>
         {% endif %}

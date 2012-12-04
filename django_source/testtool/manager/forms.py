@@ -141,6 +141,13 @@ class DisplayTestInstanceForm(forms.ModelForm):
     def clean_location(self):
         return self.instance.location
     
+    
+class ExportDataForm(forms.Form):
+    format = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices = (('report', 'Report (.pdf)'),
+                                                                                       ('spreadsheet', 'Spreadsheet (.csv)'),
+                                                                                       ('matlab','MATLAB (.mat)'),
+                                                                                       ('python','Python (.py)')))
+    
 
 class DisplayUserForm(forms.ModelForm):
     class Meta:

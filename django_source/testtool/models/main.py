@@ -42,6 +42,12 @@ class Test(models.Model):
         app_label = 'testtool'
     def __unicode__(self):
         return self.title
+    def has_data(self):
+        ti_set = TestInstance.objects.filter(test=self)
+        for ti in ti_set:
+            if ti.has_data():
+                return True
+        return False
     
     
 class TestInstance(models.Model):
@@ -80,8 +86,10 @@ class TestInstance(models.Model):
             return 'Error'
     def is_active(self):
         return self.get_status() in ['Ready to run', 'Incomplete']
+    def has_data(self):
+        return self.get_status() in ['Complete', 'Incomplete']
 
-
+        
 class Video(models.Model):
     test        = models.ForeignKey(Test)
     filename    = models.CharField(max_length=200)

@@ -39,12 +39,7 @@
                     </form>
                 {% endif %}
                 {% if can_export %}
-                    <form action="{% url export_data %}" method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="test_id" value="{{ test_id }}" />
-                        <input type="hidden" name="test_instance_id" value="{{ test_instance_id }}" />
-                        <input type="submit" class="btn btn-primary" value="Export Data" />
-                    </form>
+                    <a class="btn btn-primary" href="{% url export_test_instance test_id=test_id test_instance_id=test_instance_id %}">Export Data</a>
                 {% endif %}
                 {% if can_edit %}
                     <a class="btn btn-primary" href="{% url edit_test_instance test_id=test_id test_instance_id=test_instance_id %}">Edit</a>

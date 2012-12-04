@@ -84,7 +84,7 @@ def user_permission_test(up,t):
     zero_ti   = TestInstance.objects.filter(test=t).count() == 0
     zero_coll = t.collaborators.all().count() == 0
     obj_policy = { 'view':    True,
-                   'export':  True,
+                   'export':  t.has_data(),
                    'share':   True,
                    'create':  t.testcase_set.count() > 0,
                    'edit':    True,
@@ -116,7 +116,7 @@ def user_permission_test_instance(up,ti):
                     'unshare': status[1:2] }
     # policy based on test instance status for actions on test instances
     obj_policy = { 'view':    True,
-                   'export':  ti.run_time is not None,
+                   'export':  ti.has_data(),
                    'share':   True,
                    'run':     ti.is_active(),
                    'edit':    True,
@@ -418,14 +418,16 @@ class DisplayTest(UpdateView):
             context['tc_data']     = tc_data
             context['test_id']     = self.object.pk
             context['can_share']   = user_can('share',up,self.object)
+            context['can_export']  = user_can('export',up,self.object)
             context['can_edit']    = user_can('edit',up,self.object)
             context['can_delete']  = user_can('delete',up,self.object)
             context['can_unshare'] = user_can('unshare',up,self.object)
             context['can_create']  = user_can('create',up,self.object)
+            context['header']      = 'Test %d: %s' % (self.object.pk,self.object.title)
             context.update(get_alert_context(self.request,self.object))
         else:
             context['error'] = 'You do not have access to this test.'
-        context['header'] = 'Test %d: %s' % (self.object.pk,self.object.title)
+            context['header'] = 'Test %d' % (self.object.pk)
         return context
 
 @login_required
@@ -771,7 +773,7 @@ class EditTestInstance(UpdateView):
         return super(EditTestInstance, self).dispatch(*args, **kwargs)
 
     def get_success_url(self):
-        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id'],))+'?alert=edit&pk='+str(test_instance_id)
+        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id'],))+'?alert=edit&pk='+str(self.kwargs['test_instance_id'])
         
     def get_object(self):
         return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
@@ -935,105 +937,77 @@ def run_test_instance(request, test_id, test_instance_id):
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def export_data(request):
-    test_id_ran = TestInstance.objects.exclude(run_time=None).values_list('test__id',flat=True).distinct()    # pk's of all tests that have test instances that have been run
-    up = request.user.get_profile()
-    # of these, find the ones of which the user is an owner or collaborator
-    t_valid = []
-    ti_valid = []
-    t_valid_id = []
-    ti_valid_id = []
-    for id in test_id_ran:                              # for each run test, find its run instances
-        t_ran = Test.objects.get(pk=id)
-        t_ran_ti = t_ran.testinstance_set.exclude(run_time=None)
-        tmp_list = []
-        tmp_list_id = []
-        for ti in t_ran_ti:
-            if user_can('export',up,ti):
-                tmp_list.append(ti)
-                tmp_list_id.append(ti.pk)
-        if len(tmp_list) > 0:
-            t_valid.append(t_ran)
-            ti_valid.append(tmp_list)
-            ti_valid_id.append(tmp_list_id)
-            t_valid_id.append(t_ran.pk)
-    # if this page was reached from a test/test instance page, select default options
-    if len(t_valid) > 0:
-        t_valid_index_default = 0
-        ti_valid_index_default = 0
-        if request.method == 'POST':
-            try:
-                test_id = int(request.POST['test_id'])
-            except KeyError:
-                pass
-            else:
-                if test_id in t_valid_id:
-                    t_valid_index_default = t_valid_id.index(test_id)
-                    try:
-                        test_instance_id = int(request.POST['test_instance_id'])
-                    except KeyError:
-                        pass
-                    else:
-                        if test_instance_id in ti_valid_id[t_valid_index_default]:
-                            ti_valid_index_default = ti_valid_id[t_valid_index_default].index(test_instance_id)
-                        else:
-                            return render_to_response('testtool/manager/export_data.html', { 'error': 'You do not have access to this test instance data' }, context_instance=RequestContext(request))
-                else:
-                    return render_to_response('testtool/manager/export_data.html', { 'error': 'You do not have access to this test data' }, context_instance=RequestContext(request))
-        data = {'t_valid': t_valid, 'ti_valid': ti_valid, 't_valid_index_default': t_valid_index_default, 'ti_valid_index_default': ti_valid_index_default }
+def export_obj(request,test_id,test_instance_id=None):
+    if test_instance_id is None:
+        mode = 'Test'
+        obj = get_object_or_404(Test, pk=test_id)
+        hdr = 'Export Test %d: %s' % (obj.pk, obj.title)
     else:
-        data = {'error': 'There are no test instances that have been run for which you have export permissions.' }
-    return render_to_response('testtool/manager/export_data.html', data, context_instance=RequestContext(request))
-        
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def save_data(request):
-    #
-    # doesn't do any checking for existence of objects (i.e. try-catch)!!!
-    # 
-    if request.method == 'POST':
-        try:
-            t_id = int(request.POST['test_select'])
-            ti_id = int(request.POST['test_instance_select'])
-            format_list = request.POST.getlist('format')
-        except KeyError:
-            return HttpResponse('Please select a choice')
+        mode = 'Test Instance'
+        obj = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)
+        hdr = 'Export Test Instance %d of Test %d: %s' % (obj.pk, obj.test.pk, obj.test.title)
+    up = request.user.get_profile()
+    perm = user_can('export',up,obj,True)
+    if perm['granted']:
+        if request.method == 'POST':
+            form = ExportDataForm(request.POST)
+            if form.is_valid():
+                if mode=='Test':                    
+                    ti_set = TestInstance.objects.filter(test=obj)
+                    ti_list = []
+                    for ti in ti_set:
+                        if ti.has_data():
+                            ti_list.append(ti)
+                elif mode=='Test Instance':
+                    ti_list = [obj]
+                return export_data(form.cleaned_data['format'],ti_list)
         else:
-            up = request.user.get_profile()
-            ti = get_object_or_404(TestInstance, pk=ti_id)
-            if user_can('export',up,ti):        # check that user can export test instances
-                if len(format_list) == 0:
-                    response = HttpResponse('Please select a data format')
-                else:
-                    raw_data = get_raw_data(ti)
-                    if len(format_list) == 1:
-                        data = get_formatted_data(raw_data, format_list[0])
-                        response = HttpResponse(content_type=data['type'])
-                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.%s' % (ti.test.title, ti_id, data['ext'])
-                        response.write(data['buffer'].getvalue())
-                        data['buffer'].close()
-                    else:
-                        zip_buffer = StringIO()
-                        zip = zipfile.ZipFile(zip_buffer,'a',zipfile.ZIP_DEFLATED)
-                        for format in format_list:
-                            data = get_formatted_data(raw_data, format)
-                            zip.writestr('%s_instance_%d.%s' % (ti.test.title, ti_id, data['ext']), data['buffer'].getvalue())
-                            data['buffer'].close()
-                        for file in zip.filelist:       # fix for Linux zip files read in Windows (http://bitkickers.blogspot.com/2010/07/django-zip-files-create-dynamic-in.html)
-                            file.create_system = 0
-                        zip.close()
-                        response = HttpResponse(content_type='application/zip')
-                        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.zip' % (ti.test.title, ti_id)
-                        response.write(zip_buffer.getvalue())
-                        zip_buffer.close()
-                return response
-            else:
-                return HttpResponse('You do not have permission to export this test instance.')
-    return HttpResponseRedirect(reverse('export_data'))
-
-
+            form = ExportDataForm()
+        return render_to_response('testtool/manager/export_data.html', {'header': hdr, 'form': form}, context_instance=RequestContext(request))
+    else:
+        if not perm['perm_user']:
+            msg = 'You do not have permission to export this %s.' % (mode)
+            hdr = 'Export Data'
+        elif not perm['perm_obj']:
+            msg = 'This %s does not have any data.' % (mode)
+        return render_to_response('testtool/manager/export_data.html', {'header': hdr, 'error': msg}, context_instance=RequestContext(request))
+        
+        
+def export_data(format_list, ti_list):
+    num_format = len(format_list)
+    num_ti = len(ti_list)
+    if num_format==0 or num_ti==0:
+        raise Exception('export_data: empty list.')
+    if num_format==1 and num_ti==1:
+        ti = ti_list[0]
+        raw_data = get_raw_data(ti)
+        data = get_formatted_data(raw_data, format_list[0])
+        response = HttpResponse(content_type=data['type'])
+        response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.%s' % (ti.test.title, ti.pk, data['ext'])
+        response.write(data['buffer'].getvalue())
+        data['buffer'].close()
+    else:
+        zip_buffer = StringIO()
+        zip = zipfile.ZipFile(zip_buffer,'a',zipfile.ZIP_DEFLATED)
+        for ti in ti_list:
+            raw_data = get_raw_data(ti)
+            for format in format_list:
+                data = get_formatted_data(raw_data, format)
+                zip.writestr('%s_instance_%d.%s' % (ti.test.title, ti.pk, data['ext']), data['buffer'].getvalue())
+                data['buffer'].close()
+        for file in zip.filelist:       # fix for Linux zip files read in Windows (http://bitkickers.blogspot.com/2010/07/django-zip-files-create-dynamic-in.html)
+            file.create_system = 0
+        zip.close()
+        response = HttpResponse(content_type='application/zip')
+        if num_ti==1:
+            response['Content-Disposition'] = 'attachment; filename=%s_instance_%d.zip' % (ti.test.title, ti.pk)
+        else:
+            response['Content-Disposition'] = 'attachment; filename=%s_data.zip' % (ti.test.title)
+        response.write(zip_buffer.getvalue())
+        zip_buffer.close()
+    return response
+       
+                
 def get_raw_data(ti):
     # this should eventually extract the data out of the test instance so that the database only needs to be accessed once for returning a variety of formats
     return ti
@@ -1045,7 +1019,7 @@ def get_formatted_data(raw_data, format):
         data = format_as_report(raw_data,buffer)
         type = 'application/pdf'
         ext = 'pdf'
-    elif format == 'csv':
+    elif format == 'spreadsheet':
         data = format_as_csv(raw_data,buffer)
         type = 'text/csv'
         ext = 'csv'

@@ -28,6 +28,7 @@
             }
             .info {
                 padding: 3px 15px;
+                margin: 0px;
             }
         </style>
         
@@ -85,7 +86,6 @@
                             <li class="{% active request 'create_test' %}"><a href="{% url create_test %}"><i class="icon-file"></i> Create New Test</a></li>
                             <li class="nav-header">Tools</li>
                             <li class="{% active request 'share_test' %}"><a href="{% url share_test %}"><i class="icon-share"></i> Share</a></li>
-                            <li class="{% active request 'export_data' %}"><a href="{% url export_data %}"><i class="icon-briefcase"></i> Export</a></li>
                             <li class="{% active request 'log_book' %}"><a href="{% url log_book %}"><i class="icon-book"></i> Log Book</a></li>
                         </ul>
                     </div><!--/.well -->
