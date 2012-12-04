@@ -11,17 +11,11 @@
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <!-- styles -->
-        <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
-        <link href="{% static 'bootstrap/css/bootstrap-responsive.min.css' %}" rel="stylesheet" >
-        <link type="text/css" href="{% static 'css/smoothness/jquery-ui-1.8.18.custom.css' %}" rel="stylesheet" />
+        <link type="text/css" href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
         <style type="text/css">
             body {
                 padding-top: 60px;
                 padding-bottom: 40px;
-            }
-            .sidebar-nav {
-                padding: 9px 0;
             }
             .profile-hover:hover .dropdown-menu{
                 display: block;    
@@ -30,19 +24,24 @@
                 padding: 3px 15px;
             }
         </style>
+        <link type="text/css" href="{% static 'bootstrap/css/bootstrap-responsive.min.css' %}" rel="stylesheet" >
+        <link type="text/css" href="{% static 'css/tally.css' %}" rel="stylesheet" >
         
-        <script src="js/bootstrap.min.js"></script>
-        <script type="text/javascript" src="{% static 'js/jquery-1.7.2.min.js' %}"></script>
-        <script type="text/javascript" src="{% static 'js/jquery-ui-1.8.18.custom.min.js' %}"></script>
+        <script type="text/javascript" src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
+		<script type="text/javascript" src="{% static 'bootstrap/js/jquery.js' %}"></script>
         <script type="text/javascript" src="{% static 'js/json2.js' %}"></script>
-        
+
+        <link rel="shortcut icon" href="{% static 'bootstrap/ico/favicon.ico' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'bootstrap/ico/apple-touch-icon-144-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'bootstrap/ico/apple-touch-icon-114-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'bootstrap/ico/apple-touch-icon-72-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" href="{% static 'bootstrap/ico/apple-touch-icon-57-precomposed.png' %}">        
         {% block head %}
         {% endblock head %}
     </head>
     
     <body>
-
-        <div class="navbar navbar-fixed-top">
+        <div class="navbar navbar-inverse navbar-fixed-top">
             <div class="navbar-inner">
                 <div class="container-fluid">
                     <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
@@ -70,26 +69,24 @@
                             <li class="{% active request 'about' %}"><a href="{% url about %}">About</a></li>
                             <li class="{% active request 'help' %}"><a href="{% url help %}">Help</a></li>
                         </ul>
-                    </div><!--/.nav-collapse -->
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="container-fluid">
             <div class="row-fluid">
-                <div class="span3">
-                    <div class="well sidebar-nav">
-                        <ul class="nav nav-list">
-                            <li class="nav-header">Tests</li>
-                            <li class="{% active request 'list_tests' %}"><a href="{% url list_tests %}"><i class="icon-list"></i> My Tests</a></li>
-                            <li class="{% active request 'create_test' %}"><a href="{% url create_test %}"><i class="icon-file"></i> Create New Test</a></li>
-                            <li class="nav-header">Tools</li>
-                            <li class="{% active request 'share_test' %}"><a href="{% url share_test %}"><i class="icon-share"></i> Share</a></li>
-                            <li class="{% active request 'export_data' %}"><a href="{% url export_data %}"><i class="icon-briefcase"></i> Export</a></li>
-                            <li class="{% active request 'log_book' %}"><a href="{% url log_book %}"><i class="icon-book"></i> Log Book</a></li>
-                        </ul>
-                    </div><!--/.well -->
-                </div><!--/span-->
+            	<div class="span3">
+                    	<ul class="well nav nav-list tally-sidenav">
+                        	<li class="nav-header">Tests</li>
+                        	<li class="{% active request 'list_tests' %}"><a href="{% url list_tests %}"><i class="icon-list"></i> My Tests</a></li>
+                        	<li class="{% active request 'create_test' %}"><a href="{% url create_test %}"><i class="icon-file"></i> Create New Test</a></li>
+                        	<li class="nav-header">Tools</li>
+                        	<li class="{% active request 'share_test' %}"><a href="{% url share_test %}"><i class="icon-share"></i> Share</a></li>
+                        	<li class="{% active request 'export_data' %}"><a href="{% url export_data %}"><i class="icon-briefcase"></i> Export</a></li>
+                        	<li class="{% active request 'log_book' %}"><a href="{% url log_book %}"><i class="icon-book"></i> Log Book</a></li>
+                    	</ul>
+                </div>
                 <div class="span9">
                     <h1>{% block header %}Default header{% endblock header %}</h1>
                     <br/><br/>
@@ -111,16 +108,27 @@
                     {% endif %}
                     {% block buttons %}
                     {% endblock buttons  %}
-                </div><!--/span-->
-            </div><!--/row-->
-
+                </div>
+            </div>
             <hr>
-
             <footer>
                 <p>&copy; UCSD - Video Processing Lab 2012</p>
             </footer>
-
-        </div><!--/.fluid-container-->
-
+        </div>
+		
+        <script src="{% static 'bootstrap/js/bootstrap-transition.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-alert.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-modal.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-dropdown.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-scrollspy.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-tab.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-tooltip.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-popover.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-button.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-collapse.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-carousel.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-typeahead.js' %}"></script>
+        <script src="{% static 'bootstrap/js/bootstrap-affix.js' %}"></script>
+        <script src="{% static 'js/tally.js' %}"></script>
     </body>
 </html>
