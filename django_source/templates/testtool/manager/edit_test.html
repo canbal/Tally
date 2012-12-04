@@ -136,7 +136,8 @@
         			<div class="accordion-heading">
     					<table width="95%" align="center">
     						<tr>
-								<td align="left" width="100%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
+								<td width="10%">{{ tc.0.repeat }} x</td>
+								<td align="left" width="90%"><a class="accordion-toggle" data-toggle="collapse" data-parent="#id_test_cases" href="#collapse{{ forloop.counter }}">Test Case #{{ forloop.counter }}: {{ tc.0.pk }}</a></td>
 								{% if allow_modify %}
 								<td align="right"><button class="btn btn-mini btn-danger" id="btn_del_tc_{{ tc.0.pk }}"><i class="icon-remove"></i></button></td>
 								{% endif %}
