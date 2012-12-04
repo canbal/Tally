@@ -9,10 +9,7 @@
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <!-- styles -->
-        <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
-        <link href="{% static 'bootstrap/css/bootstrap-responsive.min.css' %}" rel="stylesheet" >
-        <link type="text/css" href="{% static 'css/smoothness/jquery-ui-1.8.18.custom.css' %}" rel="stylesheet" />
+        <link type="text/css" href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
         <style type="text/css">
             body {
                 padding-top: 60px;
@@ -25,6 +22,13 @@
                 list-style: none;
             }
         </style>
+        <link type="text/css" href="{% static 'bootstrap/css/bootstrap-responsive.min.css' %}" rel="stylesheet" >
+
+        <link rel="shortcut icon" href="{% static 'bootstrap/ico/favicon.ico' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'bootstrap/ico/apple-touch-icon-144-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'bootstrap/ico/apple-touch-icon-114-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'bootstrap/ico/apple-touch-icon-72-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" href="{% static 'bootstrap/ico/apple-touch-icon-57-precomposed.png' %}">        
     </head>
     
     <body>
@@ -45,32 +49,27 @@
                 </div>
                 
                 <div class="span4">
-                    <form class="well form-horizontal" action="{% url login %}" method="post">
+                    <form class="well form-inline" action="{% url login %}" method="post">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
                         <div class="alert alert-error">
                             Your username and password didn't match. Please try again.
                     	</div>
                     	{% endif %}
-	                	<table width="100%">
-            			<tr>
-                			<td>
-                        		<div class="control-group{% if form.username.errors or form.non_field_errors %} error{% endif %}">
-                            		<label class="control-label" for="id_{{ form.username.html_name }}">{{ form.username.label }}{% if form.username.errors %} (required){% endif %}</label>
-                            		<div class="controls">
-                                	{{ form.username }}
-                            	</div>
-                        		</div>
-                        		<div class="control-group{% if form.password.errors or form.non_field_errors %} error{% endif %}">
-                            		<label class="control-label" for="id_{{ form.password.html_name }}">{{ form.password.label }}{% if form.password.errors %} (required){% endif %}</label>
-                            		<div class="controls">
-                                	{{ form.password }}
-                        			</div>
-                        		</div>
-                    		</td>
-                        	<td><input type="submit" class="btn btn-large btn-success pull-right" value="Login" /></td>
-                        </tr>
-                        </table>
+                		<div class="control-group{% if form.username.errors or form.non_field_errors %} error{% endif %}">
+                    		<label class="control-label" for="id_{{ form.username.html_name }}">{{ form.username.label }}{% if form.username.errors %} (required){% endif %}</label>
+                    		<div class="controls">
+	                        	{{ form.username }}
+                    		</div>
+                		</div>
+                		<div class="control-group{% if form.password.errors or form.non_field_errors %} error{% endif %}">
+                    		<label class="control-label" for="id_{{ form.password.html_name }}">{{ form.password.label }}{% if form.password.errors %} (required){% endif %}</label>
+                    		<div class="controls">
+	                        	{{ form.password }}
+                			</div>
+                		</div>
+                		<div class="form-actions">                    		<input type="submit" class="btn btn-large btn-success pull-right" value="Login"/>
+                        </div>
                         <input type="hidden" name="next" value="{{ next }}" />
                     </form>
                     <div class="well">
@@ -89,8 +88,6 @@
             <footer>
                 <p>&copy; UCSD - Video Processing Lab 2012</p>
             </footer>
-
-        </div><!--/.fluid-container-->
-
+        </div>
     </body>
 </html>
