@@ -106,6 +106,7 @@ class Video(models.Model):
 class TestCase(models.Model):
     test   = models.ForeignKey(Test)
     videos = models.ManyToManyField(Video, through='TestCaseItem')
+    repeat = models.PositiveIntegerField(default=1)
     
     class Meta:
         app_label = 'testtool'

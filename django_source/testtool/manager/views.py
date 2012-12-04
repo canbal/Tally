@@ -83,6 +83,8 @@ def user_permission_test(up,t):
     # policy based on test status for actions on tests
     zero_ti   = TestInstance.objects.filter(test=t).count() == 0
     zero_coll = t.collaborators.all().count() == 0
+    zero_ti_coll = TestInstance.objects.filter(test=t,collaborators=up).count() == 0
+    zero_ti_coll = zero_ti_coll and (TestInstance.objects.filter(test=t,owner=up).count() == 0)
     obj_policy = { 'view':    True,
                    'export':  t.has_data(),
                    'share':   True,
@@ -90,7 +92,7 @@ def user_permission_test(up,t):
                    'edit':    True,
                    'modify':  zero_ti and zero_coll,
                    'delete':  zero_ti and zero_coll,
-                   'unshare': True }
+                   'unshare': zero_ti_coll }
     return { 'status': status[idx], 'perm_policy': perm_policy, 'obj_policy': obj_policy }
 
 
@@ -455,21 +457,8 @@ def unshare_test(request, test_id):
     if request.method=='POST':
         up = request.user.get_profile()
         if user_can('unshare',up,t):
-            # check if all of its owned TestInstances are free to delete
-            owned_ti_set = TestInstance.objects.filter(test=t,owner=up)
-            for ti in owned_ti_set:
-                if not user_can('delete',up,ti):
-                    return HttpResponseRedirect(reverse('display_test_instance', args=(test_id, ti.pk,))+'?alert=delete_err')
-            # if all is good delete/unshare all the associated TestInstances
-            for ti in owned_ti_set:
-                create_log_entry(up,'deleted',ti)
-                ti.delete()
-            for ti in TestInstance.objects.filter(test=t,collaborators=up):
-                ti.collaborators.remove(up)
-                create_log_entry(up,'unshared',ti)
-            # finally unshare the Test
-            t.collaborators.remove(up)
             create_log_entry(up,'unshared',t)
+            t.collaborators.remove(up)
             return HttpResponseRedirect(reverse('list_tests')+'?alert=unshare&pk='+str(test_id))
         else:
             return HttpResponseRedirect(reverse('display_test', args=(test_id,))+'?alert=unshare_err')
@@ -595,10 +584,11 @@ def add_test_case_discrete(request, test, user_profile):
     if request.method == 'POST':
         form = CreateTestCaseFormDiscrete(request.POST)
         if form.is_valid():
-            tc = TestCase.objects.create(test=test)
             data = form.cleaned_data
             f1 = data['filename1']
             f2 = data['filename2']
+            r  = data['repeat']
+            tc = TestCase.objects.create(test=test,repeat=r)
             for ii in range(0,2): # repeat each video twice
                 if test.method == 'DSIS':
                     TestCaseItem.objects.create(test_case=tc,video=f1,play_order=1+ii*2,is_reference=True)
@@ -619,7 +609,7 @@ def add_test_case_discrete(request, test, user_profile):
 
     form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
     form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
-        
+
     if test.method == 'DSIS':
         form.fields['filename1'].label = 'Reference video'
         form.fields['filename2'].label = 'Test video'
@@ -633,9 +623,10 @@ def add_test_case_SSCQE(request, test, user_profile):
     if request.method == 'POST':
         form = CreateTestCaseFormSSCQE(request.POST)
         if form.is_valid():
-            tc = TestCase.objects.create(test=test)
             data = form.cleaned_data
             f = data['filename']
+            r = data['repeat']
+            tc = TestCase.objects.create(test=test)
             TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
             return {'status': 'done'}
     else:
@@ -733,7 +724,9 @@ class CreateTestInstance(CreateView):
         create_log_entry(up,'created',self.object)
         # create new test case instances
         tc_all = self.object.test.testcase_set.all()
-        repeat = tc_all.count()*[1]            # repeat each test case 1 time for testing; this list will come from somewhere else eventually
+        repeat = []
+        for tc in tc_all:
+            repeat.append(tc.repeat)
         rand_order = range(1,sum(repeat)+1)    # play order starts from 1
         random.shuffle(rand_order)
         idx = 0
