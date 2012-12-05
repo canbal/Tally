@@ -52,26 +52,13 @@ class DisplayTestForm(forms.ModelForm):
 class CreateTestCaseFormDiscrete(forms.Form):
     filename1 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
     filename2 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
-    repeat    = forms.IntegerField(required=True,initial=1)
-    
-    def clean(self):
-        cleaned_data = super(CreateTestCaseFormDiscrete, self).clean()
-        repeat = cleaned_data.get('repeat')
-        if repeat <= 0:
-            msg = 'Has to be positive'
-            self._errors['repeat'] = self.error_class([msg])
-            del cleaned_data['repeat']
-        elif repeat > 10:
-            msg = 'Maximum allowed repetition is 10'
-            self._errors['repeat'] = self.error_class([msg])
-            del cleaned_data['repeat']            
-        return cleaned_data
+    repeat    = forms.IntegerField(min_value=1,max_value=10,required=True,initial=1)
     
     
 class CreateTestCaseFormSSCQE(forms.Form):
     filename = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
-    repeat   = forms.IntegerField(required=True,initial=1)
-    
+    repeat   = forms.IntegerField(min_value=1,max_value=10,required=True,initial=1)
+
     def clean(self):
         cleaned_data = super(CreateTestCaseFormDiscrete, self).clean()
         repeat = cleaned_data.get('repeat')
@@ -85,6 +72,7 @@ class CreateTestCaseFormSSCQE(forms.Form):
 class CreateEditTestInstanceForm(forms.ModelForm):
     available = forms.ModelMultipleChoiceField(label='Available subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
     subjects = forms.ModelMultipleChoiceField(label='Enrolled subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
+    
     class Meta:
         model = TestInstance
         fields = ('path', 'location', 'description', 'schedule_time', 'available', 'subjects')
