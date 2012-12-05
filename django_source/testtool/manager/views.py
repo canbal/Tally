@@ -957,7 +957,7 @@ def export_share_obj(request,fcn,test_id,test_instance_id=None):
     if fcn=='export':
         return export_obj(request,obj,mode,perm,args)
     elif fcn=='share':
-        return share_obj(request,obj,mode,perm,args)
+        return share_obj(request,obj,mode,perm,args,up)
 
 
 def export_obj(request,obj,mode,perm,args):
@@ -986,7 +986,7 @@ def export_obj(request,obj,mode,perm,args):
     return render_to_response('testtool/manager/export_data.html', args, context_instance=RequestContext(request))
     
         
-def share_obj(request,obj,mode,perm,args):
+def share_obj(request,obj,mode,perm,args,up):
     if perm['granted']:
         if request.method == 'POST':
             form = ShareObjectForm(request.POST)
@@ -998,7 +998,7 @@ def share_obj(request,obj,mode,perm,args):
                     for u in share_list:
                         coll_ti = TestInstance.objects.filter(test=obj,collaborators=u)
                         for ti in coll_ti:
-                            ti.collaborators.remove(up)
+                            ti.collaborators.remove(u)
                     return HttpResponseRedirect(reverse('display_test', args=(obj.pk,))+'?alert=share&pk='+str(obj.pk))
                 elif mode=='Test Instance':
                     ti_list = [obj]
