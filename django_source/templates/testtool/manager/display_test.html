@@ -73,13 +73,11 @@
 	</div>
 	{% endif %}
     <div class="form-actions form-container">
-        <a class="btn" href="{% url list_test_instances test_id=test_id %}">View Instances</a>
+        {% if ti_exist %}
+            <a class="btn" href="{% url list_test_instances test_id=test_id %}">View Instances</a>
+        {% endif %}
        	{% if can_share %}
-       	<form action="{% url share_test %}" method="post">
- 	      	{% csrf_token %}
-	        <input type="hidden" name="test_id" value="{{ test_id }}" />
-            <input type="submit" class="btn btn-info" value="Share" />
-        </form>
+            <a class="btn btn-primary" href="{% url share_test test_id=test_id %}">Share</a>
         {% endif %}
         {% if can_export %}
             <a class="btn btn-primary" href="{% url export_test test_id=test_id %}">Export Data</a>

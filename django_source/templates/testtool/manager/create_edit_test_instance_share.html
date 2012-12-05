@@ -9,13 +9,13 @@
 <script type="text/javascript">
     $().ready(function() {
         $('#add_btn').click(function() {
-            return !$('#id_available option:selected').remove().appendTo('#id_subjects').removeAttr("selected");
+            return !$('#id_available option:selected').remove().appendTo('#id_to_enroll').removeAttr("selected");
         });
         $('#remove_btn').click(function() {
-            return !$('#id_subjects option:selected').remove().appendTo('#id_available').removeAttr("selected");
+            return !$('#id_to_enroll option:selected').remove().appendTo('#id_available').removeAttr("selected");
         });
         $('form').submit(function() {
-            $('#id_subjects option').each(function(i) {
+            $('#id_to_enroll option').each(function(i) {
                 $(this).attr("selected", "selected");
             });
         });
@@ -37,8 +37,8 @@
         <div class="control-group{% if field.errors %} error{% endif %}">
             <label class="control-label" for="id_{{ field.html_name }}">{{ field.label }}</label>
             <div class="controls">
-                {% if field.html_name == "subjects" %}
-                <select {% if field.field.widget.attrs.readonly %}readonly="True"{% endif %} multiple="multiple" name="subjects" id="id_{{ field.html_name }}">
+                {% if field.html_name == to_enroll %}
+                <select {% if field.field.widget.attrs.readonly %}readonly="True"{% endif %} multiple="multiple" name="{{ field.html_name }}" id="id_to_enroll">
                     {% for e in enrolled %}
                     <option value="{{ e.pk }}">{{ e.user.username }}</option>
                     {% endfor %}
@@ -61,8 +61,8 @@
         </div>
     {% endfor %}
     <div class="form-actions">
-        <a class="btn" href="{% block cancel_href %}{% endblock cancel_href %}">Cancel</a>
-        <input type="submit" class="btn btn-primary" value="{% block submit_value %}{% endblock submit_value %}"/>
+        <a class="btn" href="{{ cancel_url }}">Cancel</a>
+        <input type="submit" class="btn btn-primary" value="{{ submit_value }}"/>
     </div>
 </form>
 {% endblock content %}

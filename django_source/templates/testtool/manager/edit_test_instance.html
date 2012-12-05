@@ -1,9 +1,0 @@
-
-{% extends "testtool/manager/base_create_edit_test_instance.html" %}
-
-{% block cancel_href %}
-    {% url display_test_instance test_id=test_id test_instance_id=test_instance_id %}
-{% endblock cancel_href %}
-
-<!-- must be on one line -->
-{% block submit_value %}Save{% endblock submit_value %}

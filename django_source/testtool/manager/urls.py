@@ -5,9 +5,10 @@ urlpatterns = patterns('testtool.manager.views',
 
     ### Tests
     url(r'^tests/$',                                'list_tests',       name='list_tests'),
-    url(r'^tests/(?P<test_id>\d+)/delete$',         'delete_test',      name='delete_test'),
+    url(r'^tests/(?P<test_id>\d+)/export$',         'export_share_obj', {'fcn':'export'}, name='export_test'),
+    url(r'^tests/(?P<test_id>\d+)/share$',          'export_share_obj', {'fcn':'share'},  name='share_test'),
     url(r'^tests/(?P<test_id>\d+)/unshare$',        'unshare_test',     name='unshare_test'),
-    url(r'^tests/(?P<test_id>\d+)/export$',         'export_obj',       name='export_test'),
+    url(r'^tests/(?P<test_id>\d+)/delete$',         'delete_test',      name='delete_test'),
     url(r'^tests/(?P<test_id>\d+)/addvideo/$',      'add_video',        name='add_video'),
     url(r'^deletevideo/(?P<video_id>\d+)/$',        'delete_video',     name='delete_video'),
     url(r'^tests/(?P<test_id>\d+)/addtestcase/$',   'add_test_case',    name='add_test_case'),
@@ -15,14 +16,11 @@ urlpatterns = patterns('testtool.manager.views',
     
     ### Test Instances
     url(r'^tests/(?P<test_id>\d+)/instances/$',                                  'list_test_instances',   name='list_test_instances'),
-    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/delete$',  'delete_test_instance',  name='delete_test_instance'),
     url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/run/$',    'run_test_instance',     name='run_test_instance'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/export$',  'export_share_obj',      {'fcn':'export'}, name='export_test_instance'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/share$',   'export_share_obj',      {'fcn':'share'},  name='share_test_instance'),
     url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/unshare$', 'unshare_test_instance', name='unshare_test_instance'),
-    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/export$',  'export_obj',            name='export_test_instance'),
-    
-    ### Share/Export
-    url(r'^share/$',       'share_test',        name='share_test'),
-    url(r'^share/save/$',  'share_test_submit', name='share_test_submit'),
+    url(r'^tests/(?P<test_id>\d+)/instances/(?P<test_instance_id>\d+)/delete$',  'delete_test_instance',  name='delete_test_instance'),
     
     ### Misc
     url(r'^logbook/$',                          'log_book',       name='log_book'),

@@ -199,30 +199,3 @@ def desktop_signal(ti,status,handle,msg,mediaList,validKeys):
     else:
         raise Exception('desktop_signal: invalid status.') 
     return HttpResponse(json.dumps({'status': status, 'msg': msg_text, 'path': path, 'mediaList': mediaList, 'counter': counter}))
-    
-    
-
-########################################################################################################
-################################            UNUSED FUNCTIONS            ################################
-########################################################################################################
-@login_required
-@group_required('Subjects')
-def enroll(request):
-    #subject = request.user.get_profile()
-    #latest_test_instances = TestInstance.objects.exclude(subjects=subject).order_by('-create_time')
-    #return render_to_response('testtool/main/enroll.html', {'latest_test_instances': latest_test_instances})
-    return HttpResponseRedirect('/')
-
-        
-@login_required
-@group_required('Subjects')
-def enroll_to_test_instance(request, test_instance_id):
-    # ti = get_object_or_404(TestInstance, pk=test_instance_id)
-    # try:
-    # A user may not have an associated UserProfile - i.e. SuperUser
-        # subject = request.user.get_profile()
-    # except UserProfile.DoesNotExist:
-        # pass
-    # else:
-        # ti.subjects.add(subject)
-    return HttpResponseRedirect('/')

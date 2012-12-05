@@ -85,9 +85,11 @@ def user_permission_test(up,t):
     zero_coll = t.collaborators.all().count() == 0
     zero_ti_coll = TestInstance.objects.filter(test=t,collaborators=up).count() == 0
     zero_ti_coll = zero_ti_coll and (TestInstance.objects.filter(test=t,owner=up).count() == 0)
+    exclude_list = [t.owner.pk] + [x.pk for x in t.collaborators.all()]
+    available_collaborators = get_available_collaborators(t)
     obj_policy = { 'view':    True,
                    'export':  t.has_data(),
-                   'share':   True,
+                   'share':   available_collaborators.count() > 0,
                    'create':  t.testcase_set.count() > 0,
                    'edit':    True,
                    'modify':  zero_ti and zero_coll,
@@ -117,9 +119,10 @@ def user_permission_test_instance(up,ti):
                     'delete':  status[0:1],
                     'unshare': status[1:2] }
     # policy based on test instance status for actions on test instances
+    available_collaborators = get_available_collaborators(ti)
     obj_policy = { 'view':    True,
                    'export':  ti.has_data(),
-                   'share':   True,
+                   'share':   available_collaborators.count() > 0,
                    'run':     ti.is_active(),
                    'edit':    True,
                    'delete':  ti.collaborators.count() == 0,
@@ -419,6 +422,7 @@ class DisplayTest(UpdateView):
             context['files']       = Video.objects.filter(test=self.object)
             context['tc_data']     = tc_data
             context['test_id']     = self.object.pk
+            context['ti_exist']    = TestInstance.objects.filter(test=self.object).count() > 0
             context['can_share']   = user_can('share',up,self.object)
             context['can_export']  = user_can('export',up,self.object)
             context['can_edit']    = user_can('edit',up,self.object)
@@ -432,6 +436,7 @@ class DisplayTest(UpdateView):
             context['header'] = 'Test %d' % (self.object.pk)
         return context
 
+        
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
@@ -701,9 +706,9 @@ def list_tests(request):
 ########################################################################################################
 class CreateTestInstance(CreateView):
     model = TestInstance
-    form_class = CreateTestInstanceForm
+    form_class = CreateEditTestInstanceForm
     initial = {'schedule_time':datetime.datetime.now()}
-    template_name = 'testtool/manager/create_test_instance.html'
+    template_name = 'testtool/manager/create_edit_test_instance_share.html'
                 
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
@@ -742,9 +747,11 @@ class CreateTestInstance(CreateView):
         t = get_object_or_404(Test, pk=self.kwargs['test_id'])
         perm = user_can('create',self.request.user.get_profile(),t,True)
         if perm['granted']:
-            context['header']   = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
-            context['enrolled'] = UserProfile.objects.none()
-            context['test_id']  = self.kwargs['test_id']
+            context['header']       = 'Create New Test Instance of Test %d: %s' % (t.pk, t.title)
+            context['enrolled']     = UserProfile.objects.none()
+            context['to_enroll']    = 'subjects'
+            context['cancel_url']   = reverse('display_test', args=(self.kwargs['test_id'],))
+            context['submit_value'] = 'Create'
         else:
             context['header'] = 'Create New Test Instance'
             if not perm['perm_user']:
@@ -756,8 +763,8 @@ class CreateTestInstance(CreateView):
         
 class EditTestInstance(UpdateView):
     model = TestInstance
-    form_class = CreateTestInstanceForm
-    template_name = 'testtool/manager/edit_test_instance.html'
+    form_class = CreateEditTestInstanceForm
+    template_name = 'testtool/manager/create_edit_test_instance_share.html'
     
     @method_decorator(login_required)
     @method_decorator(group_required('Testers'))
@@ -779,10 +786,11 @@ class EditTestInstance(UpdateView):
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
         if user_can('edit',self.request.user.get_profile(),self.object):
-            context['header']           = 'Edit Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
-            context['enrolled']         = self.object.subjects.all()
-            context['test_id']          = self.kwargs['test_id']
-            context['test_instance_id'] = self.kwargs['test_instance_id']
+            context['header']       = 'Edit Test Instance %d of Test %d: %s' % (self.object.pk, self.object.test.pk, self.object.test.title)
+            context['enrolled']     = self.object.subjects.all()
+            context['to_enroll']    = 'subjects'
+            context['cancel_url']   = reverse('display_test_instance', args=(self.kwargs['test_id'],self.kwargs['test_instance_id'],))
+            context['submit_value'] = 'Save'
         else:
             context['header'] = 'Edit Test Instance'
             context['error']  = 'You do not have permission to edit this test instance.'
@@ -930,17 +938,29 @@ def run_test_instance(request, test_id, test_instance_id):
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def export_obj(request,test_id,test_instance_id=None):
+def export_share_obj(request,fcn,test_id,test_instance_id=None):
+    if fcn not in ['export', 'share']:
+        raise Exception('export_share_obj: invalid parameter fcn.')
     if test_instance_id is None:
         mode = 'Test'
         obj = get_object_or_404(Test, pk=test_id)
-        hdr = 'Export Test %d: %s' % (obj.pk, obj.title)
+        hdr = '%s Test %d: %s' % (fcn, obj.pk, obj.title)
+        cancel_url = reverse('display_test', args=(test_id,))
     else:
         mode = 'Test Instance'
         obj = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)
-        hdr = 'Export Test Instance %d of Test %d: %s' % (obj.pk, obj.test.pk, obj.test.title)
+        hdr = '%s Test Instance %d of Test %d: %s' % (fcn, obj.pk, obj.test.pk, obj.test.title)
+        cancel_url = reverse('display_test_instance', args=(test_id,test_instance_id,))
+    args = {'header': hdr[0].capitalize()+hdr[1:], 'cancel_url': cancel_url}
     up = request.user.get_profile()
-    perm = user_can('export',up,obj,True)
+    perm = user_can(fcn,up,obj,True)
+    if fcn=='export':
+        return export_obj(request,obj,mode,perm,args)
+    elif fcn=='share':
+        return share_obj(request,obj,mode,perm,args)
+
+
+def export_obj(request,obj,mode,perm,args):
     if perm['granted']:
         if request.method == 'POST':
             form = ExportDataForm(request.POST)
@@ -956,14 +976,58 @@ def export_obj(request,test_id,test_instance_id=None):
                 return export_data(form.cleaned_data['format'],ti_list)
         else:
             form = ExportDataForm()
-        return render_to_response('testtool/manager/export_data.html', {'header': hdr, 'form': form}, context_instance=RequestContext(request))
+        args['form'] = form
     else:
         if not perm['perm_user']:
-            msg = 'You do not have permission to export this %s.' % (mode)
-            hdr = 'Export Data'
+            args['error'] = 'You do not have permission to export this %s.' % (mode)
+            args['header'] = 'Export %s' % (mode)
         elif not perm['perm_obj']:
-            msg = 'This %s does not have any data.' % (mode)
-        return render_to_response('testtool/manager/export_data.html', {'header': hdr, 'error': msg}, context_instance=RequestContext(request))
+            args['error'] = 'This %s does not have any data.' % (mode)
+    return render_to_response('testtool/manager/export_data.html', args, context_instance=RequestContext(request))
+    
+        
+def share_obj(request,obj,mode,perm,args):
+    if perm['granted']:
+        if request.method == 'POST':
+            form = ShareObjectForm(request.POST)
+            if form.is_valid():
+                share_list = form.cleaned_data['share_with']
+                obj.collaborators.add(*share_list)
+                create_log_entry(up,'shared',obj,share_list)
+                if mode=='Test':        # remove users as collaborators from test instances (i.e. elevate their status to test collaborator)
+                    for u in share_list:
+                        coll_ti = TestInstance.objects.filter(test=obj,collaborators=u)
+                        for ti in coll_ti:
+                            ti.collaborators.remove(up)
+                    return HttpResponseRedirect(reverse('display_test', args=(obj.pk,))+'?alert=share&pk='+str(obj.pk))
+                elif mode=='Test Instance':
+                    ti_list = [obj]
+                    return HttpResponseRedirect(reverse('display_test_instance', args=(obj.test.pk,obj.pk,))+'?alert=share&pk='+str(obj.pk))
+        else:
+            form = ShareObjectForm()
+        form.fields['available'].queryset = get_available_collaborators(obj)
+        args['form'] = form
+    else:
+        if not perm['perm_user']:
+            args['error'] = 'You do not have permission to share this %s.' % (mode)
+            args['header'] = 'Share %s' % (mode)
+        elif not perm['perm_obj']:
+            args['error'] = 'There are no available collaborators for this %s.' % (mode)
+    args['to_enroll'] = 'share_with'
+    args['submit_value'] = 'Share'
+    return render_to_response('testtool/manager/create_edit_test_instance_share.html', args, context_instance=RequestContext(request))
+    
+    
+def get_available_collaborators(obj):
+    # all user profiles who the object can be shared with (all Testers excluding object owner/collaborators)
+    exclude_list = [obj.owner.pk] + [x.pk for x in obj.collaborators.all()]
+    if isinstance(obj,Test):
+        pass
+    elif isinstance(obj,TestInstance):      # additionally exclude Test owner/collaborators
+        exclude_list = exclude_list + [obj.test.owner.pk] + [x.pk for x in obj.test.collaborators.all()]
+    else:
+        raise Exception('user_permission: Must pass Test or TestInstance object.')
+    return UserProfile.objects.filter(user__groups__name__iexact='Testers').exclude(pk__in=exclude_list)
         
         
 def export_data(format_list, ti_list):
@@ -1148,136 +1212,7 @@ def process_mat_py_data(ti):
     return subject_data
 
     
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def share_test(request):
-    up = request.user.get_profile()
-    t_own = Test.objects.filter(owner=up)
-    t_share = list(set(list(t_own.values_list('pk',flat=True)) + list(TestInstance.objects.filter(owner=up).values_list('test__id',flat=True))))
     
-    # group test instances by test
-    t_valid = []
-    ti_valid = []
-    t_valid_id = []
-    ti_valid_id = []
-    for id in t_share:      # all Tests that can be shared or have TestInstances that can be shared
-        t = Test.objects.get(pk=id)
-        tmp = t.testinstance_set.filter(Q(test__owner=up) | Q(owner=up)).distinct()
-        tmp_id = tmp.values_list('pk',flat=True)
-        if tmp.count() > 0:
-            t_valid.append(t)
-            ti_valid.append(tmp)
-            t_valid_id.append(t.pk)
-            ti_valid_id.append(list(tmp_id))
-
-    # list users who do not yet have access to test/test instances
-    all_testers = Group.objects.get(name='Testers').user_set.all()
-    share_test_with = []        # users with whom tests can be shared (nested list, each list corresponds to test in t_own)
-    for t in t_own:
-        share_test_with.append(list(all_testers.exclude(userprofile=t.owner).exclude(userprofile__in=t.collaborators.all())))
-    share_test_instance_with = []    # users with whom test instances can be shared (double-nested list, i.e. [[[u1,u2,u3],[u1,u4]], [[u2,u3],[u3,u4]]]
-    for ti_list in ti_valid:
-        sw1 = []
-        for ti in ti_list:
-            sw1.append(list(all_testers.exclude(userprofile=ti.owner).exclude(userprofile__in=ti.collaborators.all()).exclude(userprofile=ti.test.owner).exclude(userprofile__in=ti.test.collaborators.all())))
-        share_test_instance_with.append(sw1)
-
-    # set defaults
-    radio_default = 1
-    t_valid_index_default = 0
-    ti_valid_index_default = 0
-    # if this page was reached from a test/test instance page, select default options
-    if request.method == 'POST':
-        try:
-            test_id = int(request.POST['test_id'])
-        except KeyError:
-            # no defaults requested, use default defaults
-            pass
-        else:
-            try:
-                test_instance_id = int(request.POST['test_instance_id'])
-            except KeyError:
-                # a test was requested to be shared
-                t_own_id_values = t_own.values_list('pk',flat=True)
-                if test_id in t_own_id_values:
-                    radio_default = 0
-                    t_valid_index_default = list(t_own_id_values).index(test_id)
-                else:
-                    return render_to_response('testtool/manager/share_test.html', 'You do not have permission to share this test.', context_instance=RequestContext(request))
-            else:
-                # a test instance of a test was requested to be shared
-                if test_id in t_valid_id:
-                    t_idx = t_valid_id.index(test_id)
-                    if test_instance_id in ti_valid_id[t_idx]:
-                        ti_valid_index_default = ti_valid_id[t_idx].index(test_instance_id)
-                        t_valid_index_default = t_idx
-                    else:
-                        return render_to_response('testtool/manager/share_test.html', 'You do not have permission to share this test instance.', context_instance=RequestContext(request))
-                else:
-                    return render_to_response('testtool/manager/share_test.html', 'You do not have permission to share this test.', context_instance=RequestContext(request))
-    data = {'t_own': t_own,
-            't_valid': t_valid,
-            'ti_valid': ti_valid,
-            't_valid_index_default': t_valid_index_default,
-            'ti_valid_index_default': ti_valid_index_default,
-            'radio_default': radio_default,
-            'share_test_with': share_test_with,
-            'share_test_instance_with': share_test_instance_with }
-    return render_to_response('testtool/manager/share_test.html', data, context_instance=RequestContext(request))
-    
-    
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def share_test_submit(request):
-    if request.method == 'POST':
-        try:
-            mode = request.POST['radio_share']
-            t_id = int(request.POST['test_select'])
-            share_with = request.POST.getlist('tester_select')
-        except KeyError:
-            return HttpResponse('please select a choice')
-        else:
-            if len(share_with) == 0:
-                return HttpResponse('please select a choice')
-            up = request.user.get_profile()
-            if mode == 'share_test':
-                t = get_object_or_404(Test, pk=t_id)
-                if user_can('share',up,t):                              # check that user can share test
-                    share_list = []
-                    for id in share_with:                               # add collaborators to test
-                        u = get_object_or_404(UserProfile, pk=int(id))
-                        share_list.append(u)
-                    t.collaborators.add(*share_list)
-                    create_log_entry(up,'shared',t,share_list)
-                    return HttpResponseRedirect(reverse('display_test', args=(t.pk,))+'?alert=share&pk='+str(t.pk))
-                else:
-                    return HttpResponse('You do not have permission to share this test.')
-            elif mode == 'share_test_instance':
-                try:
-                    ti_id = int(request.POST['test_instance_select'])
-                except KeyError:
-                    return HttpResponse('please select a test instance')
-                else:
-                    ti = get_object_or_404(TestInstance, pk=ti_id, test__id=t_id)   # ensures that test instance belongs to test
-                    if user_can('share',up,ti):                                     # check that user can share test instance
-                        share_list = []
-                        for id in share_with:                                       # add collaborators to test instance
-                            u = get_object_or_404(UserProfile, pk=int(id))
-                            share_list.append(u)
-                        ti.collaborators.add(*share_list)
-                        create_log_entry(up,'shared',ti,share_list)
-                        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk,ti.pk,))+'?alert=share&pk='+str(ti.pk))
-                    else:
-                        return HttpResponse('You do not have permission to share this test instance.')
-            else:
-                return HttpResponse('mode must be ''share_test'' or ''share_test_instance''')
-    else:
-        return HttpResponseRedirect(reverse('share_test'))
-
-
-
 ########################################################################################################
 ##################################         PROFILE FUNCTIONS        ####################################
 ########################################################################################################

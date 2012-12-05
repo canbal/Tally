@@ -10,8 +10,4 @@ urlpatterns = patterns('testtool.main.views',
     # Desktop App URLs
     url(r'^(?P<test_instance_id>\d+)/init/$',      'init_test_instance', name='init_test_instance'),
     url(r'^(?P<test_instance_id>\d+)/get_media/$', 'get_media',          name='get_media'),
-    
-    # Unused URLs
-    url(r'^enroll/$',                           'enroll',                  name='enroll'),
-    url(r'^(?P<test_instance_id>\d+)/enroll/$', 'enroll_to_test_instance', name='enroll_to_test_instance'),
 )

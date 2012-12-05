@@ -67,6 +67,7 @@ class CreateTestCaseFormDiscrete(forms.Form):
             del cleaned_data['repeat']            
         return cleaned_data
     
+    
 class CreateTestCaseFormSSCQE(forms.Form):
     filename = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
     repeat   = forms.IntegerField(required=True,initial=1)
@@ -80,15 +81,16 @@ class CreateTestCaseFormSSCQE(forms.Form):
             del cleaned_data['repeat']
         return cleaned_data
 
-class CreateTestInstanceForm(forms.ModelForm):
-    available = forms.ModelMultipleChoiceField(label='Available Subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
-    subjects = forms.ModelMultipleChoiceField(label='Enrolled Subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
+        
+class CreateEditTestInstanceForm(forms.ModelForm):
+    available = forms.ModelMultipleChoiceField(label='Available subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
+    subjects = forms.ModelMultipleChoiceField(label='Enrolled subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
     class Meta:
         model = TestInstance
         fields = ('path', 'location', 'description', 'schedule_time', 'available', 'subjects')
         
     def __init__(self, *args, **kwargs):
-        super(CreateTestInstanceForm, self).__init__(*args, **kwargs)
+        super(CreateEditTestInstanceForm, self).__init__(*args, **kwargs)
         status = ''
         if self.instance.pk:
             status = self.instance.get_status()
@@ -169,8 +171,13 @@ class ExportDataForm(forms.Form):
                                                                                        ('spreadsheet', 'Spreadsheet (.csv)'),
                                                                                        ('matlab','MATLAB (.mat)'),
                                                                                        ('python','Python (.py)')))
-    
 
+                                                                                       
+class ShareObjectForm(forms.Form):
+    available = forms.ModelMultipleChoiceField(label='Available collaborators', queryset=UserProfile.objects.filter(user__groups__name__iexact='Testers'), required=False)
+    share_with = forms.ModelMultipleChoiceField(queryset=UserProfile.objects.filter(user__groups__name__iexact='Testers'))
+
+        
 class DisplayUserForm(forms.ModelForm):
     class Meta:
         model = User
@@ -192,6 +199,7 @@ class DisplayUserForm(forms.ModelForm):
         return self.instance.email
     def clean_date_joined(self):
         return self.instance.date_joined
+    
     
 class DisplayUserProfileForm(forms.ModelForm):
     sex = forms.CharField(widget=forms.TextInput(attrs={'readonly':True}))
