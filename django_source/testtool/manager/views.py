@@ -3,12 +3,11 @@ from django.contrib.auth.models import Group
 from django.shortcuts import render_to_response, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.template import RequestContext
-from django.core.urlresolvers import reverse, reverse_lazy
+from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.generic import CreateView, UpdateView, DetailView
 from django.utils.decorators import method_decorator
 from django.conf import settings
-from django.db.models import Q
 from testtool.models import *
 from testtool.decorators import group_required
 from testtool.shortcuts import has_user_profile
@@ -130,39 +129,43 @@ def user_permission_test_instance(up,ti):
     return { 'status': status[idx], 'perm_policy': perm_policy, 'obj_policy': obj_policy }
 
 
+def set_alert(request,alert,pk=None):
+    request.session['alert'] = alert
+    if pk is not None:
+        request.session['pk'] = pk
+    
+    
 def get_alert_context(request,obj):
-    context = {'alert':'','alert_class':''}
-    # read the alert parameter from request
-    try:
-        alert = request.REQUEST['alert']
-    except KeyError:
-        alert = []
-    try:
-        obj_pk = request.REQUEST['pk']
-    except KeyError:
-        obj_pk = ''
+    # read the alert from request, and clear it so that it doesn't persist
+    alert = request.session.get('alert',[])
+    obj_pk = str(request.session.get('pk',''))
+    if 'alert' in request.session:
+        del request.session['alert']
+    if 'pk' in request.session:
+        del request.session['pk']
     # if there exists any alerts build right context
+    context = {'alert':'','alert_class':''}
     if alert:
         if isinstance(obj,Test):
-            obj_str = 'test'
+            obj_str = 'Test'
         elif isinstance(obj,TestInstance):
-            obj_str = 'test instance'
+            obj_str = 'Test Instance'
         else:
             raise Exception('get_alert_context: Must pass Test or TestInstance object.')
         if alert == 'new':
-            context['alert'] = '%s successfully created.' %(obj_str)
+            context['alert'] = '%s successfully created.' % (obj_str)
             context['alert_class'] = 'success'
         elif alert == 'edit':
-            context['alert'] = '%s %s successfully edited.' %(obj_str,obj_pk)
+            context['alert'] = '%s %s successfully edited.' % (obj_str,obj_pk)
             context['alert_class'] = 'success'
         elif alert == 'share':
-            context['alert'] = 'New collaborators successfully added to %s %s.' %(obj_str,obj_pk)
+            context['alert'] = 'New collaborators successfully added to %s %s.' % (obj_str,obj_pk)
             context['alert_class'] = 'success'
         elif alert == 'update':
-            context['alert'] = '%s %s is successfully updated.' %(obj_str,obj_pk)
+            context['alert'] = '%s %s successfully updated.' % (obj_str,obj_pk)
             context['alert_class'] = 'success'
         elif alert == 'save':
-            context['alert'] = 'Changes to %s %s are successfully saved.' %(obj_str,obj_pk)
+            context['alert'] = 'Changes to %s %s are successfully saved.' % (obj_str,obj_pk)
             context['alert_class'] = 'success'
         elif alert == 'delete':
             context['alert'] = '%s %s successfully deleted.' % (obj_str,obj_pk)
@@ -171,12 +174,11 @@ def get_alert_context(request,obj):
             context['alert'] = 'You are no longer collaborating on %s %s.' % (obj_str,obj_pk)
             context['alert_class'] = 'warning'            
         elif alert == 'delete_err':
-            context['alert'] = 'Only the %s owner can delete a %s, after all collaborators have removed themselves.' %(obj_str,obj_str)
+            context['alert'] = 'A %s can only be deleted by its owner, after all collaborators have removed themselves.' % (obj_str)
             context['alert_class'] = 'error'
         elif alert == 'unshare_err':
-            context['alert'] = 'You are not a collaborator on this %s.' %(obj_str)
+            context['alert'] = 'You are not a collaborator on this %s.' % (obj_str)
             context['alert_class'] = 'error'
-    context['alert'] = context['alert'].capitalize()
     return context
 
 
@@ -370,9 +372,11 @@ class EditTest(UpdateView):
         try:
             save = self.request.POST['save']
         except KeyError:
-            return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,))+'?alert=update&pk='+str(self.object.pk))
+            set_alert(self.request,'update',self.object.pk)
+            return HttpResponseRedirect(reverse('edit_test', args=(self.object.pk,)))
         else:
-            return HttpResponseRedirect(reverse('display_test', args=(self.object.pk,))+'?alert=save&pk='+str(self.object.pk))            
+            set_alert(self.request,'save')
+            return HttpResponseRedirect(reverse('display_test', args=(self.object.pk,)))
     
     def get_context_data(self, **kwargs):
         context = super(EditTest, self).get_context_data(**kwargs)
@@ -440,37 +444,27 @@ class DisplayTest(UpdateView):
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def delete_test(request, test_id):
+def unshare_delete_test(request, test_id, action):
+    if action not in ['unshare', 'delete']:
+        raise Exception('unshare_delete_test: invalid action.')
     t = get_object_or_404(Test, pk=test_id)
     if request.method=='POST':
         up = request.user.get_profile()
-        if user_can('delete',up,t):
-            create_log_entry(up,'deleted',t)
-            t.delete()
-            return HttpResponseRedirect(reverse('list_tests')+'?alert=delete&pk='+str(test_id))
+        if user_can(action,up,t):
+            create_log_entry(up,action+'d',t)
+            if action=='unshare':
+                t.collaborators.remove(up)
+            elif action=='delete':
+                t.delete()
+            set_alert(request,action,test_id)
+            return HttpResponseRedirect(reverse('list_tests'))
         else:
-            return HttpResponseRedirect(reverse('display_test', args=(test_id,))+'?alert=delete_err')
+            set_alert(request,action+'_err')
+            return HttpResponseRedirect(reverse('display_test', args=(test_id,)))
     else:
-        return HttpResponseRedirect(reverse('display_test', args=(test_id,)))
+        return HttpResponseRedirect(reverse('display_test', args=(test_id,)))    
+
         
-
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def unshare_test(request, test_id):
-    t = get_object_or_404(Test, pk=test_id)
-    if request.method=='POST':
-        up = request.user.get_profile()
-        if user_can('unshare',up,t):
-            create_log_entry(up,'unshared',t)
-            t.collaborators.remove(up)
-            return HttpResponseRedirect(reverse('list_tests')+'?alert=unshare&pk='+str(test_id))
-        else:
-            return HttpResponseRedirect(reverse('display_test', args=(test_id,))+'?alert=unshare_err')
-    else:
-        return HttpResponseRedirect(reverse('display_test', args=(test_id,)))        
-
-
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
@@ -740,7 +734,8 @@ class CreateTestInstance(CreateView):
                 tci = TestCaseInstance(test_instance=self.object, test_case=tc_all[ii], play_order=rand_order[idx])
                 idx += 1
                 tci.save()
-        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,))+'?alert=new')
+        set_alert(self.request,'new')
+        return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,)))
                     
     def get_context_data(self, **kwargs):
         context = super(CreateTestInstance, self).get_context_data(**kwargs)
@@ -773,7 +768,8 @@ class EditTestInstance(UpdateView):
         return super(EditTestInstance, self).dispatch(*args, **kwargs)
 
     def get_success_url(self):
-        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id'],))+'?alert=edit&pk='+str(self.kwargs['test_instance_id'])
+        set_alert(self.request,'edit',self.kwargs['test_instance_id'])
+        return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id'],))
         
     def get_object(self):
         return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
@@ -781,7 +777,8 @@ class EditTestInstance(UpdateView):
     # def form_valid(self, form):
         # create_log_entry(self.request.user.get_profile(),'edited',self.object)
         # return super(EditTestInstance, self).form_valid(form)
-        # return HttpResponseRedirect(reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,))+'?alert=edit&pk='+str(test_instance_id)
+        # set_alert(self.request,'edit',self.kwargs['test_instance_id'])
+        # return reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,))
 
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
@@ -837,41 +834,31 @@ class DisplayTestInstance(UpdateView):
             context['test_instance_id'] = self.kwargs['test_instance_id']
             context['error']            = 'You do not have access to this test instance.'
         return context
-        
-        
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
-def delete_test_instance(request, test_id, test_instance_id):
-    ti = get_object_or_404(TestInstance, pk=test_instance_id, test__id=test_id)   # ensures that test instance belongs to test
-    if request.method=='POST':
-        up = request.user.get_profile()
-        if user_can('delete',up,ti):
-            create_log_entry(up,'deleted',ti)
-            ti.delete()
-            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id,))+'?alert=delete&pk='+str(test_instance_id))
-        else:
-            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,))+'?alert=delete_err')
-    else:
-        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,)))
 
         
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def unshare_test_instance(request, test_id, test_instance_id):
+def unshare_delete_test_instance(request, test_id, test_instance_id, action):
+    if action not in ['unshare', 'delete']:
+        raise Exception('unshare_delete_test_instance: invalid action.')
     ti = get_object_or_404(TestInstance, pk=test_instance_id, test__id=test_id)   # ensures that test instance belongs to test
     if request.method=='POST':
         up = request.user.get_profile()
-        if user_can('unshare',up,ti):
-            ti.collaborators.remove(up)
-            create_log_entry(up,'unshared',ti)
-            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id,))+'?alert=unshare&pk='+str(test_instance_id))
+        if user_can(action,up,ti):
+            create_log_entry(up,action+'d',ti)
+            if action=='unshare':
+                ti.collaborators.remove(up)
+            elif action=='delete':
+                ti.delete()
+            set_alert(request,action,test_instance_id)
+            return HttpResponseRedirect(reverse('list_test_instances', args=(test_id,)))
         else:
-            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,))+'?alert=unshare_err')
+            set_alert(request,action+'_err')
+            return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,)))
     else:
-        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,)))        
-
+        return HttpResponseRedirect(reverse('display_test_instance', args=(ti.test.pk, ti.pk,)))  
+        
 
 @login_required
 @group_required('Testers')
@@ -938,52 +925,26 @@ def run_test_instance(request, test_id, test_instance_id):
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def export_share_obj(request,fcn,test_id,test_instance_id=None):
-    if fcn not in ['export', 'share']:
-        raise Exception('export_share_obj: invalid parameter fcn.')
+def share_export_obj(request,action,test_id,test_instance_id=None):
+    if action not in ['share', 'export']:
+        raise Exception('share_export_obj: invalid parameter action.')
     if test_instance_id is None:
         mode = 'Test'
         obj = get_object_or_404(Test, pk=test_id)
-        hdr = '%s Test %d: %s' % (fcn, obj.pk, obj.title)
+        hdr = '%s Test %d: %s' % (action, obj.pk, obj.title)
         cancel_url = reverse('display_test', args=(test_id,))
     else:
         mode = 'Test Instance'
         obj = get_object_or_404(TestInstance, pk=test_instance_id, test__pk=test_id)
-        hdr = '%s Test Instance %d of Test %d: %s' % (fcn, obj.pk, obj.test.pk, obj.test.title)
+        hdr = '%s Test Instance %d of Test %d: %s' % (action, obj.pk, obj.test.pk, obj.test.title)
         cancel_url = reverse('display_test_instance', args=(test_id,test_instance_id,))
     args = {'header': hdr[0].capitalize()+hdr[1:], 'cancel_url': cancel_url}
     up = request.user.get_profile()
-    perm = user_can(fcn,up,obj,True)
-    if fcn=='export':
-        return export_obj(request,obj,mode,perm,args)
-    elif fcn=='share':
+    perm = user_can(action,up,obj,True)
+    if action=='share':
         return share_obj(request,obj,mode,perm,args,up)
-
-
-def export_obj(request,obj,mode,perm,args):
-    if perm['granted']:
-        if request.method == 'POST':
-            form = ExportDataForm(request.POST)
-            if form.is_valid():
-                if mode=='Test':                    
-                    ti_set = TestInstance.objects.filter(test=obj)
-                    ti_list = []
-                    for ti in ti_set:
-                        if ti.has_data():
-                            ti_list.append(ti)
-                elif mode=='Test Instance':
-                    ti_list = [obj]
-                return export_data(form.cleaned_data['format'],ti_list)
-        else:
-            form = ExportDataForm()
-        args['form'] = form
-    else:
-        if not perm['perm_user']:
-            args['error'] = 'You do not have permission to export this %s.' % (mode)
-            args['header'] = 'Export %s' % (mode)
-        elif not perm['perm_obj']:
-            args['error'] = 'This %s does not have any data.' % (mode)
-    return render_to_response('testtool/manager/export_data.html', args, context_instance=RequestContext(request))
+    elif action=='export':
+        return export_obj(request,obj,mode,perm,args)
     
         
 def share_obj(request,obj,mode,perm,args,up):
@@ -994,15 +955,16 @@ def share_obj(request,obj,mode,perm,args,up):
                 share_list = form.cleaned_data['share_with']
                 obj.collaborators.add(*share_list)
                 create_log_entry(up,'shared',obj,share_list)
+                set_alert(request,'share',obj.pk)
                 if mode=='Test':        # remove users as collaborators from test instances (i.e. elevate their status to test collaborator)
                     for u in share_list:
                         coll_ti = TestInstance.objects.filter(test=obj,collaborators=u)
                         for ti in coll_ti:
                             ti.collaborators.remove(u)
-                    return HttpResponseRedirect(reverse('display_test', args=(obj.pk,))+'?alert=share&pk='+str(obj.pk))
+                    return HttpResponseRedirect(reverse('display_test', args=(obj.pk,)))
                 elif mode=='Test Instance':
                     ti_list = [obj]
-                    return HttpResponseRedirect(reverse('display_test_instance', args=(obj.test.pk,obj.pk,))+'?alert=share&pk='+str(obj.pk))
+                    return HttpResponseRedirect(reverse('display_test_instance', args=(obj.test.pk,obj.pk,)))
         else:
             form = ShareObjectForm()
         form.fields['available'].queryset = get_available_collaborators(obj)
@@ -1028,6 +990,32 @@ def get_available_collaborators(obj):
     else:
         raise Exception('user_permission: Must pass Test or TestInstance object.')
     return UserProfile.objects.filter(user__groups__name__iexact='Testers').exclude(pk__in=exclude_list)
+        
+        
+def export_obj(request,obj,mode,perm,args):
+    if perm['granted']:
+        if request.method == 'POST':
+            form = ExportDataForm(request.POST)
+            if form.is_valid():
+                if mode=='Test':
+                    ti_set = TestInstance.objects.filter(test=obj)
+                    ti_list = []
+                    for ti in ti_set:
+                        if ti.has_data():
+                            ti_list.append(ti)
+                elif mode=='Test Instance':
+                    ti_list = [obj]
+                return export_data(form.cleaned_data['format'],ti_list)
+        else:
+            form = ExportDataForm()
+        args['form'] = form
+    else:
+        if not perm['perm_user']:
+            args['error'] = 'You do not have permission to export this %s.' % (mode)
+            args['header'] = 'Export %s' % (mode)
+        elif not perm['perm_obj']:
+            args['error'] = 'This %s does not have any data.' % (mode)
+    return render_to_response('testtool/manager/export_data.html', args, context_instance=RequestContext(request))
         
         
 def export_data(format_list, ti_list):
