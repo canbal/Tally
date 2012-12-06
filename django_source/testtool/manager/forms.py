@@ -59,15 +59,6 @@ class CreateTestCaseFormSSCQE(forms.Form):
     filename = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
     repeat   = forms.IntegerField(min_value=1,max_value=10,required=True,initial=1)
 
-    def clean(self):
-        cleaned_data = super(CreateTestCaseFormDiscrete, self).clean()
-        repeat = cleaned_data.get('repeat')
-        if repeat <= 0:
-            msg = 'Has to be positive'
-            self._errors['repeat'] = self.error_class([msg])
-            del cleaned_data['repeat']
-        return cleaned_data
-
         
 class CreateEditTestInstanceForm(forms.ModelForm):
     available = forms.ModelMultipleChoiceField(label='Available subjects', queryset=UserProfile.objects.filter(user__groups__name__iexact='Subjects'), required=False)
