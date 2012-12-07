@@ -495,9 +495,10 @@ def add_video(request, test_id):
                             f = Video.objects.get(test=t, filename=filename)
                         except Video.DoesNotExist:
                             f = Video.objects.create(test=t, filename=filename)
-                            if t.method == 'SSCQE':
-                                tc = TestCase.objects.create(test=t)
-                                TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
+                            # # uncomment to enable adding test cases automatically for SSCQE
+                            # if t.method == 'SSCQE':
+                            #     tc = TestCase.objects.create(test=t)
+                            #     TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
                             create_log_entry(up,'edited',t)
                             status = 0;
                         else:
@@ -596,7 +597,7 @@ def add_test_case_discrete(request, test, user_profile):
                     TestCaseItem.objects.create(test_case=tc,video=f1,play_order=1+ii*2,is_reference=True)
                     TestCaseItem.objects.create(test_case=tc,video=f2,play_order=2+ii*2)
                 else:
-                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2)
+                    TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2,is_reference=True)
                     TestCaseItem.objects.create(test_case=tc,video=f2,play_order=rand_order[1]+ii*2)
             return {'status': 'done'}
     else:
@@ -608,13 +609,8 @@ def add_test_case_discrete(request, test, user_profile):
 
     form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
     form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
-
-    if test.method == 'DSIS':
-        form.fields['filename1'].label = 'Reference video'
-        form.fields['filename2'].label = 'Test video'
-    elif test.method == 'DSCQS':
-        form.fields['filename1'].label = 'First video'
-        form.fields['filename2'].label = 'Second video'
+    form.fields['filename1'].label = 'Reference video'
+    form.fields['filename2'].label = 'Test video'
     return {'status': 'incomplete', 'form': form}
 
     
