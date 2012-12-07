@@ -588,14 +588,14 @@ def add_test_case_discrete(request, test, user_profile):
             f2 = data['filename2']
             r  = data['repeat']
             tc = TestCase.objects.create(test=test,repeat=r)
+            # generate play order for DSCQS
+            rand_order = range(1,3)
+            random.shuffle(rand_order)
             for ii in range(0,2): # repeat each video twice
                 if test.method == 'DSIS':
                     TestCaseItem.objects.create(test_case=tc,video=f1,play_order=1+ii*2,is_reference=True)
                     TestCaseItem.objects.create(test_case=tc,video=f2,play_order=2+ii*2)
                 else:
-                    # generate play order
-                    rand_order = range(1,3)
-                    random.shuffle(rand_order)
                     TestCaseItem.objects.create(test_case=tc,video=f1,play_order=rand_order[0]+ii*2)
                     TestCaseItem.objects.create(test_case=tc,video=f2,play_order=rand_order[1]+ii*2)
             return {'status': 'done'}
@@ -625,7 +625,7 @@ def add_test_case_SSCQE(request, test, user_profile):
             data = form.cleaned_data
             f = data['filename']
             r = data['repeat']
-            tc = TestCase.objects.create(test=test)
+            tc = TestCase.objects.create(test=test,repeat=r)
             TestCaseItem.objects.create(test_case=tc,video=f,play_order=1)
             return {'status': 'done'}
     else:
