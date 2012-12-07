@@ -92,13 +92,13 @@
 					{% if alert %}
 					<div class="alert alert-{{ alert_class }} alert-block">
 						<a class="close" data-dismiss="alert" href="#">&times</a>
-						<h4>{{ alert }}</h4>
+						<b>{{ alert }}</b>
 						</div>
 					{% endif %}
                     {% if error %}
 					<div class="alert alert-error alert-block">
 						<a class="close" data-dismiss="alert" href="#">&times</a>
-						<h4>{{ error }}</h4>
+						<b>{{ error }}</b>
 					</div>
 					{% else %}
                     	{% block content %}
