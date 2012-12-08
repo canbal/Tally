@@ -609,8 +609,6 @@ def add_test_case_discrete(request, test, user_profile):
 
     form.fields['filename1'].queryset = form.fields['filename1'].queryset.filter(test=test)
     form.fields['filename2'].queryset = form.fields['filename2'].queryset.filter(test=test)
-    form.fields['filename1'].label = 'Reference video'
-    form.fields['filename2'].label = 'Test video'
     return {'status': 'incomplete', 'form': form}
 
     
@@ -633,7 +631,6 @@ def add_test_case_SSCQE(request, test, user_profile):
                      'error': 'There are no videos associated with this test.'}
 
     form.fields['filename'].queryset = form.fields['filename'].queryset.filter(test=test)
-    form.fields['filename'].label = 'Video'
     return {'status': 'incomplete', 'form': form}
     
     
@@ -1117,30 +1114,60 @@ def format_as_csv(ti, buffer):
                     writer.writerow('')
             writer.writerow('')
             writer.writerow('')
-    elif method == 'DSIS':
+    elif method in ['DSIS', 'DSCQS']:
         subject_data = ti.subjects.order_by('pk').values_list
         user_names = subject_data('user__username',flat=True)
-        writer.writerow(['User Name',  ''] + list(user_names))
-        writer.writerow(['First Name', ''] + list(subject_data('user__first_name',flat=True)))
-        writer.writerow(['Last Name',  ''] + list(subject_data('user__last_name',flat=True)))
-        writer.writerow(['Birth Date', ''] + list(subject_data('birth_date',flat=True)))
-        writer.writerow(['Gender',     ''] + list(subject_data('sex',flat=True)))
+        if method=='DSIS':
+            numBlanks = 0;
+        elif method=='DSCQS':
+            numBlanks = 1;
+        writer.writerow(['User Name',  ''] + insertBlankColumns(list(user_names),numBlanks))
+        writer.writerow(['First Name', ''] + insertBlankColumns(list(subject_data('user__first_name',flat=True)),numBlanks))
+        writer.writerow(['Last Name',  ''] + insertBlankColumns(list(subject_data('user__last_name',flat=True)),numBlanks))
+        writer.writerow(['Birth Date', ''] + insertBlankColumns(list(subject_data('birth_date',flat=True)),numBlanks))
+        writer.writerow(['Gender',     ''] + insertBlankColumns(list(subject_data('sex',flat=True)),numBlanks))
         writer.writerow('')
         writer.writerow(['Test Case', 'Play Order'] + ['Score: ' + u for u in user_names])
+        if method=='DSCQS':
+            writer.writerow(['', ''] + [type for u in user_names for type in ['Reference', 'Test']])
         all_test_cases = ti.test.testcase_set.all()
         for ii,tc in enumerate(all_test_cases):
             all_tci = tc.testcaseinstance_set.filter(test_instance=ti).all()
             for jj,tci in enumerate(all_tci):
                 subj_scores = []
                 for pk in subject_data('pk',flat=True):     # have to loop through subjects in case of empty scores
-                    try:
-                        obj = ScoreDSIS.objects.get(test_case_instance=tci,subject__id=pk)
-                        val = obj.value
-                    except ScoreDSIS.DoesNotExist:
-                        val = ''
-                    subj_scores.append(val)
-                writer.writerow([str(ii+1), tci.play_order] + subj_scores)
+                    if method=='DSIS':
+                        try:
+                            obj = ScoreDSIS.objects.get(test_case_instance=tci,subject__id=pk)
+                            val = obj.value
+                        except ScoreDSIS.DoesNotExist:
+                            val = ''
+                        subj_scores.append(val)
+                    elif method=='DSCQS':
+                        try:
+                            obj = ScoreDSCQS.objects.get(test_case_instance=tci,subject__id=pk)
+                            first_item = TestCaseItem.objects.get(test_case=tci.test_case,play_order=1)
+                        except ObjectDoesNotExist:
+                            val_ref = ''
+                            val_test = ''
+                        else:
+                            if first_item.is_reference:     # reference video was played first, so value1 corresponds to it
+                                val_ref = obj.value1
+                                val_test = obj.value2
+                            else:                           # test video was played first, and has value = value1
+                                val_ref = obj.value2
+                                val_test = obj.value1
+                        subj_scores.extend([val_ref,val_test])
+                writer.writerow([str(ii+1), tci.play_order] + insertBlankColumns(subj_scores,numBlanks))
     return buffer
+    
+    
+def insertBlankColumns(list_in,numBlanks):
+    out = []
+    for x in list_in:
+        out.append(x)
+        out.extend(['' for y in range(0,numBlanks)])
+    return out
     
     
 def format_as_matlab(raw_data, buffer):
@@ -1182,7 +1209,14 @@ def process_mat_py_data(ti):
                         score = { 'value': float(subj_score.value) }
                     elif method == 'DSCQS':
                         subj_score = tci.scoredscqs_set.get(subject=subject)
-                        score = { 'value1': float(subj_score.value1), 'value2': float(subj_score.value2) }
+                        first_item = TestCaseItem.objects.get(test_case=tci.test_case,play_order=1)
+                        if first_item.is_reference:     # reference video was played first, so value1 corresponds to it
+                            val_ref = subj_score.value1
+                            val_test = subj_score.value2
+                        else:                           # test video was played first, and has value = value1
+                            val_ref = subj_score.value2
+                            val_test = subj_score.value1
+                        score = { 'val_ref': float(val_ref), 'val_test': float(val_test) }
                     else:
                         raise Exception('get_raw_data: invalid test method.')
                 except ObjectDoesNotExist:

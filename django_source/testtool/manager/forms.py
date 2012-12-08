@@ -19,11 +19,10 @@ class EditTestForm(forms.ModelForm):
     
 
 class DisplayTestForm(forms.ModelForm):
-    owner = forms.CharField()
     create_time = forms.DateTimeField()
     class Meta:
         model = Test
-        exclude = ('owner')
+        widgets = {'owner': forms.TextInput(), 'method': forms.TextInput()}
         
     def __init__(self, *args, **kwargs):
         super(DisplayTestForm, self).__init__(*args, **kwargs)
@@ -31,7 +30,7 @@ class DisplayTestForm(forms.ModelForm):
         for key in ['owner', 'create_time', 'method', 'collaborators', 'title', 'description']:
             self.fields[key].widget.attrs['readonly'] = True
         # override initial values
-        self.fields['owner'].initial = self.instance.owner
+        self.initial['owner'] = self.instance.owner.user.username
         # define querysets
         self.fields['collaborators'].queryset = self.instance.collaborators.all()
         # define extra fields
@@ -50,13 +49,13 @@ class DisplayTestForm(forms.ModelForm):
 
 
 class CreateTestCaseFormDiscrete(forms.Form):
-    filename1 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
-    filename2 = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
+    filename1 = forms.ModelChoiceField(label = 'Reference video', queryset = Video.objects.all(), required = True)
+    filename2 = forms.ModelChoiceField(label = 'Test video', queryset = Video.objects.all(), required = True)
     repeat    = forms.IntegerField(min_value=1,max_value=10,required=True,initial=1)
     
     
 class CreateTestCaseFormSSCQE(forms.Form):
-    filename = forms.ModelChoiceField(queryset = Video.objects.all(), required = True)
+    filename = forms.ModelChoiceField(label = 'Video', queryset = Video.objects.all(), required = True)
     repeat   = forms.IntegerField(min_value=1,max_value=10,required=True,initial=1)
 
         
