@@ -8,8 +8,6 @@ from django.template import RequestContext
 from testtool.shortcuts import has_user_profile
 from forms import RegistrationForm, UserProfileForm
 
-def register(request):
-    return render_to_response('testtool/registration/register_select.html')
 
 def register_subject(request):
     if request.method == 'POST':

@@ -25,7 +25,10 @@ def index(request):
     try:            # user may not have an associated UserProfile - i.e. SuperUser
         subject = request.user.get_profile()
     except UserProfile.DoesNotExist:
-        return HttpResponse('You are not registered as a subject or a tester in the system!')
+        if request.user.is_superuser:
+            return HttpResponseRedirect(reverse('register_tester'))
+        else:
+            return HttpResponse('You are not an admin or registered as a subject or a tester in the system!')
     if request.user.groups.filter(name='Testers'):
         log = get_log(request,'new')
         return render_to_response('testtool/manager/home.html', {'log':log}, context_instance=RequestContext(request))
@@ -37,7 +40,6 @@ def index(request):
                 ti_list.append(ti)
         return render_to_response('testtool/main/index.html', {'ti_list': ti_list})
     return HttpResponse('You are not registered as a subject or a tester in the system!')
-    
     
 @login_required
 @group_required('Subjects')
