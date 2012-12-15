@@ -154,8 +154,8 @@ def status_continuous(request, ti, max_counter):
                 status = 5
             else:
                 if tci.is_media_done:
-                    #tci.is_done = True
-                    #tci.save()
+                    tci.is_done = True  # comment/uncomment these two lines to allow/disable tester to control
+                    tci.save()          # when test case is played from desktop app
                     status = 2      # 2: means all subjects have voted for current test case
                 else:
                     status = 4

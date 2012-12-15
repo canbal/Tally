@@ -5,9 +5,6 @@
 *.user
 
 qt_build_win7-64/
-qt_source_old/
-qt_source/st2.pro.user
-
 django_source/testtool/migrations/
 
 .project

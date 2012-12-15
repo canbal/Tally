@@ -9,7 +9,7 @@ QT += core gui\
       network\
       webkit
 
-TARGET = st2
+TARGET = tally_desktop
 
 TEMPLATE = app
 

@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // initialize UI
     ui->setupUi(this);
     ui->nextVideo->setEnabled(false);
+    ui->nextVideo->setVisible(false);
     ui->status->setText("Log into the website and navigate to the start page of the test instance you wish to run.");
 
     // initialize settings dialog
@@ -104,6 +105,9 @@ void MainWindow::onURLChanged(const QUrl &url)
 
 
 // when the 'next video' button is pressed, it sets the 'done' flag for the present test case
+// this button is not used, but left in here to allow for the tester to control when the next test case is presented.
+// enabling this code requires uncommenting these lines as well as commenting/uncommenting other related lines (search for nextVideo or m_testCaseDone)
+// some code would have to be edited on the server side too (in testtool/test_modes/views > status_continuous, uncomment tci.is_done = True and tci.save())
 void MainWindow::on_nextVideo_clicked()
 {
     //ui->nextVideo->setEnabled(false);

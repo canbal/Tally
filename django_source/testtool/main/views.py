@@ -9,7 +9,7 @@ from testtool.models import *
 from testtool.main.forms import *
 from testtool.decorators import group_required
 from testtool.test_modes.views import tally_continuous, tally_discrete, status_continuous, status_discrete
-from testtool.manager.views import get_log
+from testtool.manager.views import get_log, create_log_entry
 import json
 
 
@@ -117,8 +117,8 @@ def get_media(request, test_instance_id):
     if status == 'media_done':
         tci_current.is_media_done = True
         tci_current.save()
-    if status == 'test_case_done':
-        tci_current.is_media_done = True
+    if status == 'test_case_done':        # inactive, but left in here to allow for tester to control when test case is played
+        tci_current.is_media_done = True  # see Tally_desktop code (mainwindow.cpp > on_nextVideo_clicked() for comments)
         tci_current.is_done = True
         tci_current.save()
     if tci_current.is_done:             # if current test case is done, increment counter and return next video or done signal
@@ -135,7 +135,7 @@ def get_media(request, test_instance_id):
         ti.run_time = datetime.datetime.now()       # set the run_time of the test instance to now
         ti.counter += 1
         ti.save()
-        create_log_entry([],'created',ti,[])
+        create_log_entry([],'ran',ti)
         return media_signal(ti,'run','',getMediaList(tci_current))
     return media_signal(ti,'wait')      # otherwise, the subjects haven't finished scoring- return a wait signal
         
