@@ -1,33 +1,6 @@
+{% extends "testtool/registration/base_subject_register.html" %}
 
-<!DOCTYPE html> 
-<html> 
-	<head> 
-	<title>{% block title %}Tally{% endblock title %}</title> 
-	<meta name="viewport" content="width=device-width, initial-scale=1"> 
-    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
-    <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
-    <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js"></script>
-    {% block head %}
-    {% endblock head %}
-</head> 
-
-<body> 
-
-<div {% block page_id %}{% endblock page_id %} data-role="page">
-
-	<div data-role="header">
-        <h1>{% block header %}Default header{% endblock header %}</h1>
-        <a href="{% url home %}" data-icon="home" class="ui-btn-left">Home</a>
-        <a href="{% url logout %}" data-icon="delete" class="ui-btn-right" data-ajax="false">Logout</a>
-	</div>
-
-    <div data-role="content" data-theme="c">
-        {% block content %}
-            <p>Default content</p>
-        {% endblock content %}
-    </div>
-
-</div>
-
-</body>
-</html>
+{% block controls %}
+    <a href="{% url home %}" data-icon="home" class="ui-btn-left">Home</a>
+    <a href="{% url logout %}" data-icon="delete" class="ui-btn-right" data-ajax="false">Logout</a>
+{% endblock controls %}

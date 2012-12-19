@@ -1,0 +1,15 @@
+{% extends "testtool/registration/base_subject_register.html" %}
+
+{% block header %}
+    Welcome, Admin
+{% endblock header %}
+
+{% block content %}
+    <div data-role="fieldcontain">
+        <fieldset data-role="controlgroup">
+            <a href="{% url admin:index %}" data-role="button" data-ajax="false">Go to admin page</a>
+            <a href="{% url register_tester %}" data-role="button" data-ajax="false">Register a new tester</a>
+            <a href="{% url logout %}" data-role="button" data-ajax="false">Logout</a>
+        </fieldset>
+    </div>
+{% endblock content %}

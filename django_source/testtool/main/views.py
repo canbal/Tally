@@ -25,7 +25,7 @@ def index(request):
         subject = request.user.get_profile()
     except UserProfile.DoesNotExist:
         if request.user.is_superuser:
-            return HttpResponseRedirect(reverse('register_tester'))
+            return render_to_response('testtool/registration/index_admin.html')
         else:
             return HttpResponse('You are not an admin or registered as a subject or a tester in the system!')
     if request.user.groups.filter(name='Testers'):

@@ -1,0 +1,44 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Tally</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="">
+        <meta name="author" content="">
+        <link type="text/css" href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+        <link type="text/css" href="{% static 'bootstrap/css/bootstrap-responsive.min.css' %}" rel="stylesheet" >
+        <style type="text/css">
+            body {
+                padding-top: 60px;
+                padding-bottom: 40px;
+            }
+        </style>
+        {% block head_1 %}
+        {% endblock head_1 %}
+        <link rel="shortcut icon" href="{% static 'bootstrap/ico/favicon.ico' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'bootstrap/ico/apple-touch-icon-144-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'bootstrap/ico/apple-touch-icon-114-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'bootstrap/ico/apple-touch-icon-72-precomposed.png' %}">
+        <link rel="apple-touch-icon-precomposed" href="{% static 'bootstrap/ico/apple-touch-icon-57-precomposed.png' %}">        
+    </head>
+    
+    <body>
+        {% block navbar %}
+        {% endblock navbar %}
+        <div class="container-fluid">
+            <div class="row-fluid">
+                {% block row %}
+                {% endblock row %}
+            </div>
+            <hr>
+            <footer>
+                <p>UCSD - Video Processing Lab</p>
+            </footer>
+        </div>
+        {% block end_scripts %}
+        {% endblock end_scripts %}
+    </body>
+</html>
