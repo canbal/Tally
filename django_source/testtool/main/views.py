@@ -6,7 +6,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from testtool.models import *
-from testtool.main.forms import *
 from testtool.decorators import group_required
 from testtool.test_modes.views import tally_continuous, tally_discrete, status_continuous, status_discrete
 from testtool.manager.views import get_log, create_log_entry

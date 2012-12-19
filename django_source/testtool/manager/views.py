@@ -172,7 +172,7 @@ def get_alert_context(request,obj):
             context['alert_class'] = 'success'
         elif alert == 'unshare':
             context['alert'] = 'You are no longer collaborating on %s %s.' % (obj_str,obj_pk)
-            context['alert_class'] = 'warning'            
+            context['alert_class'] = 'success'            
         elif alert == 'delete_err':
             context['alert'] = 'A %s can only be deleted by its owner, after all collaborators have removed themselves.' % (obj_str)
             context['alert_class'] = 'error'
@@ -215,7 +215,7 @@ def get_log(request,mode):
 def create_log_entry(actor,action,obj,tags_arg=[]):
     ts = datetime.datetime.now()
     if action=='joined':
-        os = {'object':'Tally', 'message':'%s joined Tally.' % (actor.user.username)}
+        os = {'object':'Tally', 'message':'%s joined Tally' % (actor.user.username)}
         tags = []       # notify no one
     elif action=='edited':
         os = get_object_message(actor,action,obj,'')
@@ -765,13 +765,11 @@ class EditTestInstance(UpdateView):
         return reverse('display_test_instance', args=(self.kwargs['test_id'], self.kwargs['test_instance_id'],))
         
     def get_object(self):
-        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])   # ensures that test instance belongs to test
+        return get_object_or_404(TestInstance, pk=self.kwargs['test_instance_id'], test__id=self.kwargs['test_id'])
     
-    # def form_valid(self, form):
-        # create_log_entry(self.request.user.get_profile(),'edited',self.object)
-        # return super(EditTestInstance, self).form_valid(form)
-        # set_alert(self.request,'edit',self.kwargs['test_instance_id'])
-        # return reverse('display_test_instance', args=(self.object.test.pk, self.object.pk,))
+    def form_valid(self, form):
+        create_log_entry(self.request.user.get_profile(),'edited',self.object)
+        return super(EditTestInstance, self).form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super(EditTestInstance, self).get_context_data(**kwargs)
@@ -1127,7 +1125,7 @@ def format_as_csv(ti, buffer):
         writer.writerow(['Birth Date', ''] + insertBlankColumns(list(subject_data('birth_date',flat=True)),numBlanks))
         writer.writerow(['Gender',     ''] + insertBlankColumns(list(subject_data('sex',flat=True)),numBlanks))
         writer.writerow('')
-        writer.writerow(['Test Case', 'Play Order'] + ['Score: ' + u for u in user_names])
+        writer.writerow(['Test Case', 'Play Order'] + insertBlankColumns(['Score: ' + u for u in user_names],numBlanks))
         if method=='DSCQS':
             writer.writerow(['', ''] + [type for u in user_names for type in ['Reference', 'Test']])
         all_test_cases = ti.test.testcase_set.all()
@@ -1158,7 +1156,7 @@ def format_as_csv(ti, buffer):
                                 val_ref = obj.value2
                                 val_test = obj.value1
                         subj_scores.extend([val_ref,val_test])
-                writer.writerow([str(ii+1), tci.play_order] + insertBlankColumns(subj_scores,numBlanks))
+                writer.writerow([str(ii+1), tci.play_order] + subj_scores)
     return buffer
     
     

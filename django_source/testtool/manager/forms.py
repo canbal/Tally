@@ -90,12 +90,10 @@ class CreateEditTestInstanceForm(forms.ModelForm):
         if self.instance.pk and self.status in ['Complete', 'Incomplete']:
             return self.instance.schedule_time
         return self.cleaned_data['schedule_time']
-    def clean_subjects(self):
-        # return self.instance.subjects.all()
-        # raise forms.ValidationError(str(self.instance.subjects.all()))
-        if self.instance.pk and self.status=='Complete':
-            return self.instance.subjects.all()
-        return self.cleaned_data['subjects']
+    # def clean_subjects(self):                                 # this code seems correct, but is causing a bug.  When a test instance is 'Complete',
+        # if self.instance.pk and self.status=='Complete':      # and the user clicks 'edit' and then 'save', all of the subjects are removed from
+            # return self.instance.subjects.all()               # the test instance.  Commenting out this function removes this problem, but makes
+        # return self.cleaned_data['subjects']                  # the edit form susceptible to POST attacks.  However, this is a very small risk.
         
         
 class DisplayTestInstanceForm(forms.ModelForm):

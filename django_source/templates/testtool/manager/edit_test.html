@@ -56,7 +56,9 @@
     $(document).ready(function(){
         $("#file_select").on('change',handleFileSelect);
     });
+    
 </script>
+
 <style>
     ul {
         list-style: none;
@@ -117,8 +119,8 @@
 	<div class="control-group">  
 		<label class="control-label" for="file_select">Add New Files</label>
     	<div class="controls">
-        	<input class="input-file" id="file_select" type="file" multiple="" style="display:none">
-            <a class="btn" id="file_select_btn" onclick="$('input[id=file_select]').click();">Browse</a>
+        	<input class="input-file" id="file_select" type="file" multiple=""> <!-- style="display:none">
+            <a class="btn" id="file_select_btn" onclick="$('#file_select').click();">Browse</a> --> <!-- commented since QWebView does not work with this -->
         </div>
         <div class="controls">
         	<div class="span5" id="files_show">

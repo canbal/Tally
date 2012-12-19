@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from testtool.shortcuts import has_user_profile
 from forms import RegistrationForm, UserProfileForm
+from testtool.manager.views import create_log_entry
 
 
 def register_subject(request):
@@ -50,6 +51,7 @@ def register_tester(request):
             profile = pform.save(commit=False)
             profile.user = tester
             profile.save()
+            create_log_entry(profile,'joined',[])
             return HttpResponseRedirect(reverse('admin:index'))
     else:
         rform = RegistrationForm()
