@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize settings dialog
     m_savedPrefs = new QSettings("UCSD","Tally");
-    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://137.110.118.234/").toString();
+    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://videoprocessing.ucsd.edu/").toString();
     m_videoMode = m_savedPrefs->value("videoMode",2).toInt();
     m_pathToCLMP = m_savedPrefs->value("pathToCLMP","c:/Program Files (x86)/Windows Media Player/wmplayer.exe").toString();
     m_argsCLMP = m_savedPrefs->value("argStringCLMP","/fullscreen /play /close").toString().split(" ");
@@ -119,10 +119,6 @@ void MainWindow::on_nextVideo_clicked()
 // if everything is valid, it will communicate with the server and begin the test.
 void MainWindow::on_startTest_clicked()
 {
-    // tried to POST to /login/ but get "connection closed" error- this is due to webpage being forbidden (HTTP 403).
-    // likely due to CSRF not being handled.  some web searching reveals that @csrf_exempt decorator may
-    // not actually remove CSRF handling.  when i tried this (@csrf_exempt), it still didn't work
-
     bool success = true;
     ui->startTest->setEnabled(false);
     ui->settings->setEnabled(false);
@@ -133,7 +129,7 @@ void MainWindow::on_startTest_clicked()
     } else if (m_videoMode==2) {
         if (!QFile(m_pathToCLMP).exists()) {
             success = false;
-            msgBoxError("Cannot find video player", QString("File '%1' does not exist.").arg(m_pathToCLMP).toStdString());
+            msgBoxError("Cannot find media player", QString("File '%1' does not exist.").arg(m_pathToCLMP).toStdString());
         }
     }
     // check for valid URL
@@ -333,7 +329,9 @@ void MainWindow::processCommand_get_media(Json::Value root, bool *success, std::
     std::string status = std::string(root["status"].asCString());
     if (status=="done") {
         // end test
-        ui->status->setText(QString("Test complete.  Please exit program."));
+        ui->status->setText(QString("Test complete.  You can begin another test or exit the program."));
+        ui->startTest->setEnabled(true);
+        ui->settings->setEnabled(true);
     } else if (status=="wait") {
         // re-request data after timeout
         clock_t endwait;
@@ -454,7 +452,7 @@ void MainWindow::onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus)
 // pops up an error message if there is a problem with the command-line media player
 void MainWindow::handleCLMPError(QProcess::ProcessError error)
 {
-    msgBoxError("Error with video player",QString("Error code = %1").arg(error).toStdString());
+    msgBoxError("Error with media player",QString("Error code = %1").arg(error).toStdString());
 }
 
 
