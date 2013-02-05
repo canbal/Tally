@@ -2,9 +2,13 @@
 {% extends "testtool/test_modes/base_discrete.html" %}
 
 {% block voting_control %}
-    <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
-    {% for elem in choices %}
-        <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
-        <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
-    {% endfor %}
+<div data-role="fieldcontain">
+    <fieldset data-role="controlgroup"> 
+        <legend>In terms of overall quality relative to the reference video, degradations in the test video were:</legend>
+        {% for elem in choices %}
+            <input type="radio" name="value" id="choice{{ forloop.counter }}" value="{{ elem.0 }}" />
+            <label for="choice{{ forloop.counter }}">({{ elem.0 }}) {{ elem.1 }}</label>
+        {% endfor %}
+    </fieldset>
+</div>
 {% endblock voting_control %}

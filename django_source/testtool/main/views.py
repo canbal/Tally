@@ -62,7 +62,7 @@ def status(request, test_instance_id):
         try:
             ti = TestInstance.objects.get(pk=test_instance_id)
         except:
-            return status_continuous(request, [], max_counter)      # will return error code
+            return status_continuous(request, [], 0)      # will return error code
         max_counter = ti.testcaseinstance_set.count()
         if ti.test.method in method_list('Continuous'):
             return status_continuous(request, ti, max_counter)

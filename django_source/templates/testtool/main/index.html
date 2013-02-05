@@ -1,4 +1,8 @@
-{% extends "testtool/main/base_subject.html" %}
+{% extends "testtool/registration/base_subject_register.html" %}
+
+{% block controls %}
+    <a href="{% url logout %}" data-icon="delete" class="ui-btn-right" data-ajax="false" id="logout_btn">Logout</a>
+{% endblock controls %}
 
 {% block header %}
     {% if ti_list %}

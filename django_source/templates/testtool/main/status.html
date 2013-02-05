@@ -1,4 +1,9 @@
-{% extends "testtool/main/base_subject.html" %}
+{% extends "testtool/registration/base_subject_register.html" %}
+
+{% block controls %}
+    <a href="{% url home %}" data-icon="home" class="ui-btn-left" id="home_btn">Home</a>
+    <a href="{% url logout %}" data-icon="delete" class="ui-btn-right" data-ajax="false" id="logout_btn">Logout</a>
+{% endblock controls %}
 
 {% block page_id %}id="status"{% endblock page_id %}
 
@@ -14,6 +19,10 @@
                 } else {
                     $( "#header" ).empty().append(data.header);
                     $( "#message" ).empty().append(data.message);
+                    if(data.status!="3") {
+                        document.getElementById("home_btn").style.visibility="hidden";
+                        document.getElementById("logout_btn").style.visibility="hidden";
+                    }
                 }
             });
         }

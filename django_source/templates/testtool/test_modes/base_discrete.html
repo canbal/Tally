@@ -1,5 +1,4 @@
-
-{% extends "testtool/main/base_subject.html" %}
+{% extends "testtool/registration/base_subject_register.html" %}
 
 {% block header %}
     {{ header }}
@@ -8,12 +7,8 @@
 {% block content %}
     <form id="form" action="{% url tally test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
         {% csrf_token %}
-        <div data-role="fieldcontain">
-            <fieldset data-role="controlgroup"> 
-                {% block voting_control %}
-                {% endblock voting_control %}
-            </fieldset>
-        </div>
+        {% block voting_control %}
+        {% endblock voting_control %}
         <span style="float:right">
             <button type="submit" data-theme="b" value="Submit" data-inline="true" data-icon="check">Submit</button>
         </span>
