@@ -1,9 +1,201 @@
-{% extends "testtool/manager/base_manager.html" %}
+﻿{% extends "testtool/manager/base_manager.html" %}
 
 {% block header %}
     Help
 {% endblock header %}
 
 {% block content %}
+    <p>This guide is meant to help you get started with the Tally system for subjective testing.  Please read the sections below for relevant information.  If anything is missing or unclear, please do not hesitate to contact <a href="mailto:tally.vpl@gmail.com?Subject=Documentation%20error" target="_blank">Tally help</a>.</p>
+    
+    <h3 id="contents">Contents</h3>
+    <p><a href="#videos">Preparing Videos</a></p>
+    <p><a href="#definitions">Definitions</a></p>
+    <p><a href="#testmodes">Test modes</a></p>
+    <p><a href="#registration">Registration Guide</a></p>
+    <p><a href="#testcreation">Creating a Test</a></p>
+    <p><a href="#testinstancecreation">Creating a Test Instance</a></p>
+    <p><a href="#desktopapp">Desktop Application</a></p>
+    <p><a href="#runtest">Running a Test</a></p>
+    <p><a href="#policies">Policies</a></p>
+
+
+    <h3 id="videos">Preparing Videos</h3>
+    <p>The Tally system does not differentiate between displays. Depending on the requirements of the display, it is the tester's responsibility to prepare the test videos accordingly. The videos are played using either Qt Phonon media player or any command-line controllable media player. Typically 2D videos do not require any special treatment. However for 3D videos tester needs to follow the expected 3D video format for the display.</p>
+
+    <p>Currently most common 3D representations are frame compatible top-bottom or side-by-side formats. For these formats the display crops the input video in half to extract different views of the stereo video, and upsamples them to full resolution in order to display them simultaneously in 3D. Thus the tester has to first downsample the views of a stereo video and put them together into the frame compatible format before storing as a video file on the computer.</p>
+
+    <a href="#contents">Back to contents</a>
+
+
+    <h3 id="definitions">Definitions</h3>
+    <p>In the Tally system, a Test object contains all of the information comprising a subjective test: the test videos, test method, and test cases.  A test case is the item the subjects vote on; it contains the test video(s), possibly a reference video (depending on the test method), and the order in which they are played.  A Test Instance object is a copy of its parent Test that additionally contains a randomized play order for the test cases and a list of subjects enrolled.</p>
+
+    <a href="#contents">Back to contents</a>
+
+
+    <h3 id="testmodes">Supported Test Modes</h3>
+    <p>The Tally system currently supports three different test modes: Double-Stimulus Impairment Scale (DSIS), Double-Stimulus Continuous Quality Evaluation (DSCQS) Type II, and Single-Stimulus Continuous Quality Evaluation (SSCQE).  These methods are all specified by the ITU Recommendation ITU-R BT.500-13, and the Tally implementation follows this specification:</p>
+    <p>ITU-R, "Recommendation ITU-R BT.500-13: Methodology for the subjective assessment of the quality of television pictures," International Telecommunication Union, Recommendation, Jan. 2012.</p>
+
+    <h4>DSIS</h4>
+    <p>With this test method, the undegraded reference video and the test video are explicitly labeled for the subject.  The reference video is played first, followed by the test video, then the videos are repeated.  Subjects are then asked to submit their scores, and then the next test case will proceed.  Subjects score the video on a discrete 5-point scale annotated with adjectives referring to the level of degradation relative to the reference video: 5 - Imperceptible; 4 - Perceptible but not annoying; 3 - Slightly annoying; 2 - Annoying; 1 - Very annoying.  Currently, the Tally system does not automatically label videos as test or reference.  These banners would have to be added into the video by the user.</p>
+
+    <h4>DSCQE Type II</h4>
+    <p>This test method also compares a reference video to a test video, but neither are explicitly labeled.  Instead, they are randomly labeled "Video 1" and "Video 2".  Video 1 is played first, followed by Video 2, and then the video pair is repeated in the same order.  Subjects are then asked to submit their scores, and then the next test case will proceed.  Subjects are asked to rate the quality of both videos on a continuous scale from 1 to 5 annotated with adjectives at equal intervals: Excellent, Good, Fair, Poor, and Bad.</p>
+
+    <h4>SSCQE</h4>
+    <p>In this test method, a test video is played and the subjects continually rate the quality of the video on a continuous scale of 1 to 5.  Rather than explicitly submitting scores at discrete moments in during the test, the subject scores are continually sampled at a rate of twice per second in the background.  Subjects adjust a slider based on their opinion of the video quality as the test video progresses.<p>
+
+    <a href="#contents">Back to contents</a>
+
+    
+    <h3 id="registration">Registration Guide</h3>
+
+    <h4>Registering a Tester</h4>
+    <p>Only administrators can register a Tester to the system. After logging in to the system, the welcome page shows a button saying "Register a new tester". This button takes the administrator to the Tester registration form. Once the form is filled correctly a new Tester should be successfully created.</p>
+
+    <h4>Registering a Subject</h4>
+    <p>Subjects register themselves to the Tally system. The home page provides a button saying "Register" which takes a user to the Subject registration form. Filling this form correctly registers a user to the system as a Subject.</p>
+
+    <a href="#contents">Back to contents</a>
+
+    
+    <h3 id="testcreation">Creating a Test</h3>
+    <p>Once a Tester logins to the system, the sidebar provides the link to create a new test (look for "Create New Test"). Clicking that link takes the Tester to an initial form where Tester gives a user-friendly title to the new Test, provides an optional description for later reference, and most importantly selects a Test method. Except for the Test method, the title and description can be edited later. Hitting the "Create" button takes the Tester to a second form page where Tester can populate the Test with videos.</p>
+
+    <p>In order to populate the Test with videos, Tester first selects video files from the computer. Before these video files are added to the Test, Tester has to additionally hit the green upload buttons next to each video file. Simply avioding to hit that button would prevent a file being added to the Test. The Tally system does not actually upload the files themselves but records only the filenames. Tester is responsible to make sure that these videos exist on the computer running the desktop application.</p>
+
+    <p>Once the videos are associated with the Test, next step is to create the Test Cases. In order to make the newly associated video files available for Test Case creation, Tester needs to hit the "Update" button. (Next to the "Update" button, the "Save" button actually terminates the Test creation process and directs the Tester to the detail page of the Test. If hit accidentally, it is easy to get back by hitting the "Edit" button.) After this a new link appears that says "Add new test case". This link takes the Tester to the form that allows creating test cases out of the available videos. A Test Case can be set up to be repeated multiple times. The difference between creating two identical Test Cases and setting the repeat to two for a Test Case is, the results for the former case are compiled together and allows easy data unfolding for the Tester later on. Tester can create as many Test Cases as required simply by repeating the process. Once done, hitting the "Save" button takes the Tester to the details page of the newly created Test, where he can create a child Test Instance.</p>
+
+    <a href="#contents">Back to contents</a>
+
+
+    <h3 id="testinstancecreation">Creating a Test Instance</h3>
+    <p>To create a Test Instance out of an existing Test, first the Tester needs to navigate himself to the details page of that particular Test. The list of existing Tests can be seen by clicking on the "My Tests" link on the sidebar.</p>
+
+    <p>At the Test details page, the "Create Test Instance" button takes the Tester to the Test Instance creation form. In this form tester provides the file path to the folder containing the test videos, a folder on the computer running the desktop app. This path is crucial since the desktop app checks it before allowing to start a Test, and a Test can only be started if all the necessary videos are available in this folder. Additionally, the Tester needs to add subjects (who have already registered to the system themselves) that will participate in the Test Instance. This can be done by clicking on the subject username(s) and hitting the "Add" button. If a subject is added to the Test Instance by accident, it is also possible to remove him by clicking on his username and hitting the "Remove" button. Finally clicking "Create" button creates the Test Instance and directs the Tester to its details page, where he can also start running the newly created Test Instance.</p>
+
+
+    <a href="#contents">Back to contents</a>
+
+
+    <h3 id="desktopapp">Desktop Application</h3>
+    <p>The desktop application, Tally-Desktop, should be installed on the same computer where the test videos are located and to which the display screen is connected.  This computer can be the same one as the server hosting the Tally website or a different one entirely.  Either way, Tally-Desktop communicates with the server using HTTP.  The server tells Tally-Desktop which videos to play and when, and then Tally-Desktop plays the videos using video player software installed on the local computer.</p>
+
+    <p>The Settings menu in Tally-Desktop allows one to change the default web address that loads upon startup of the Tally-Desktop (this should point to the web address of where you have hosted the Tally site), and also to change which video player is used.  The native Qt player can be used, in which case the screen on which the player shows can be toggled.  Any command-line player, such as Windows Media Player, can also be used, and the commands to the video player can be entered using the appropriate text boxes.  The filenames of the videos to be played are passed in after the command list entered in the Settings menu.</p>
+    <a href="#contents">Back to contents</a>
+    
+
+    <h3 id="runtest">Running a Test</h3>
+    <p>Once the videos have been prepared and everything has been installed, a test can be run.  Start the desktop application and adjust the video player settings as desired.  Using the browser inside Tally-Desktop, log into the Tally webiste that you have set up on your server.  Create a new Test Instance, or select an existing one, to run.  Subjects must be added to a Test Instance at the time of creation or by editing it.  Once at least one subject is enrolled, the Test Instance can be run.  
+
+    <p>Before running the test, have the subjects log into your Tally website using whatever device you prefer (smartphone, tablet, laptop, etc.).  Upon successful login, they should see a page with a list of buttons.  Each button refers to a Test Instance that is available for them to participate in.  Have them click the button with the ID that matches the ID of the Test Instance you wish to run.  Now, they should be taken to a waiting page.</p>
+
+    <p>Once all the subjects have reached this page, begin the test when you are ready.  Click the "Run Test" button on the Test Instance display page.  The website will take you to a page instructing you to click "Start Test" on Tally-Desktop.  When you are ready, click this button and the test will begin.  The subjects will be automatically redirected from the waiting page to the voting page, and the test will proceed on its own until completion.</p>
+
+    <p>Note that a Test Instance can only be run by accessing the webpage through the desktop application.</p>
+    <a href="#contents">Back to contents</a>
+
+
+    <h3 id="policies">Policies and Permissions</h3>
+    <p>To protect your data while enabling sharing functionality and other features of the site, we have implemented a set of policies and permissions.  These rules dictate what actions can be performed on objects based on the user's relation to the object and the state of the object.  If you try to do something on the site and get an error message that says you do not have access or something similar, the explanation can be found here.</p>
+
+    <p>Table I indicates who can perform what action on which object.  For instance, a Test Collaborator may export any Test Instance of the parent test, but can only share the Test Instances he creates.</p>
+
+    <p>Table II indicates certain restrictions on actions that can be performed on an object based on its state.  For instance, a Test Instance can be deleted whenever there are no collaborators on that Test Instance.</p>
+
+    <p>Tables I and II together specify the full permission on any action, object, and user combination.  For instance, a Test Instance can be created by someone who is the owner or a collaborator of the parent test, and as long as the parent test has test cases.  Similarly, a Test can be deleted if it has no child Test Instances, there are not collaborators on that test, and the Test Owner is the one deleting it.</p>
+
+    <h4>Table I. Actions that can be performed on objects by user status.</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Parent Test</th>
+                <th>Child Test Instance</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Test Owner</td>
+                <td>view, export, share, edit, modify, delete</td>
+                <td>view, export, share, create</td>
+            </tr>
+            <tr>
+                <td>Test Collaborator</td>
+                <td>view, export, unshare</td>
+                <td>view, export, create</td>
+            </tr>
+            <tr>
+                <td>Test Instance Owner</td>
+                <td>view</td>
+                <td>view, export, share, edit, delete, run</td>
+            </tr>
+            <tr>
+                <td>Test Instance Collaborator</td>
+                <td>view</td>
+                <td>view, export, unshare</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>Table II. Conditions on objects that must be satisfied by action.</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Parent Test</th>
+                <th>Child Test Instance</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>View</td>
+                <td>(no restrictions)</td>
+                <td>(no restrictions)</td>
+            </tr>
+            <tr>
+                <td>Edit</td>
+                <td>(no restrictions)</td>
+                <td>(no restrictions)</td>
+            </tr>
+            <tr>
+                <td>Modify</td>
+                <td>No child Test Instances and no Test Collaborators</td>
+                <td>N/A</td>
+            </tr>
+            <tr>
+                <td>Export</td>
+                <td>At least one of the child Test Instances has been run</td>
+                <td>Has been run (complete or incomplete)</td>
+            </tr>
+            <tr>
+                <td>Share</td>
+                <td>There are other Testers who do not already have access (not Test Owner/Collaborators)</td>
+                <td>There are other Testers who do not already have access (not Test/Test Instance Owner/Collaborators)</td>
+            </tr>
+            <tr>
+                <td>Unshare</td>
+                <td>You are not an Owner or Collaborator of any child Test Instance</td>
+                <td>(no restrictions)</td>
+            </tr>
+            <tr>
+                <td>Create</td>
+                <td>N/A</td>
+                <td>Parent Test has test cases</td>
+            </tr>
+            <tr>
+                <td>Delete</td>
+                <td>No Test Instances and no Test Collaborators</td>
+                <td>No Test Instance Collaborators</td>
+            </tr>
+            <tr>
+                <td>Run</td>
+                <td>N/A</td>
+                <td>Test Instance has subjects and has not been started or finished</td>
+            </tr>
+        </tbody>
+    </table>
+    <a href="#contents">Back to contents</a>
 {% endblock content %}
 

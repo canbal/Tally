@@ -312,13 +312,6 @@ def mirror_score(request, test_instance_id):
 @login_required
 @group_required('Testers')
 @user_passes_test(has_user_profile)
-def about(request):
-    return render_to_response('testtool/manager/about.html',context_instance=RequestContext(request))
-    
-
-@login_required
-@group_required('Testers')
-@user_passes_test(has_user_profile)
 def help(request):
     return render_to_response('testtool/manager/help.html',context_instance=RequestContext(request))
     
