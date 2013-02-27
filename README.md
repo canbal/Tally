@@ -14,7 +14,7 @@ The web-based nature of our tool offers other new benefits as well. With this de
 
 ## Authors and Contributors
 
-Ankit K. Jain (@ankitkj) Can Bal (@canbal)
+Ankit K. Jain (<a href="https://github.com/ankitkj" class="user-mention">@ankitkj</a>) Can Bal (@canbal)
 
 ## Support or Contact
 
