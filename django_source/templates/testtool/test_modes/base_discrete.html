@@ -5,7 +5,7 @@
 {% endblock header %}
 
 {% block content %}
-    <form id="form" action="{% url tally test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
+    <form id="form" action="{% url 'tally' test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
         {% csrf_token %}
         {% block voting_control %}
         {% endblock voting_control %}

@@ -14,19 +14,16 @@
 {% block row %}
     <div class="span8">
         <div class="hero-unit">
-            <h1>Welcome</h1>
-            <p></p>
-            <p>to the web-based subjective testing tool.</p>
-            <p>A site that simplifies data collection for human vision experiments</p>
-            <p>Developed by the UC San Diego Video Processing Lab</p>
-            <br/>
-            <br/>
-            <p>Thank you for helping with our research!</p>
+            <h1>Tally</h1>
+            <br>
+            <br>
+            <p>Tally is a web-based subjective testing tool.</p>
+            <p>It simplifies data collection for human vision experiments.</p>
         </div>
     </div>
     
     <div class="span4">
-        <form class="well form-inline" action="{% url login %}" method="post">
+        <form class="well form-inline" action="{% url 'login' %}" method="post">
             {% csrf_token %}
             {% if form.non_field_errors %}
             <div class="alert alert-error">
@@ -53,7 +50,7 @@
             <table width="100%">
                 <tr>
                     <td>New subjects, register here.</td>
-                    <td><a class="btn btn-large btn-primary pull-right" href="{% url register_subject %}">Register</a></td>
+                    <td><a class="btn btn-large btn-primary pull-right" href="{% url 'register_subject' %}">Register</a></td>
                 </tr>
             </table>
         </div>

@@ -29,15 +29,15 @@
                 </div>
             </div>
             <div class="form-actions form-container">
-                <a class="btn" href="{% url display_test test_id=test_id %}">Parent Test</a>
+                <a class="btn" href="{% url 'display_test' test_id=test_id %}">Parent Test</a>
                 {% if can_share %}
-                    <a class="btn btn-primary" href="{% url share_test_instance test_id=test_id test_instance_id=test_instance_id %}">Share</a>
+                    <a class="btn btn-primary" href="{% url 'share_test_instance' test_id=test_id test_instance_id=test_instance_id %}">Share</a>
                 {% endif %}
                 {% if can_export %}
-                    <a class="btn btn-primary" href="{% url export_test_instance test_id=test_id test_instance_id=test_instance_id %}">Export Data</a>
+                    <a class="btn btn-primary" href="{% url 'export_test_instance' test_id=test_id test_instance_id=test_instance_id %}">Export Data</a>
                 {% endif %}
                 {% if can_edit %}
-                    <a class="btn btn-primary" href="{% url edit_test_instance test_id=test_id test_instance_id=test_instance_id %}">Edit</a>
+                    <a class="btn btn-primary" href="{% url 'edit_test_instance' test_id=test_id test_instance_id=test_instance_id %}">Edit</a>
                 {% endif %}
                 {% if can_delete or can_unshare %}
                     <a href="#deleteModal" role="button" class="btn btn-danger" data-toggle="modal">{% if can_delete %}Delete{% else %}Stop collaborating{% endif %}</a>
@@ -50,7 +50,7 @@
                         </div>
                         <div class="modal-footer">
                             <button class="btn" data-dismiss="modal">Cancel</button>
-                            <form action="{% if can_delete %}{% url delete_test_instance test_id=test_id test_instance_id=test_instance_id %}{% else %}{% url unshare_test_instance test_id=test_id test_instance_id=test_instance_id %}{% endif %}" method="post">
+                            <form action="{% if can_delete %}{% url 'delete_test_instance' test_id=test_id test_instance_id=test_instance_id %}{% else %}{% url 'unshare_test_instance' test_id=test_id test_instance_id=test_instance_id %}{% endif %}" method="post">
                                 {% csrf_token %}
                                 <input type="submit" class="btn btn-danger" value="Yes, {% if can_delete %}delete{% else %}stop collaborating{% endif %}" />
                             </form>
@@ -58,7 +58,7 @@
                     </div>
                 {% endif %}
                 {% if can_run %}
-                    <a class="btn btn-success" href="{% url run_test_instance test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
+                    <a class="btn btn-success" href="{% url 'run_test_instance' test_id=test_id test_instance_id=test_instance_id %}">Start Test</a>
                 {% endif %}
             </div>
         </div>

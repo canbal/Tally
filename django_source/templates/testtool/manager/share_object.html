@@ -3,9 +3,9 @@
 
 {% block cancel_href %}
     {% if mode == "Test" %}
-        {% url display_test test_id=test_id %}
+        {% url 'display_test' test_id=test_id %}
     {% elif mode == "Test Instance" %}
-        {% url display_test_instance test_id=test_id test_instance_id=test_instance_id %}
+        {% url 'display_test_instance' test_id=test_id test_instance_id=test_instance_id %}
     {% endif %}
 {% endblock cancel_href %}
 

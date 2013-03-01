@@ -46,7 +46,7 @@
         for (var i = 0, f; f = files[i]; i++) {
             show.push('<tr id="row_add_file_',i,'"><td align="left" width="100%">', escape(f.name), '</td>',
                       '<td align="right"><button class="btn btn-mini btn-success" id="btn_add_file_',i,'"><i class="icon-upload"></i></button></td></tr>');
-            js.push('$("#btn_add_file_',i,'").click(function() { postAddFile("{% url add_video test_id %}",',i,',"',escape(f.name),'") });\n');
+            js.push('$("#btn_add_file_',i,'").click(function() { postAddFile("{% url 'add_video' test_id %}",',i,',"',escape(f.name),'") });\n');
         }
         show.push('</table>')
         $("#files_show").html(show.join(''));
@@ -158,7 +158,7 @@
     		    {% if allow_modify %}
     			<div class="accordion-group">
         			<div class="accordion-heading">
-            			<a class="accordion-toggle" href={% url add_test_case test_id %}>Add new test case</a>
+            			<a class="accordion-toggle" href={% url 'add_test_case' test_id %}>Add new test case</a>
         			</div>
     			</div>
     			{% endif %}
@@ -167,7 +167,7 @@
 	</div>
 	{% endif %}
     <div class="form-actions">
-        <a class="btn" href="{% url display_test test_id=test_id %}">Cancel</a>
+        <a class="btn" href="{% url 'display_test' test_id=test_id %}">Cancel</a>
 	    <input type="button" class="btn btn-info" id="update_button" value="Update">
         <input type="button" class="btn btn-primary" id="save_button" value="Save">
     </div>
@@ -185,12 +185,12 @@ $("#save_button").click(function() {
 {% if allow_modify %}
 <script type="text/javascript">
 {% for file in files %}
-$("#btn_del_file_{{ file.pk }}").click(function() { postDeleteFile("{% url delete_video file.pk %}", {{ file.pk }}); });
+$("#btn_del_file_{{ file.pk }}").click(function() { postDeleteFile("{% url 'delete_video' file.pk %}", {{ file.pk }}); });
 {% endfor %}
 </script>
 <script type="text/javascript">
 {% for tc in tc_data %}
-$("#btn_del_tc_{{ tc.0.pk }}").click(function() { postDeleteTestCase("{% url delete_test_case tc.0.pk %}", {{ tc.0.pk }}); });
+$("#btn_del_tc_{{ tc.0.pk }}").click(function() { postDeleteTestCase("{% url 'delete_test_case' tc.0.pk %}", {{ tc.0.pk }}); });
 {% endfor %}
 </script>
 <script type="text/javascript" id="btn_add_scripts"></script>

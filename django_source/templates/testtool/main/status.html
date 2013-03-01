@@ -1,8 +1,8 @@
 {% extends "testtool/registration/base_subject_register.html" %}
 
 {% block controls %}
-    <a href="{% url home %}" data-icon="home" class="ui-btn-left" id="home_btn">Home</a>
-    <a href="{% url logout %}" data-icon="delete" class="ui-btn-right" data-ajax="false" id="logout_btn">Logout</a>
+    <a href="{% url 'home' %}" data-icon="home" class="ui-btn-left" id="home_btn">Home</a>
+    <a href="{% url 'logout' %}" data-icon="delete" class="ui-btn-right" data-ajax="false" id="logout_btn">Logout</a>
 {% endblock controls %}
 
 {% block page_id %}id="status"{% endblock page_id %}
@@ -13,9 +13,9 @@
             $( "#error" ).empty();
         }
         function updateStatus() {
-            $.getJSON("{% url status test_instance_id=test_instance.pk %}", function(data) {
+            $.getJSON("{% url 'status' test_instance_id=test_instance.pk %}", function(data) {
                 if(data.status=="4") {
-                    window.location = "{% url tally test_instance_id=test_instance.pk %}";
+                    window.location = "{% url 'tally' test_instance_id=test_instance.pk %}";
                 } else {
                     $( "#header" ).empty().append(data.header);
                     $( "#message" ).empty().append(data.message);

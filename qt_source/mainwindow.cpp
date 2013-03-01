@@ -21,11 +21,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize settings dialog
     m_savedPrefs = new QSettings("UCSD","Tally");
-    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://videoprocessing.ucsd.edu/").toString();
-    m_videoMode = m_savedPrefs->value("videoMode",2).toInt();
+    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://canbal.github.com/Tally/").toString();
+    m_videoMode = m_savedPrefs->value("videoMode",1).toInt();
     m_pathToCLMP = m_savedPrefs->value("pathToCLMP","c:/Program Files (x86)/Windows Media Player/wmplayer.exe").toString();
     m_argsCLMP = m_savedPrefs->value("argStringCLMP","/fullscreen /play /close").toString().split(" ");
-    m_settings = new Settings::Settings();
+    m_settings = new Settings();
     m_settings->setWindowModality(Qt::ApplicationModal);    // disables other windows while this one is open
     m_settings->setDefaults(m_defaultWebAddress,m_videoMode,m_pathToCLMP,m_argsCLMP.join(" "));
     connect(m_settings,SIGNAL(settings_changed()),this,SLOT(copySettings()));

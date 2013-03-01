@@ -1,7 +1,7 @@
 import os
 import sys
 
-path = 'C:/Users/Ankit/Desktop/Tally/django_source/Tally'
+path = os.path.join(os.path.abspath(os.path.dirname(__file__)))
 if path not in sys.path:
     sys.path.append(path)
 

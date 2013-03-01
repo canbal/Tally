@@ -30,7 +30,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </a>
-                <a class="brand" href="{% url home %}">Tally</a>
+                <a class="brand" href="{% url 'home' %}">Tally</a>
                 <div class="btn-group pull-right profile-hover">
                     <button class="btn dropdown-toggle">
                         <i class="icon-user"></i> {{ request.user.username }}
@@ -40,15 +40,15 @@
                         <li class="info">{{ request.user.first_name }} {{ request.user.last_name }}</li>
                         <li class="info">{{ request.user.email }}</li>
                         <li class="divider"></li>
-                        <li><a href="{% url profile %}"><i class="icon-th-list"></i> Profile</a></li>
-                        <li><a href="{% url logout %}"><i class="icon-off"></i> Sign Out</a></li>
+                        <li><a href="{% url 'profile' %}"><i class="icon-th-list"></i> Profile</a></li>
+                        <li><a href="{% url 'logout' %}"><i class="icon-off"></i> Sign Out</a></li>
                     </ul>
                 </div>
                 <div class="nav-collapse">
                     <ul class="nav pull-right">
-                        <li class="{% active request 'home' %}"><a href="{% url home %}">Home</a></li>
+                        <li class="{% active request 'home' %}"><a href="{% url 'home' %}">Home</a></li>
                         <li><a href="http://canbal.github.com/Tally" target="_blank">Tally on Git</a></li>
-                        <li class="{% active request 'help' %}"><a href="{% url help %}">Help</a></li>
+                        <li class="{% active request 'help' %}"><a href="{% url 'help' %}">Help</a></li>
                     </ul>
                 </div>
             </div>
@@ -60,10 +60,10 @@
     <div class="span3">
             <ul class="well nav nav-list tally-sidenav">
                 <li class="nav-header">Tests</li>
-                <li class="{% active request 'list_tests' %}"><a href="{% url list_tests %}"><i class="icon-list"></i> My Tests</a></li>
-                <li class="{% active request 'create_test' %}"><a href="{% url create_test %}"><i class="icon-file"></i> Create New Test</a></li>
+                <li class="{% active request 'list_tests' %}"><a href="{% url 'list_tests' %}"><i class="icon-list"></i> My Tests</a></li>
+                <li class="{% active request 'create_test' %}"><a href="{% url 'create_test' %}"><i class="icon-file"></i> Create New Test</a></li>
                 <li class="nav-header">Tools</li>
-                <li class="{% active request 'log_book' %}"><a href="{% url log_book %}"><i class="icon-book"></i> Log Book</a></li>
+                <li class="{% active request 'log_book' %}"><a href="{% url 'log_book' %}"><i class="icon-book"></i> Log Book</a></li>
             </ul>
     </div>
     <div class="span9">

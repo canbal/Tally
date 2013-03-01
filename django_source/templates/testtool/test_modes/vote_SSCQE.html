@@ -5,11 +5,11 @@
 {% block head %}
     <script type="text/javascript">
         function transmitScore() {
-            $.post("{% url tally test_instance_id=test_instance.pk %}", $("#form_SSCQE").serialize(), function(data) {
+            $.post("{% url 'tally' test_instance_id=test_instance.pk %}", $("#form_SSCQE").serialize(), function(data) {
                 if (data.status=="1") {
-                    window.location = "{% url status test_instance_id=test_instance.pk %}";
+                    window.location = "{% url 'status' test_instance_id=test_instance.pk %}";
                 } else if (data.status=="3") {
-                    window.location = "{% url tally test_instance_id=test_instance.pk %}";
+                    window.location = "{% url 'tally' test_instance_id=test_instance.pk %}";
                 } //else {
                 //    $( "#message" ).empty().append(data.message);
                 //}
@@ -25,7 +25,7 @@
 {% endblock header %}
 
 {% block content %}
-    <form id="form_SSCQE" action="{% url tally test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
+    <form id="form_SSCQE" action="{% url 'tally' test_instance_id=test_instance.pk %}" method="post" data-ajax="false">
         {% csrf_token %}
         <div data-role="fieldcontain">
             <fieldset data-role="controlgroup"> 

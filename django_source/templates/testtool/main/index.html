@@ -1,7 +1,7 @@
 {% extends "testtool/registration/base_subject_register.html" %}
 
 {% block controls %}
-    <a href="{% url logout %}" data-icon="delete" class="ui-btn-right" data-ajax="false" id="logout_btn">Logout</a>
+    <a href="{% url 'logout' %}" data-icon="delete" class="ui-btn-right" data-ajax="false" id="logout_btn">Logout</a>
 {% endblock controls %}
 
 {% block header %}
@@ -16,7 +16,7 @@
     <div data-role="fieldcontain">
         <fieldset data-role="controlgroup"> 
             {% for ti in ti_list %}
-                <li><a href="{% url tally test_instance_id=ti.pk %}" data-role="button" data-ajax="false">Begin test {{ ti.id }}</a></li>
+                <li><a href="{% url 'tally' test_instance_id=ti.pk %}" data-role="button" data-ajax="false">Begin test {{ ti.id }}</a></li>
             {% endfor %}
         </fieldset>
     </div>

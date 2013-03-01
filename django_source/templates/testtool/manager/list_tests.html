@@ -30,14 +30,14 @@
                         <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a href="{% url list_test_instances test_id=t.3 %}">View test instances</a></li>
-                        <li><a href="{% url create_test_instance test_id=t.3 %}">Create new test instance</a></li>
+                        <li><a href="{% url 'list_test_instances' test_id=t.3 %}">View test instances</a></li>
+                        <li><a href="{% url 'create_test_instance' test_id=t.3 %}">Create new test instance</a></li>
                     </ul>
                 </div>
             </td>
-            <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.0 }}</td>
-            <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.1 }}</td>
-            <td class="row-click" onclick="document.location.href='{% url display_test test_id=t.3 %}'">{{ t.2 }}</td>
+            <td class="row-click" onclick="document.location.href='{% url 'display_test' test_id=t.3 %}'">{{ t.0 }}</td>
+            <td class="row-click" onclick="document.location.href='{% url 'display_test' test_id=t.3 %}'">{{ t.1 }}</td>
+            <td class="row-click" onclick="document.location.href='{% url 'display_test' test_id=t.3 %}'">{{ t.2 }}</td>
         </tr>
         {% endfor %}
     </tbody>

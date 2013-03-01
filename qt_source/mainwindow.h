@@ -49,7 +49,7 @@ private slots:
 private:
         // controls and widgets
     Ui::MainWindow *ui;
-    Settings::Settings *m_settings;
+    Settings *m_settings;
     QNetworkAccessManager *m_manager;
     Phonon::MediaObject *m_phonon;
     Phonon::VideoWidget *m_videoWidget;
