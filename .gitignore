@@ -5,6 +5,8 @@
 *.user
 *.o
 
+qt_source/Makefile
+qt_source/tally_desktop
 qt_build_win7-64/
 django_source/testtool/migrations/
 
