@@ -244,42 +244,54 @@ void MainWindow::interpretServerCommand(std::string mode)
     // read command from server
     QString command = readServerResponse();
 
-    // interpret command
-    bool success = true;
-    QStringList keys = (QStringList() << "status" << "msg" << "path" << "mediaList" << "counter");
-    std::stringstream errMsg;
-    Json::Value root;
-    Json::Reader reader;
-    if (!reader.parse(command.toStdString().c_str(),root)) {
-        success = false;
-        errMsg << reader.getFormatedErrorMessages() << std::endl;
+    if (command == "error")
+    {
+        // do nothing, an error message is already displayed
+    } else if (command == "unknown_error") {
+        // this happens when using with Ubuntu 12.04 64-bit Apache server
+        // then re-request data after timeout
+        clock_t endwait;
+        endwait = clock () + PING_INTERVAL * CLOCKS_PER_SEC;
+        while (clock() < endwait) {}
+        sendStatusToServer("waiting");
     } else {
-        bool keysValid = root.size()==(unsigned)keys.size();
-        int ii = 0;
-        while (keysValid && ii<keys.size()) {
-            keysValid = root.isMember(keys.at(ii).toStdString()) ;
-            ii++;
-        }
-        if (keysValid) {
-            if (mode == "init") {
-                processCommand_init(root, &success, &errMsg);
-            } else if (mode == "get_media") {
-                processCommand_get_media(root, &success, &errMsg);
+        // interpret command
+        bool success = true;
+        QStringList keys = (QStringList() << "status" << "msg" << "path" << "mediaList" << "counter");
+        std::stringstream errMsg;
+        Json::Value root;
+        Json::Reader reader;
+        if (!reader.parse(command.toStdString().c_str(),root)) {
+            success = false;
+            errMsg << reader.getFormatedErrorMessages() << std::endl;
+        } else {
+            bool keysValid = root.size()==(unsigned)keys.size();
+            int ii = 0;
+            while (keysValid && ii<keys.size()) {
+                keysValid = root.isMember(keys.at(ii).toStdString()) ;
+                ii++;
+            }
+            if (keysValid) {
+                if (mode == "init") {
+                    processCommand_init(root, &success, &errMsg);
+                } else if (mode == "get_media") {
+                    processCommand_get_media(root, &success, &errMsg);
+                } else {
+                    success = false;
+                    errMsg << "Invalid server command mode." << std::endl;
+                }
             } else {
                 success = false;
-                errMsg << "Invalid server command mode." << std::endl;
+                errMsg << "Invalid message from server." << std::endl;
+            }
+        }
+        if (success) {
+            if (mode == "init") {
+                sendStatusToServer("init");
             }
         } else {
-            success = false;
-            errMsg << "Invalid message from server." << std::endl;
+            msgBoxError("Error with test instance", errMsg.str());
         }
-    }
-    if (success) {
-        if (mode == "init") {
-            sendStatusToServer("init");
-        }
-    } else {
-        msgBoxError("Error with test instance", errMsg.str());
     }
 }
 
@@ -293,7 +305,12 @@ QString MainWindow::readServerResponse()
         command = (QString) reply->readAll();
         ui->signal->setText(command);
     } else {
-        msgBoxError("Error with server response", reply->errorString().toStdString());
+        if (reply->error() == 99) {
+            command = "unknown_error"; // happens when using with Ubuntu 12.04 64-bit Apache server, handle explicitly
+        } else {
+            command = "error";
+			msgBoxError("Error with server response", reply->errorString().toStdString());
+        }
     }
     reply->deleteLater();
     return(command);
