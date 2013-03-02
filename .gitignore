@@ -3,6 +3,7 @@
 #*#
 *.pyc
 *.user
+*.o
 
 qt_build_win7-64/
 django_source/testtool/migrations/
