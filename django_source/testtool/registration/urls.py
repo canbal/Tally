@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 urlpatterns = patterns('testtool.registration.views',
     url(r'^login/$',           'custom_login',    { 'template_name':'testtool/registration/login.html' }, name='login'),

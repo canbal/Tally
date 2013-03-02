@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 from testtool.manager.views import CreateTest, DisplayTest, EditTest, CreateTestInstance, DisplayTestInstance, EditTestInstance
 
 urlpatterns = patterns('testtool.manager.views',
