@@ -23,6 +23,13 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 ---
 
 # Installation
+
+These are the suggested installation steps and work on our tested systems. Depending on your system configurations you may need to alter some of the steps.
+
+For example Tally can potentially run on any python server, but we only tested for Apache+mod\_wsgi. We provide the installation steps for this server as a suggested configuration.
+
+Also for Linux and MacOSX, you do not need to use any package manager to install dependencies. You can also download their source code and proceed with their installation guides.
+
 ## Windows
 ### Back-end
 1. Install Python 2.7.x
@@ -95,7 +102,7 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 4. Build the project in Release mode.  Create a new directory to deploy the desktop app.  Copy tally_desktop.exe from the release build directory, and phonon4.dll, QtCore4.dll, QtGui4.dll, QtNetwork4.dll, and QtWebKit4.dll from C:\Qt\4.8.4\bin, into the deployment directory.  If you compiled with mingw, you may additionally need libgcc_s_dw201.dll and mingwm10.dll or something similar.  Copy the entire directory C:\Qt\4.8.4\plugins\phonon_backend into the deployment directory.  The deployment directory now contains everything you need to run Tally Desktop on any computer.  
 
 
-## Linux
+## Ubuntu
 ### Back-end
 1. Install required packages  
 	`$ sudo apt-get install python python-dev build-essential libatlas-base-dev gfortran git`  
@@ -169,16 +176,16 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 	`$ echo export PATH=/usr/local/bin:\$PATH >> ~/.bash_profile`
 5. Restart your Terminal so it picks up the path
 6. Download and install dependencies (easiest way is through Homebrew and pip)
-	- Install python (Install it from Homebrew as well even if you already have it from Apple, it also installs pip, which will be required to install some other dependencies)  
+	- install python (Install it from Homebrew as well even if you already have it from Apple, it also installs pip, which will be required to install some other dependencies)  
 		`$ brew install python`
-	- Check for python (output should be /usr/local/bin/python)  
+	- check for python (output should be /usr/local/bin/python)  
 		`$ which python`
-	- Add the latest python to your path just like we added Homebrew on step 4:  
+	- add the latest python to your path just like we added Homebrew on step 4:  
 		`$ echo export PATH=/usr/local/share/python:\$PATH >> ~/.bash_profile`
-	- Restart your Terminal so it picks up the path
-	- Install Django through pip  
+	- restart your Terminal so it picks up the path
+	- install Django through pip  
 		`$ pip install Django`
-	- Install numpy
+	- install numpy
 		- [alt1] through pip (this numpy installation made scipy installation fail for us)  
 			`$ pip install numpy`
 		- [alt2] through Homebrew  
@@ -186,7 +193,7 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 			`$ brew tap homebrew/science`  
 			`$ pip install nose` (required for Homebrew numpy)  
 			`$ brew install numpy`  
-	- Install scipy through pip  
+	- install scipy through pip  
 		`$ brew install gfortran (required for scipy)`  
 		`$ pip install scipy`  
 3. Download Tally
@@ -194,13 +201,13 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 		`$ git clone git://github.com/canbal/Tally.git`
 	- [alternative] download the zip file from <http://canbal.github.com/Tally/>
 4. Setup Tally
-	- Change into back-end directory  
+	- change into back-end directory  
 		`$ cd Tally/django_source`  
-	- Initialize the Tally system  
+	- initialize the Tally system  
 		`$ ./manage.py init_tally`  
-	- Open a browser and point it to the location printed in the command window, something like http://127.0.0.1:8000, and login with the superuser credentials you just created
-	- Create a tester account, then logout of the website, and login as the Tester to make sure everything is working
-	- Stop the development server by pressing `Ctrl-C` in the command window
+	- open a browser and point it to the location printed in the command window, something like http://127.0.0.1:8000, and login with the superuser credentials you just created
+	- create a tester account, then logout of the website, and login as the Tester to make sure everything is working
+	- stop the development server by pressing `Ctrl-C` in the command window
 5. Install mod\_wsgi
 	- [alt1] using official homebrew package -- [bug report](https://github.com/mxcl/homebrew/issues/18185)  
 		`$ brew tap homebrew/apache`  
@@ -208,9 +215,9 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 	- [alt2] using [unofficial fixed package](https://github.com/ahihi/homebrew-apache/commit/600bf143272f34371cf0826d69758b56083f529d) developed by <a href="https://github.com/ahihi" class="user-mention">@ahihi</a>  
 		`$ brew install https://raw.github.com/ahihi/homebrew-apache/600bf143272f34371cf0826d69758b56083f529d/mod_wsgi.rb`  
 6. Setup mod\_wsgi to work with Apache
-	- First find where Homebrew installed mod_wsgi.so and make sure this file exists  
+	- first find where Homebrew installed mod_wsgi.so and make sure this file exists  
 		`$ brew list mod_wsgi`  
-	- Link this file to the apache2/modules
+	- link this file to the apache2/modules
 		    $ sudo ln -s `brew list mod_wsgi` /usr/libexec/apache2/</code>  
 	- edit /etc/apache2/httpd.conf to contain following lines (requires elevated permissions):
 		- near the top of the file, there will be many lines beginning with "LoadModule …"
@@ -244,10 +251,10 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 		</Directory>
 		```
 7. Start Apache
-	- Click on Apple logo > System Preferences
-	- Click on Sharing
-	- Turn on Web Sharing (click on the checkbox next to it)
-	- In order to allow access to the files in Tally, you need to change the owner of the file to apache. Execute following command to give ownership to the apache user (www):  
+	- click on Apple logo > System Preferences
+	- click on Sharing
+	- turn on Web Sharing (click on the checkbox next to it)
+	- in order to allow access to the files in Tally, you need to change the owner of the file to apache. Execute following command to give ownership to the apache user (www):  
 		`$ sudo chown -R _www {path to Tally}/django_source`  
 		`$ sudo chgrp -R _www {path to Tally}/django_source`  
 
@@ -257,6 +264,31 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 		- download and install Qt libraries 4.8.4 for Mac.  Note that Tally is only compatible with Qt libraries 4.8.4
 		- download and install Qt Creator 2.6.2 for Mac.
 2. Open Qt Creator and load the qt_source/tally_desktop.pro
-	- File --> Open File or Project --> {path to Tally}/qt_source/tally_desktop.pro
+	- File > Open File or Project > {path to Tally}/qt_source/tally_desktop.pro
 	- Configure project
 3. Compile and run
+
+---
+
+# Ideas for Future Release
+
+Here is a list of items we would like to include in Tally in the future release. Feel free to contribute :)
+
+### Subjective test functionality
+1. Allow for practice tests which come at the beginning of every test instance, are not randomized, and whose scores are discarded or kept separate from the other test data
+2. Display banners before videos and test cases such as “Test #1” or “Reference Video” for a configurable number of seconds
+3. Allow a timed break between test cases
+4. Enable Tally for images
+5. Support SAMVIQ, DSCQS Type I
+6. Insert instruction sheet for subjects before they begin a test, maybe allow a PDF to be uploaded (add instruction field to Test model)
+
+### Site features
+1. If forgotten, allow changing password
+2. Disable action buttons and provide popup explanation instead of making them invisible when unavailable
+3. Video uploading/downloading
+
+### Advanced
+1. Enable PDF report generation
+2. Automatic data analysis tools
+3. Standardized tests for visual acuity, stereo vision, and eye dominance
+online registration tool for scheduling participant
