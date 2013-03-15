@@ -33,7 +33,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 ## Windows
 ### Back-end
 1. Install Python 2.7.x
-  - download Python 2.7.3 Windows Installer from <http://www.python.org/download/> and run it
+	- download Python 2.7.3 Windows Installer from <http://www.python.org/download/> and run it
 2. Install Django, Numpy, and Scipy
 	- Django
 		- download the tarball of latest version of Django (Django 1.5) from <https://www.djangoproject.com/download/> and extract
@@ -290,5 +290,4 @@ Here is a list of items we would like to include in Tally in the future release.
 ### Advanced
 1. Enable PDF report generation
 2. Automatic data analysis tools
-3. Standardized tests for visual acuity, stereo vision, and eye dominance
-online registration tool for scheduling participant
+3. Standardized tests for visual acuity, stereo vision, and eye dominance online registration tool for scheduling participant
