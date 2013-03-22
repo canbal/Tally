@@ -20,6 +20,10 @@ Ankit K. Jain (<a href="https://github.com/ankitkj" class="user-mention">@ankitk
 
 For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as we can.
 
+## License
+
+This content is released under the [MIT License](https://github.com/canbal/Tally/blob/master/LICENSE.txt).
+
 ---
 
 # Installation
