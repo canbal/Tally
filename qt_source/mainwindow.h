@@ -3,11 +3,8 @@
 
 #include <QMainWindow>
 #include <QNetworkAccessManager>
-#include <Phonon/VideoWidget>
-#include <Phonon/MediaObject>
 #include <QProcess>
 #include <QSettings>
-#include <json/json.h>
 #include "settings.h"
 
 
@@ -26,7 +23,7 @@ public:
     ~MainWindow();
 
 signals:
-    void phonon_finished(int exitCode, QProcess::ExitStatus exitStatus);
+    //void phonon_finished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private slots:
         // related to UI
@@ -37,22 +34,22 @@ private slots:
         // related to UI settings
     void on_settings_clicked();
     void copySettings();
-    void changeScreen();
+    //void changeScreen();
         // server signals
     void initTest();
     void executeServerMediaCommand();
         // media player responses
-    void onPhononFinished();
-    void onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    void handleCLMPError(QProcess::ProcessError error);
+    //void onPhononFinished();
+    //void onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    //void handleCLMPError(QProcess::ProcessError error);
 
 private:
         // controls and widgets
     Ui::MainWindow *ui;
     Settings *m_settings;
     QNetworkAccessManager *m_manager;
-    Phonon::MediaObject *m_phonon;
-    Phonon::VideoWidget *m_videoWidget;
+    //Phonon::MediaObject *m_phonon;
+    //Phonon::VideoWidget *m_videoWidget;
     QProcess *m_CLMP;
         // internal parameters
     QString m_rootURL;
@@ -71,11 +68,11 @@ private:
     QNetworkReply *postToServer(std::string path, std::string status="");
     void interpretServerCommand(std::string mode);
     QString readServerResponse();
-    void processCommand_init(Json::Value root, bool *success, std::stringstream *errMsg);
-    void processCommand_get_media(Json::Value root, bool *success, std::stringstream *errMsg);
+    void processCommand_init(QJsonObject serverCmdObj, bool *success, std::stringstream *errMsg);
+    void processCommand_get_media(QJsonObject serverCmdObj, bool *success, std::stringstream *errMsg);
     void sendStatusToServer(std::string status);
-    void setupMediaPlayer();
-    void playMediaList(std::string path, Json::Value mediaList);
+    //void setupMediaPlayer();
+    //void playMediaList(std::string path, QJsonArray mediaList);
     void msgBoxError(std::string text, std::string details="");
 };
 

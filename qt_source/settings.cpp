@@ -2,7 +2,6 @@
 #include "ui_settings.h"
 #include <QFile>
 #include <QMessageBox>
-#include <sstream>
 
 
 Settings::Settings(QWidget *parent) :

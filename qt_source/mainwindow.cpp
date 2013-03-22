@@ -1,10 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QtGui>
-#include <QFile>
 #include <QNetworkReply>
 #include <QMessageBox>
-#include <QDesktopWidget>
 #include <time.h>
 #include <sstream>
 
@@ -45,20 +43,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize media player
     m_CLMP = NULL;
-    m_phonon = NULL;
-    m_videoWidget = NULL;
-    setupMediaPlayer();
+    //m_phonon = NULL;
+    //m_videoWidget = NULL;
+    //setupMediaPlayer();
 }
 
 
 MainWindow::~MainWindow()
-{
+{/*
     if (m_videoWidget != NULL) {
         delete m_videoWidget;
     }
     if (m_phonon != NULL) {
         delete m_phonon;
-    }
+    }*/
     if (m_CLMP != NULL) {
         delete m_CLMP;
     }
@@ -140,7 +138,7 @@ void MainWindow::on_startTest_clicked()
         QRegExp urlPattern("^/tests/(\\d+)/instances/(\\d+)/run$");
         if (urlPattern.exactMatch(currentUrl.path())) {
             // check for valid key parameter
-            QList<QPair<QString, QString> > urlQueryItems = currentUrl.queryItems();
+            QList<QPair<QString, QString> > urlQueryItems = QUrlQuery(currentUrl).queryItems();
             if ((urlQueryItems.size() == 1) && (urlQueryItems.at(0).first == "key")) {
                 m_testID = urlPattern.cap(1).toInt();
                 m_testInstanceID = urlPattern.cap(2).toInt();
@@ -183,11 +181,11 @@ void MainWindow::copySettings()
     m_argsCLMP = m_settings->m_argStringCLMP.split(" ");
     if (m_videoMode != m_settings->m_videoMode) {
         m_videoMode = m_settings->m_videoMode;
-        setupMediaPlayer();
+        //setupMediaPlayer();
     }
 }
 
-
+/*
 // if the phonon media player is selected, this function switches the screen on which it appears.
 void MainWindow::changeScreen()
 {
@@ -202,7 +200,7 @@ void MainWindow::changeScreen()
         }
     }
 }
-
+*/
 
 
 /******************************************************************
@@ -214,12 +212,12 @@ QNetworkReply *MainWindow::postToServer(std::string path, std::string status)
 {
     QNetworkRequest request(QUrl(QString("%1/%2/%3/").arg(m_rootURL).arg(m_testInstanceID).arg(path.c_str())));
     request.setHeader(QNetworkRequest::ContentTypeHeader,"application/x-www-form-urlencoded");
-    QUrl params;
+    QUrlQuery params;
     params.addQueryItem("key",m_key.toStdString().c_str());
     if (status.length() > 0) {
         params.addQueryItem("status",status.c_str());
     }
-    const QByteArray data = params.encodedQuery();
+    const QByteArray data = QByteArray(params.query().toStdString().c_str());
     return (m_manager->post(request,data));
 }
 
@@ -259,23 +257,22 @@ void MainWindow::interpretServerCommand(std::string mode)
         bool success = true;
         QStringList keys = (QStringList() << "status" << "msg" << "path" << "mediaList" << "counter");
         std::stringstream errMsg;
-        Json::Value root;
-        Json::Reader reader;
-        if (!reader.parse(command.toStdString().c_str(),root)) {
+        QJsonObject serverCmdObj = QJsonDocument::fromJson(command.toStdString().c_str()).object();
+        if (serverCmdObj.isEmpty()) {
             success = false;
-            errMsg << reader.getFormatedErrorMessages() << std::endl;
+            errMsg << "Improperly formatted message from server." << std::endl;
         } else {
-            bool keysValid = root.size()==(unsigned)keys.size();
+            bool keysValid = serverCmdObj.keys().size()==(unsigned)keys.size();
             int ii = 0;
             while (keysValid && ii<keys.size()) {
-                keysValid = root.isMember(keys.at(ii).toStdString()) ;
+                keysValid = serverCmdObj.contains(keys.at(ii));
                 ii++;
             }
             if (keysValid) {
                 if (mode == "init") {
-                    processCommand_init(root, &success, &errMsg);
+                    processCommand_init(serverCmdObj, &success, &errMsg);
                 } else if (mode == "get_media") {
-                    processCommand_get_media(root, &success, &errMsg);
+                    processCommand_get_media(serverCmdObj, &success, &errMsg);
                 } else {
                     success = false;
                     errMsg << "Invalid server command mode." << std::endl;
@@ -318,15 +315,15 @@ QString MainWindow::readServerResponse()
 
 
 // interprets the JSON string from the init response
-void MainWindow::processCommand_init(Json::Value root, bool *success, std::stringstream *errMsg)
+void MainWindow::processCommand_init(QJsonObject serverCmdObj, bool *success, std::stringstream *errMsg)
 {
-    std::string status = std::string(root["status"].asCString());
+    std::string status = serverCmdObj["status"].toString().toStdString();
     if (status=="valid") {
-        std::string path = std::string(root["path"].asCString());
-        Json::Value mediaList = root["mediaList"];
+        std::string path = serverCmdObj["path"].toString().toStdString();
+        QJsonArray mediaList = serverCmdObj["mediaList"].toArray();
         QString fullMedia;
-        for (unsigned int ii=0; ii < mediaList.size(); ii++) {
-            fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].asCString());
+        for (int ii=0; ii < mediaList.size(); ii++) {
+            fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].toString().toStdString().c_str());
             if (!QFile(fullMedia).exists()) {
                 *success = false;
                 *errMsg << "Missing file: " << fullMedia.toStdString() << std::endl;
@@ -334,16 +331,16 @@ void MainWindow::processCommand_init(Json::Value root, bool *success, std::strin
         }
     } else {
         *success = false;
-        std::string errStr = (status=="error") ? std::string(root["msg"].asCString()) : std::string("Unknown status from server.");
+        std::string errStr = (status=="error") ? std::string(serverCmdObj["msg"].toString().toStdString().c_str()) : std::string("Unknown status from server.");
         *errMsg << errStr << std::endl;
     }
 }
 
 
 // interprets the JSON string from the get_media response
-void MainWindow::processCommand_get_media(Json::Value root, bool *success, std::stringstream *errMsg)
+void MainWindow::processCommand_get_media(QJsonObject serverCmdObj, bool *success, std::stringstream *errMsg)
 {
-    std::string status = std::string(root["status"].asCString());
+    std::string status = serverCmdObj["status"].toString().toStdString();
     if (status=="done") {
         // end test
         ui->status->setText(QString("Test complete.  You can begin another test or exit the program."));
@@ -361,12 +358,12 @@ void MainWindow::processCommand_get_media(Json::Value root, bool *success, std::
             sendStatusToServer("waiting");
         }
     } else if (status=="run") {
-        std::string path = std::string(root["path"].asCString());
-        Json::Value mediaList = root["mediaList"];
-        playMediaList(path, mediaList);
+        std::string path = serverCmdObj["path"].toString().toStdString();
+        QJsonArray mediaList = serverCmdObj["mediaList"].toArray();
+        //playMediaList(path, mediaList);
     } else {
         *success = false;
-        std::string errStr = (status=="error") ? std::string(root["msg"].asCString()) : std::string("Unknown status from server.");
+        std::string errStr = (status=="error") ? std::string(serverCmdObj.value("msg").toString().toStdString().c_str()) : std::string("Unknown status from server.");
         *errMsg << errStr << std::endl;
     }
 }
@@ -384,7 +381,7 @@ void MainWindow::sendStatusToServer(std::string status)
 /******************************************************************
  ***************       MEDIA PLAYER FUNCTIONS       ***************
  ******************************************************************/
-
+/*
 // instantiates a media player based on the selected mode and cleans up the previous media player
 void MainWindow::setupMediaPlayer()
 {
@@ -423,12 +420,12 @@ void MainWindow::setupMediaPlayer()
 
 
 // plays the videos within a test case
-void MainWindow::playMediaList(std::string path, Json::Value mediaList)
+void MainWindow::playMediaList(std::string path, QJsonArray mediaList)
 {
     QString fullMedia;
     QStringList fullMediaList;
     for (unsigned int ii=0; ii < mediaList.size(); ii++) {
-        fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].asCString());
+        fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].toString().toStdString().c_str());
         ui->status->setText(QString("Playing %1").arg(fullMedia.toStdString().c_str()));
         fullMediaList << fullMedia;
     }
@@ -472,7 +469,7 @@ void MainWindow::handleCLMPError(QProcess::ProcessError error)
     msgBoxError("Error with media player",QString("Error code = %1").arg(error).toStdString());
 }
 
-
+*/
 
 /******************************************************************
  ******************       HELPER FUNCTIONS       ******************
