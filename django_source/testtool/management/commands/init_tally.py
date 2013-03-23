@@ -6,6 +6,9 @@ class Command(BaseCommand):
     help = 'Initializes Tally system'
 
     def handle(self, *args, **options):        
+        # collect static files
+        call_command('collectstatic', interactive=False)
+
         # setup the database
         call_command('syncdb', interactive=True)
         

@@ -143,7 +143,7 @@ class DisplayTestInstanceForm(forms.ModelForm):
     
     
 class ExportDataForm(forms.Form):
-    format = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices = (('report', 'Report (.pdf)'),
+    format = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices = (#('report', 'Report (.pdf)'),
                                                                                        ('spreadsheet', 'Spreadsheet (.csv)'),
                                                                                        ('matlab','MATLAB (.mat)'),
                                                                                        ('python','Python (.py)')))
