@@ -191,7 +191,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 		`$ pip install Django`
 	- install numpy and scipy
 		- [option 1] through pip (this is known to fail on some systems)  
-			`$ pip install numpy`
+			`$ pip install numpy`  
 			`$ brew install gfortran (required for scipy)`  
 			`$ pip install scipy`
 		- [option 2] through Homebrew  
