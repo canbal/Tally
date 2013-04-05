@@ -189,22 +189,30 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- restart your Terminal so it picks up the path
 	- install Django through pip  
 		`$ pip install Django`
-	- install numpy and scipy
-		- [option 1] through pip (this is known to fail on some systems)  
+	- install numpy
+		- [option 1] through pip (this is known to make next step fail on some systems)  
 			`$ pip install numpy`  
 			`$ brew install gfortran (required for scipy)`  
 			`$ pip install scipy`
 		- [option 2] through Homebrew  
 			`$ brew tap samueljohn/python`  
 			`$ brew tap homebrew/science`  
-			`$ pip install nose` (required for Homebrew numpy and scipy)  
+			`$ pip install nose` (required for Homebrew numpy)  
 			`$ brew install numpy`  
+	- install scipy
+		- [option 1] through pip
+			`$ brew install gfortran (required for scipy)`  
+			`$ pip install scipy`
+		- [option 2] through Homebrew (this works only if you installed numpy using Homebrew as well)  
 			`$ brew install scipy`  
-3. Download Tally
+		- [note] Some older Macs are not compatible with the Homebrew version of gfortran. If you encounter an installation problem due to a gfortran error, follow the "FORTRAN" section at (http://www.scipy.org/Installing_SciPy/Mac_OS_X) and install it from universal binaries. Then unlink the existing Homebrew gfortran and link new the compiler instead.
+			`$ brew unlink gfortran`  
+			`$ ln -s /usr/bin/gfortran4.2 /usr/local/bin/gfortran`  
+7. Download Tally
 	- [recommended] through git for later updates to code
 		`$ git clone git://github.com/canbal/Tally.git`
 	- [alternative] download the zip file from <http://canbal.github.com/Tally/>
-4. Setup Tally
+8. Setup Tally
 	- change into back-end directory  
 		`$ cd Tally/django_source`  
 	- initialize the Tally system  
@@ -212,13 +220,13 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- open a browser and point it to the location printed in the command window, something like http://127.0.0.1:8000, and login with the superuser credentials you just created
 	- create a tester account, then logout of the website, and login as the Tester to make sure everything is working
 	- stop the development server by pressing `Ctrl-C` in the command window
-5. Install mod\_wsgi
+9. Install mod\_wsgi
 	- [option 1] using official Homebrew package -- [bug report](https://github.com/mxcl/homebrew/issues/18185)  
 		`$ brew tap homebrew/apache`  
 		`$ brew install mod_wsgi`  
 	- [option 2] using [unofficial fixed package](https://github.com/ahihi/homebrew-apache/commit/600bf143272f34371cf0826d69758b56083f529d) developed by <a href="https://github.com/ahihi" class="user-mention">@ahihi</a>  
 		`$ brew install https://raw.github.com/ahihi/homebrew-apache/600bf143272f34371cf0826d69758b56083f529d/mod_wsgi.rb`  
-6. Setup mod\_wsgi to work with Apache
+10. Setup mod\_wsgi to work with Apache
 	- first find where Homebrew installed mod_wsgi.so and make sure this file exists  
 		`$ brew list mod_wsgi`  
 	- link this file to the apache2/modules
@@ -254,7 +262,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 			Allow from all
 		</Directory>
 		```
-7. Start Apache
+11. Start Apache
 	- click on Apple logo > System Preferences
 	- click on Sharing
 	- turn on Web Sharing (click on the checkbox next to it)
