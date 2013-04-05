@@ -205,7 +205,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 			`$ pip install scipy`
 		- [option 2] through Homebrew (this works only if you installed numpy using Homebrew as well)  
 			`$ brew install scipy`  
-		- [note] Some older Macs are not compatible with the Homebrew version of gfortran. If you encounter an installation problem due to a gfortran error, follow the "FORTRAN" section at (http://www.scipy.org/Installing_SciPy/Mac_OS_X) and install it from universal binaries. Then unlink the existing Homebrew gfortran and link new the compiler instead.
+		- [note] Some older Macs are not compatible with the Homebrew version of gfortran. If you encounter an installation problem due to a gfortran error, follow the "FORTRAN" section at http://www.scipy.org/Installing_SciPy/Mac_OS_X and install it from universal binaries. Then unlink the existing Homebrew gfortran and link new the compiler instead.
 			`$ brew unlink gfortran`  
 			`$ ln -s /usr/bin/gfortran4.2 /usr/local/bin/gfortran`  
 7. Download Tally
