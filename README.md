@@ -224,6 +224,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- [option 1] using official Homebrew package -- [bug report](https://github.com/mxcl/homebrew/issues/18185)  
 		`$ brew tap homebrew/apache`  
 		`$ brew install mod_wsgi`  
+		Note: If you're having installation problems relating to a missing 'cc' compiler and 'OSX10.8.xctoolchain', read the "Troubleshooting" section of https://github.com/Homebrew/homebrew-apache
 	- [option 2] using [unofficial fixed package](https://github.com/ahihi/homebrew-apache/commit/600bf143272f34371cf0826d69758b56083f529d) developed by <a href="https://github.com/ahihi" class="user-mention">@ahihi</a>  
 		`$ brew install https://raw.github.com/ahihi/homebrew-apache/600bf143272f34371cf0826d69758b56083f529d/mod_wsgi.rb`  
 10. Setup mod\_wsgi to work with Apache
