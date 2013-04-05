@@ -213,7 +213,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- create a tester account, then logout of the website, and login as the Tester to make sure everything is working
 	- stop the development server by pressing `Ctrl-C` in the command window
 5. Install mod\_wsgi
-	- [option 1] using official homebrew package -- [bug report](https://github.com/mxcl/homebrew/issues/18185)  
+	- [option 1] using official Homebrew package -- [bug report](https://github.com/mxcl/homebrew/issues/18185)  
 		`$ brew tap homebrew/apache`  
 		`$ brew install mod_wsgi`  
 	- [option 2] using [unofficial fixed package](https://github.com/ahihi/homebrew-apache/commit/600bf143272f34371cf0826d69758b56083f529d) developed by <a href="https://github.com/ahihi" class="user-mention">@ahihi</a>  
