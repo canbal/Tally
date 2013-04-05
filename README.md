@@ -42,8 +42,8 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- Django
 		- download the tarball of latest version of Django (Django 1.5) from https://www.djangoproject.com/download/ and extract
 		- open command window, change into extracted Django directory, and execute command "{path to Python}\python.exe setup.py install". For example, if you extracted Django and installed Python to the C drive, the command would be
-			`>> cd c:\Django-1.5`  
-			`>> c:\Python27\python.exe setup.py install`  
+			`>> cd C:\Django-1.5`  
+			`>> C:\Python27\python.exe setup.py install`  
 	- numpy
 		- download the binary installer "numpy-1.7.0-win32-superpack-python2.7.exe" from https://www.djangoproject.com/download/ and run the installer.
 	- scipy
@@ -102,7 +102,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- download and install Qt libraries 4.8.4 for Windows (select the appropriate file for the compiler you have installed).  Note that Tally is only compatible with Qt libraries 4.8.4
 	- download and install Qt Creator 2.6.2 for Windows
 2. Open {path to Tally}\qt_source\tally_desktop.pro
-3. Qt will prompt you to configure the project, asking for a build kit.  In the options menu > Build and Run > Qt Versions, click "Add..." and select c:\Qt\4.8.4\bin\qmake.exe.  Go to options > Build and Run > Kits (the next tab over), click on Desktop (the default build) and select the appropriate version (4.8.4) from the Qt version dropdown menu.  Click OK.
+3. Qt will prompt you to configure the project, asking for a build kit.  In the options menu > Build and Run > Qt Versions, click "Add..." and select C:\Qt\4.8.4\bin\qmake.exe.  Go to options > Build and Run > Kits (the next tab over), click on Desktop (the default build) and select the appropriate version (4.8.4) from the Qt version dropdown menu.  Click OK.
 4. Build the project in Release mode.  Create a new directory to deploy the desktop app.  Copy tally_desktop.exe from the release build directory, and phonon4.dll, QtCore4.dll, QtGui4.dll, QtNetwork4.dll, and QtWebKit4.dll from C:\Qt\4.8.4\bin, into the deployment directory.  If you compiled with mingw, you may additionally need libgcc_s_dw201.dll and mingwm10.dll or something similar.  Copy the entire directory C:\Qt\4.8.4\plugins\phonon_backend into the deployment directory.  The deployment directory now contains everything you need to run Tally Desktop on any computer.  
 
 
