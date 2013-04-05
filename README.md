@@ -231,7 +231,9 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- first find where Homebrew installed mod_wsgi.so and make sure this file exists  
 		`$ brew list mod_wsgi`  
 	- link this file to the apache2/modules  
-		<code>$ sudo ln -s `brew list mod_wsgi` /usr/libexec/apache2/</code>  
+		```
+		$ sudo ln -s `brew list mod_wsgi` /usr/libexec/apache2/
+		```
 	- edit /etc/apache2/httpd.conf to contain following lines (requires elevated permissions):
 		- near the top of the file, there will be many lines beginning with "LoadModule …"
 		- at the end of this list, add the line: `LoadModule wsgi_module modules/mod_wsgi.so`
