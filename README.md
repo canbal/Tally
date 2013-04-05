@@ -221,7 +221,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- create a tester account, then logout of the website, and login as the Tester to make sure everything is working
 	- stop the development server by pressing `Ctrl-C` in the command window
 9. Install mod\_wsgi
-	- [option 1] using official Homebrew package (it is known that this step is causing error on older systems - [bug report]([bug report](https://github.com/mxcl/homebrew/issues/18185))  
+	- [option 1] using official Homebrew package (it is known that this step is causing error on some systems - [bug report]([bug report](https://github.com/mxcl/homebrew/issues/18185))  
 		`$ brew tap homebrew/apache`  
 		`$ brew install mod_wsgi`  
 		Note: If you're having installation problems relating to a missing 'cc' compiler and 'OSX10.8.xctoolchain', read the "Troubleshooting" section of https://github.com/Homebrew/homebrew-apache
