@@ -235,8 +235,10 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 		$ sudo ln -s `brew list mod_wsgi` /usr/libexec/apache2/
 		```
 	- edit /etc/apache2/httpd.conf to contain following lines (requires elevated permissions):
-		- near the top of the file, there will be many lines beginning with "LoadModule …"
-		- at the end of this list, add the line: `LoadModule wsgi_module modules/mod_wsgi.so`
+		- near the top of the file, there will be many lines beginning with `LoadModule ...`
+		- at the end of this list, add another line for `mod_wsgi.so` and follow the pattern of other statements  
+			- [pattern 1] `LoadModule wsgi_module modules/mod_wsgi.so`  
+			- [pattern 2] `LoadModule wsgi_module libexec/apache2/mod_wsgi.so`
 		- toward the middle of the file, there will be this block of text:
 
 		```
@@ -266,9 +268,14 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 		</Directory>
 		```
 11. Start Apache
-	- click on Apple logo > System Preferences
-	- click on Sharing
-	- turn on Web Sharing (click on the checkbox next to it)
+	- [method 1] this works on MacOSX versions prior to 10.8 (Mountain Lion)
+		- click on Apple logo > System Preferences
+		- click on Sharing
+		- turn on Web Sharing (click on the checkbox next to it)
+	- [method 2]
+		- run following command on Terminal  
+		`$ sudo apachectl restart`  
+12. Set correct permissions for Apache
 	- in order to allow access to the files in Tally, you need to change the owner of the file to apache. Execute following command to give ownership to the apache user (www):  
 		`$ sudo chown -R _www {path to Tally}/django_source`  
 		`$ sudo chgrp -R _www {path to Tally}/django_source`  
