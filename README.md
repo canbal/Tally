@@ -37,19 +37,19 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 ## Windows
 ### Back-end
 1. Install Python 2.7.x
-	- download Python 2.7.3 Windows Installer from <http://www.python.org/download/> and run it
+	- download Python 2.7.3 Windows Installer from http://www.python.org/download/ and run it
 2. Install Django, Numpy, and Scipy
 	- Django
-		- download the tarball of latest version of Django (Django 1.5) from <https://www.djangoproject.com/download/> and extract
+		- download the tarball of latest version of Django (Django 1.5) from https://www.djangoproject.com/download/ and extract
 		- open command window, change into extracted Django directory, and execute command "{path to Python}\python.exe setup.py install". For example, if you extracted Django and installed Python to the C drive, the command would be
 			`>> cd c:\Django-1.5`  
 			`>> c:\Python27\python.exe setup.py install`  
 	- numpy
-		- download the binary installer "numpy-1.7.0-win32-superpack-python2.7.exe" from <https://www.djangoproject.com/download/> and run the installer.
+		- download the binary installer "numpy-1.7.0-win32-superpack-python2.7.exe" from https://www.djangoproject.com/download/ and run the installer.
 	- scipy
-		- download scipy-0.12.0b1-win32-superpack-python2.7.exe from <http://sourceforge.net/projects/scipy/files/> and run the installer.
+		- download scipy-0.12.0b1-win32-superpack-python2.7.exe from http://sourceforge.net/projects/scipy/files/ and run the installer.
 3. Download Tally
-	- download the zip file from <http://canbal.github.com/Tally/>
+	- download the zip file from http://canbal.github.com/Tally/
 4. Setup Tally
 	- change into back-end directory  
 		`>> cd Tally/django_source`  
@@ -59,12 +59,12 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- create a tester account, then logout of the website, and login as the Tester to make sure everything is working
 	- stop the development server by pressing `Ctrl-C` in the command window
 5. Setup a web server
-	- download and install XAMPP from <http://sourceforge.net/projects/xampp/>
-	- dowload the win32 binary mod_wsgi for Python 2.7 from <https://code.google.com/p/modwsgi/wiki/DownloadTheSoftware>
+	- download and install XAMPP from http://sourceforge.net/projects/xampp/
+	- dowload the Win32 binary mod_wsgi for Python 2.7 from https://code.google.com/p/modwsgi/wiki/DownloadTheSoftware
 	- rename the downloaded file to mod_wsgi.so
 	- move mod_wsgi.so to C:\xampp\apache\modules
 	- open C:\xampp\apache\conf\httpd.conf in a text editor
-	- near the top of the file, there will be many lines beginning with "LoadModule …"
+	- near the top of the file, there will be many lines beginning with `LoadModule ...`
 	- at the end of this list, add the line: `LoadModule wsgi_module modules/mod_wsgi.so`
 	- toward the middle of the file, there will be this block of text:
 
@@ -123,7 +123,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 3. Download Tally
 	- [recommended] through git for later updates to code
 		`$ git clone git://github.com/canbal/Tally.git`
-	- [alternative] download the zip file from <http://canbal.github.com/Tally/>
+	- [alternative] download the zip file from http://canbal.github.com/Tally/
 4. Setup Tally    
 	- change into back-end directory  
 		`$ cd Tally/django_source`  
@@ -157,7 +157,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 		`$ sudo chown -R www-data {path to Tally}/django_source`  
 		`$ sudo chgrp -R www-data {path to Tally}/django_source`  
 	- restart apache with mod_wsgi support  
-		`$  sudo service apache2 restart`  
+		`$ sudo service apache2 restart`  
 
 ### Desktop App
 1. Install Qt  
@@ -268,12 +268,12 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 		</Directory>
 		```
 11. Start Apache
-	- [method 1] this works on MacOSX versions prior to 10.8 (Mountain Lion)
+	- [method 1] using user interface (this works on MacOSX versions prior to 10.8 [Mountain Lion])
 		- click on Apple logo > System Preferences
 		- click on Sharing
 		- turn on Web Sharing (click on the checkbox next to it)
-	- [method 2]
-		- run following command on Terminal  
+	- [method 2] using Terminal
+		- restart apache
 		`$ sudo apachectl restart`  
 12. Set correct permissions for Apache
 	- in order to allow access to the files in Tally, you need to change the owner of the file to apache. Execute following command to give ownership to the apache user (www):  
