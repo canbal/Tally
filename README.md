@@ -185,17 +185,17 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- restart your Terminal so it picks up the path
 	- install Django through pip  
 		`$ pip install Django`
-	- install numpy
-		- [alt1] through pip (this numpy installation made scipy installation fail for us)  
+	- install numpy and scipy
+		- [option 1] through pip (this is known to fail on some systems)  
 			`$ pip install numpy`
-		- [alt2] through Homebrew  
+			`$ brew install gfortran (required for scipy)`  
+			`$ pip install scipy`
+		- [option 2] through Homebrew  
 			`$ brew tap samueljohn/python`  
 			`$ brew tap homebrew/science`  
-			`$ pip install nose` (required for Homebrew numpy)  
+			`$ pip install nose` (required for Homebrew numpy and scipy)  
 			`$ brew install numpy`  
-	- install scipy through pip  
-		`$ brew install gfortran (required for scipy)`  
-		`$ pip install scipy`  
+			`$ brew install scipy`  
 3. Download Tally
 	- [recommended] through git for later updates to code
 		`$ git clone git://github.com/canbal/Tally.git`
