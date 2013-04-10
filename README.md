@@ -286,7 +286,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- [method 1] through Homebrew  
 		- check for the version of latest Qt on Homebrew  
 		`$ brew versions qt`  
-		- if latest version (version on the top of the list) is 4.8.4 skip this step otherwise execute the git command next to version 4.8.4  
+		- if latest version (version on the top of the list) is 4.8.4 skip this step; otherwise execute the git command next to version 4.8.4  
 		`$ git checkout d2139a2 /usr/local/Library/Formula/qt.rb`  
 		- install Qt  
 		`$ brew install qt`  
