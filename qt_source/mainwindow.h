@@ -6,7 +6,8 @@
 #include <QProcess>
 #include <QSettings>
 #include "settings.h"
-
+#include <QMediaPlayer>
+#include <QVideoWidget>
 
 namespace Ui {
     class MainWindow;
@@ -23,7 +24,7 @@ public:
     ~MainWindow();
 
 signals:
-    //void phonon_finished(int exitCode, QProcess::ExitStatus exitStatus);
+    void play_finished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private slots:
         // related to UI
@@ -34,22 +35,23 @@ private slots:
         // related to UI settings
     void on_settings_clicked();
     void copySettings();
-    //void changeScreen();
+    void changeScreen();
         // server signals
     void initTest();
     void executeServerMediaCommand();
         // media player responses
-    //void onPhononFinished();
-    //void onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    //void handleCLMPError(QProcess::ProcessError error);
+    void onMediaStatusChanged(QMediaPlayer::MediaStatus status);
+    void onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void handleCLMPError(QProcess::ProcessError error);
+    void handleNativePlayerError();
 
 private:
         // controls and widgets
     Ui::MainWindow *ui;
     Settings *m_settings;
     QNetworkAccessManager *m_manager;
-    //Phonon::MediaObject *m_phonon;
-    //Phonon::VideoWidget *m_videoWidget;
+    QMediaPlayer *m_mediaPlayer;
+    QVideoWidget *m_videoWidget;
     QProcess *m_CLMP;
         // internal parameters
     QString m_rootURL;
@@ -71,8 +73,8 @@ private:
     void processCommand_init(QJsonObject serverCmdObj, bool *success, std::stringstream *errMsg);
     void processCommand_get_media(QJsonObject serverCmdObj, bool *success, std::stringstream *errMsg);
     void sendStatusToServer(std::string status);
-    //void setupMediaPlayer();
-    //void playMediaList(std::string path, QJsonArray mediaList);
+    void setupMediaPlayer();
+    void playMediaList(std::string path, QJsonArray mediaList);
     void msgBoxError(std::string text, std::string details="");
 };
 

@@ -3,6 +3,8 @@
 #include <QtGui>
 #include <QNetworkReply>
 #include <QMessageBox>
+#include <QMediaPlaylist>
+#include <QDesktopWidget>
 #include <time.h>
 #include <sstream>
 
@@ -19,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize settings dialog
     m_savedPrefs = new QSettings("UCSD","Tally");
-    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://canbal.github.com/Tally/").toString();
+    m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://canbal.github.io/Tally/").toString();
     m_videoMode = m_savedPrefs->value("videoMode",1).toInt();
     m_pathToCLMP = m_savedPrefs->value("pathToCLMP","c:/Program Files (x86)/Windows Media Player/wmplayer.exe").toString();
     m_argsCLMP = m_savedPrefs->value("argStringCLMP","/fullscreen /play /close").toString().split(" ");
@@ -43,20 +45,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // initialize media player
     m_CLMP = NULL;
-    //m_phonon = NULL;
-    //m_videoWidget = NULL;
-    //setupMediaPlayer();
+    m_mediaPlayer = NULL;
+    m_videoWidget = NULL;
+    setupMediaPlayer();
 }
 
 
 MainWindow::~MainWindow()
-{/*
+{
     if (m_videoWidget != NULL) {
         delete m_videoWidget;
     }
-    if (m_phonon != NULL) {
-        delete m_phonon;
-    }*/
+    if (m_mediaPlayer != NULL) {
+        delete m_mediaPlayer;
+    }
     if (m_CLMP != NULL) {
         delete m_CLMP;
     }
@@ -181,11 +183,10 @@ void MainWindow::copySettings()
     m_argsCLMP = m_settings->m_argStringCLMP.split(" ");
     if (m_videoMode != m_settings->m_videoMode) {
         m_videoMode = m_settings->m_videoMode;
-        //setupMediaPlayer();
+        setupMediaPlayer();
     }
 }
 
-/*
 // if the phonon media player is selected, this function switches the screen on which it appears.
 void MainWindow::changeScreen()
 {
@@ -200,7 +201,6 @@ void MainWindow::changeScreen()
         }
     }
 }
-*/
 
 
 /******************************************************************
@@ -360,7 +360,7 @@ void MainWindow::processCommand_get_media(QJsonObject serverCmdObj, bool *succes
     } else if (status=="run") {
         std::string path = serverCmdObj["path"].toString().toStdString();
         QJsonArray mediaList = serverCmdObj["mediaList"].toArray();
-        //playMediaList(path, mediaList);
+        playMediaList(path, mediaList);
     } else {
         *success = false;
         std::string errStr = (status=="error") ? std::string(serverCmdObj.value("msg").toString().toStdString().c_str()) : std::string("Unknown status from server.");
@@ -381,7 +381,7 @@ void MainWindow::sendStatusToServer(std::string status)
 /******************************************************************
  ***************       MEDIA PLAYER FUNCTIONS       ***************
  ******************************************************************/
-/*
+
 // instantiates a media player based on the selected mode and cleans up the previous media player
 void MainWindow::setupMediaPlayer()
 {
@@ -393,22 +393,23 @@ void MainWindow::setupMediaPlayer()
         delete m_videoWidget;
         m_videoWidget = NULL;
     }
-    if (m_phonon != NULL) {
-        delete m_phonon;
-        m_phonon = NULL;
+    if (m_mediaPlayer != NULL) {
+        delete m_mediaPlayer;
+        m_mediaPlayer = NULL;
     }
     m_settings->disconnect(SIGNAL(change_screen()));
-    this->disconnect(SIGNAL(phonon_finished(int,QProcess::ExitStatus)));
+    this->disconnect(SIGNAL(play_finished(int,QProcess::ExitStatus)));
     if (m_videoMode==1) {
-        m_phonon = new Phonon::MediaObject();
-        m_videoWidget = new Phonon::VideoWidget();
-        Phonon::createPath(m_phonon, m_videoWidget);
-        m_videoWidget->setFullScreen(true);
-        m_videoWidget->show();
+        m_mediaPlayer = new QMediaPlayer(this);
+        m_videoWidget = new QVideoWidget(this); // 'this' makes video window appear in MainWindow
+        m_mediaPlayer->setVideoOutput(m_videoWidget);
+        m_videoWidget->setFullScreen(false);
+        //m_videoWidget->show();
         changeScreen();
         connect(m_settings,SIGNAL(change_screen()),this,SLOT(changeScreen()));
-        connect(m_phonon,SIGNAL(finished()),this,SLOT(onPhononFinished()));
-        connect(this,SIGNAL(phonon_finished(int, QProcess::ExitStatus)),this,SLOT(onVideoFinished(int, QProcess::ExitStatus)));
+        connect(m_mediaPlayer,SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),this,SLOT(onMediaStatusChanged(QMediaPlayer::MediaStatus)));
+        connect(this,SIGNAL(play_finished(int, QProcess::ExitStatus)),this,SLOT(onVideoFinished(int, QProcess::ExitStatus)));
+        connect(m_mediaPlayer, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(handleNativePlayerError()));
     } else if (m_videoMode==2) {
         m_CLMP = new QProcess(this);        // clmp = command line media player
         connect(m_CLMP,SIGNAL(finished(int, QProcess::ExitStatus)),this,SLOT(onVideoFinished(int, QProcess::ExitStatus)));
@@ -424,16 +425,19 @@ void MainWindow::playMediaList(std::string path, QJsonArray mediaList)
 {
     QString fullMedia;
     QStringList fullMediaList;
-    for (unsigned int ii=0; ii < mediaList.size(); ii++) {
+    for (int ii=0; ii < mediaList.size(); ii++) {
         fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].toString().toStdString().c_str());
         ui->status->setText(QString("Playing %1").arg(fullMedia.toStdString().c_str()));
         fullMediaList << fullMedia;
     }
     if (m_videoMode==1) {
+        QMediaPlaylist* playlist = new QMediaPlaylist(m_mediaPlayer);
         for (int ii=0; ii < fullMediaList.size(); ii++) {
-            m_phonon->enqueue(fullMediaList.at(ii));
+            playlist->addMedia(QUrl::fromLocalFile(fullMediaList.at(ii)));
         }
-        m_phonon->play();
+        playlist->setCurrentIndex(1);
+        m_mediaPlayer->setPlaylist(playlist);
+        m_mediaPlayer->play();
     } else if (m_videoMode==2) {
         m_CLMP->start(m_pathToCLMP, fullMediaList + m_argsCLMP);
     } else {
@@ -444,19 +448,28 @@ void MainWindow::playMediaList(std::string path, QJsonArray mediaList)
 
 // wrapper for the finished() signal from the Phonon player that re-emits the signal with arguments.
 // this way, a common slot (onVideoFinished) can be used regardless of the media player.
-void MainWindow::onPhononFinished()
+void MainWindow::onMediaStatusChanged(QMediaPlayer::MediaStatus status)
 {
     // Phonon::MediaObject signal finished() is emitted when last video in the queue is finished playing
-    emit phonon_finished(0, QProcess::NormalExit);
+    ui->status->setText(QString("media status is %1").arg(status));
+    //if (status == QMediaPlayer::EndOfMedia)
+    // *********
+    // IMPORTANT
+    // *********
+    // We should actually use 'EndOfMedia' but this status does not seem to be emitted at the end of the playlist.
+    // Instead, tne 'NoMedia' status is emitted but this is the default status so it is not very safe to use
+    // *********
+    if (status == QMediaPlayer::NoMedia)
+        emit play_finished(0, QProcess::NormalExit);
 }
 
 
 // tells the server that the videos in the present test case are done playing
 void MainWindow::onVideoFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
-    if (m_videoMode == 1) {
-        m_phonon->clear();   // so that video player does not pause on final frame
-    }
+/*    if (m_videoMode == 1) {
+        m_mediaPlayer->clear();   // so that video player does not pause on final frame
+    } */
     ui->status->setText(QString("Video is finished.  exitCode = %1, exitStatus = %2").arg(exitCode).arg(exitStatus));
     sendStatusToServer("media_done");
     //ui->nextVideo->setEnabled(true);
@@ -469,7 +482,13 @@ void MainWindow::handleCLMPError(QProcess::ProcessError error)
     msgBoxError("Error with media player",QString("Error code = %1").arg(error).toStdString());
 }
 
-*/
+
+// pops up an error message if there is a problem with the Qt media player
+void MainWindow::handleNativePlayerError()
+{
+    msgBoxError("Error with media player",QString("Error = %1").arg(m_mediaPlayer->errorString()).toStdString());
+}
+
 
 /******************************************************************
  ******************       HELPER FUNCTIONS       ******************

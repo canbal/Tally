@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT += core gui widgets network webkitwidgets
+QT += core gui widgets network webkitwidgets multimedia multimediawidgets
 
 TARGET = tally_desktop
 
@@ -12,10 +12,10 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
            mainwindow.cpp \
-    settings.cpp
+           settings.cpp
 
 HEADERS += mainwindow.h \
-    settings.h
+           settings.h
 
 FORMS += mainwindow.ui \
-    settings.ui
+         settings.ui
