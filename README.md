@@ -170,7 +170,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 ## MacOSX
 ### Back-end
 1. Install or update to latest Xcode (Apple's developer IDE that contains gcc etc.)
-2. Install Homebrew (Homebrew is a package manager for MacOSX and makes installing some of the tools required for Tally easier -- and makes the installation guide MacOSX version independent) <http://mxcl.github.com/homebrew/>  
+2. Install [Homebrew](http://mxcl.github.com/homebrew/) (Homebrew is a package manager for MacOSX. It makes installing some of the tools required for Tally easier, and makes the installation guide MacOSX version independent)  
 	`$ ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"`  
 3. Check Homebrew is updated and working  
 	`$ brew update`  
@@ -192,15 +192,13 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 	- install numpy
 		- [option 1] through pip (this is known to make next step fail on some systems)  
 			`$ pip install numpy`  
-			`$ brew install gfortran (required for scipy)`  
-			`$ pip install scipy`
 		- [option 2] through Homebrew  
 			`$ brew tap samueljohn/python`  
 			`$ brew tap homebrew/science`  
 			`$ pip install nose` (required for Homebrew numpy)  
 			`$ brew install numpy`  
 	- install scipy
-		- [option 1] through pip
+		- [option 1] through pip  
 			`$ brew install gfortran (required for scipy)`  
 			`$ pip install scipy`
 		- [option 2] through Homebrew (this works only if you installed numpy using Homebrew as well)  
@@ -209,7 +207,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 			`$ brew unlink gfortran`  
 			`$ ln -s /usr/bin/gfortran4.2 /usr/local/bin/gfortran`  
 7. Download Tally
-	- [recommended] through git for later updates to code
+	- [recommended] through git for later updates to code  
 		`$ git clone git://github.com/canbal/Tally.git`
 	- [alternative] download the zip file from <http://canbal.github.com/Tally/>
 8. Setup Tally
