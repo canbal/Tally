@@ -5,6 +5,7 @@
 #include <QNetworkReply>
 #include <QMessageBox>
 #include <QDesktopWidget>
+#include <QDir>
 #include <time.h>
 #include <sstream>
 
@@ -23,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_savedPrefs = new QSettings("UCSD","Tally");
     m_defaultWebAddress = m_savedPrefs->value("defaultWebAddress","http://canbal.github.com/Tally/").toString();
     m_videoMode = m_savedPrefs->value("videoMode",1).toInt();
-    m_pathToCLMP = m_savedPrefs->value("pathToCLMP","c:/Program Files (x86)/Windows Media Player/wmplayer.exe").toString();
+    m_pathToCLMP = m_savedPrefs->value("pathToCLMP","C:\Program Files (x86)\Windows Media Player\wmplayer.exe").toString();
     m_argsCLMP = m_savedPrefs->value("argStringCLMP","/fullscreen /play /close").toString().split(" ");
     m_settings = new Settings();
     m_settings->setWindowModality(Qt::ApplicationModal);    // disables other windows while this one is open
@@ -425,10 +426,11 @@ void MainWindow::setupMediaPlayer()
 // plays the videos within a test case
 void MainWindow::playMediaList(std::string path, Json::Value mediaList)
 {
+    QDir directory(QString("%1").arg(path.c_str()));
     QString fullMedia;
     QStringList fullMediaList;
     for (unsigned int ii=0; ii < mediaList.size(); ii++) {
-        fullMedia = QString("%1/%2").arg(path.c_str()).arg(mediaList[ii].asCString());
+        fullMedia = QDir::toNativeSeparators(directory.absoluteFilePath(QString("%1").arg(mediaList[ii].asCString())));
         ui->status->setText(QString("Playing %1").arg(fullMedia.toStdString().c_str()));
         fullMediaList << fullMedia;
     }
