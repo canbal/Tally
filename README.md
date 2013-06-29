@@ -22,7 +22,11 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 
 ## License
 
-This content is released under the [MIT License](https://github.com/canbal/Tally/blob/master/LICENSE.txt).
+This content is released under the [MIT License](https://github.com/canbal/Tally/blob/master/LICENSE.txt). For any documented use of our software in reports, publications, etc., we ask that you cite our paper [1].  If you want to cite the Tally website, please use [2].
+
+[1] A.K. Jain, C. Bal, and T.Q. Nguyen, "Tally: A Web-Based Subjective Testing Tool," Fifth Int'l Workshop on Quality of Multimedia Experience (QoMEX) 2013, Jul. 2013.
+
+[2] https://github.com/canbal/Tally
 
 ---
 
@@ -36,8 +40,8 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 
 ## Windows
 ### Back-end
-1. Install Python 2.7.x
-	- download Python 2.7.3 Windows Installer from http://www.python.org/download/ and run it
+1. Install Python 2.7.x (32-bit)
+	- download 32-bit Python 2.7.3 Windows Installer from http://www.python.org/download/ and run it
 2. Install Django, Numpy, and Scipy
 	- Django
 		- download the tarball of latest version of Django (Django 1.5) from https://www.djangoproject.com/download/ and extract
@@ -45,7 +49,7 @@ Also for Linux and MacOSX, you do not need to use any package manager to install
 			`>> cd C:\Django-1.5`  
 			`>> C:\Python27\python.exe setup.py install`  
 	- numpy
-		- download the binary installer "numpy-1.7.0-win32-superpack-python2.7.exe" from https://www.djangoproject.com/download/ and run the installer.
+		- download the binary installer "numpy-1.7.0-win32-superpack-python2.7.exe" from http://sourceforge.net/projects/numpy/files/NumPy/1.7.0/ and run the installer.
 	- scipy
 		- download scipy-0.12.0b1-win32-superpack-python2.7.exe from http://sourceforge.net/projects/scipy/files/ and run the installer.
 3. Download Tally
