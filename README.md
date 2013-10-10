@@ -24,7 +24,7 @@ For any inquiries email tally.vpl@gmail.com and we'll get back to you as soon as
 
 This content is released under the [MIT License](https://github.com/canbal/Tally/blob/master/LICENSE.txt). For any documented use of our software in reports, publications, etc., we ask that you cite our paper [1].  If you want to cite the Tally website, please use [2].
 
-[1] A.K. Jain, C. Bal, and T.Q. Nguyen, "Tally: A Web-Based Subjective Testing Tool," Fifth Int'l Workshop on Quality of Multimedia Experience (QoMEX) 2013, Jul. 2013.
+[1] A.K. Jain, C. Bal, and T.Q. Nguyen, "Tally: A Web-Based Subjective Testing Tool," Fifth Int'l Workshop on Quality of Multimedia Experience (QoMEX) 2013, Jul. 2013. [ [Link](http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=6603224) ]
 
 [2] https://github.com/canbal/Tally
 
